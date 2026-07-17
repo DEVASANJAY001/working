@@ -1,397 +1,603 @@
-import React, { useState, useEffect } from 'react';
-import { Mail, Phone, Lock, KeyRound, LogOut, CheckCircle2, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Mail, Phone, Lock, ArrowRight, ArrowLeft,
+  Eye, EyeOff, CheckCircle2, AlertCircle,
+  Smartphone, RefreshCw, ShieldCheck
+} from 'lucide-react';
 import { authService } from '../services/authService';
 
+/* ─────────────────── Shared helpers ─────────────────── */
+const GoogleIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-5 h-5" aria-hidden="true">
+    <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.48 14.98 1 12 1 7.35 1 3.37 3.65 1.43 7.54l3.85 2.99C6.2 7.42 8.87 5.04 12 5.04z"/>
+    <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.51h6.46c-.29 1.48-1.14 2.73-2.4 3.58l3.76 2.91c2.2-2.03 3.67-5.01 3.67-8.66z"/>
+    <path fill="#FBBC05" d="M5.28 14.71c-.24-.71-.38-1.47-.38-2.26s.14-1.55.38-2.26L1.43 7.2C.52 9.02 0 11.01 0 13.1s.52 4.08 1.43 5.9l3.85-2.99z"/>
+    <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.76-2.91c-1.1.74-2.52 1.18-4.2 1.18-3.13 0-5.8-2.38-6.72-5.49L1.43 16C3.37 19.89 7.35 22.5 12 22.5z"/>
+  </svg>
+);
+
+const Logo = () => (
+  <div className="flex items-center justify-center gap-2 mb-2">
+    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+      <ShieldCheck className="w-5 h-5 text-white" />
+    </div>
+    <span className="text-2xl font-bold text-gray-900 tracking-tight">
+      Simple<span className="text-emerald-600">Auth</span>
+    </span>
+  </div>
+);
+
+const Alert = ({ type, message }) => {
+  if (!message) return null;
+  const styles = type === 'error'
+    ? 'bg-red-50 border-red-200 text-red-700'
+    : 'bg-emerald-50 border-emerald-200 text-emerald-700';
+  const Icon = type === 'error' ? AlertCircle : CheckCircle2;
+  const iconStyle = type === 'error' ? 'text-red-500' : 'text-emerald-500';
+  return (
+    <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border text-sm ${styles}`}>
+      <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${iconStyle}`} />
+      <span>{message}</span>
+    </div>
+  );
+};
+
+const InputField = ({ label, id, type = 'text', icon: Icon, value, onChange, placeholder, maxLength, autoFocus, rightElement, hint }) => (
+  <div className="space-y-1.5">
+    <label htmlFor={id} className="block text-sm font-medium text-gray-700">{label}</label>
+    <div className="relative">
+      {Icon && (
+        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+          <Icon className="w-4.5 h-4.5 text-gray-400 w-[18px] h-[18px]" />
+        </div>
+      )}
+      <input
+        id={id}
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        maxLength={maxLength}
+        autoFocus={autoFocus}
+        className={`w-full ${Icon ? 'pl-10' : 'pl-4'} ${rightElement ? 'pr-12' : 'pr-4'} py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 hover:border-gray-300`}
+        required
+      />
+      {rightElement && (
+        <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center">
+          {rightElement}
+        </div>
+      )}
+    </div>
+    {hint && <p className="text-xs text-gray-400">{hint}</p>}
+  </div>
+);
+
+const PrimaryBtn = ({ children, loading, disabled, onClick, type = 'submit' }) => (
+  <button
+    type={type}
+    onClick={onClick}
+    disabled={loading || disabled}
+    className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold rounded-xl text-sm shadow-md shadow-emerald-600/25 transition-all duration-150 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+  >
+    {loading
+      ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+      : children}
+  </button>
+);
+
+const Divider = ({ label = 'or continue with' }) => (
+  <div className="flex items-center gap-3">
+    <div className="flex-1 h-px bg-gray-100" />
+    <span className="text-xs text-gray-400 font-medium whitespace-nowrap">{label}</span>
+    <div className="flex-1 h-px bg-gray-100" />
+  </div>
+);
+
+const GoogleBtn = ({ onClick, loading }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={loading}
+    className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white border border-gray-200 hover:bg-gray-50 active:bg-gray-100 text-gray-700 font-medium rounded-xl text-sm transition-all duration-150 active:scale-[0.98] disabled:opacity-60"
+  >
+    <GoogleIcon />
+    <span>Continue with Google</span>
+  </button>
+);
+
+const BackBtn = ({ onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors duration-150 mb-4"
+  >
+    <ArrowLeft className="w-4 h-4" />
+    Back
+  </button>
+);
+
+const validateIdentifier = (value) => {
+  if (!value?.trim()) return 'Please enter your email address or phone number.';
+  if (value.includes('@')) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Please enter a valid email address.';
+  } else {
+    const n = value.replace(/[\s\-()]/g, '');
+    if (!/^\+?[1-9]\d{6,14}$/.test(n)) return 'Please enter a valid phone number (e.g. +91 9876543210).';
+  }
+  return '';
+};
+
+/* ─────────────────── Main export ─────────────────── */
 export default function AuthPage({ onLoginSuccess }) {
-  const [tab, setTab] = useState('login'); // 'login' | 'register' | 'forgot'
-  const [identifier, setIdentifier] = useState(''); // Email or Phone number
+  // screen: 'welcome' | 'signin' | 'signin-otp' | 'signup' | 'signup-otp' | 'forgot' | 'forgot-otp'
+  const [screen, setScreen] = useState('welcome');
+  const [identifier, setIdentifier] = useState('');
   const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
-  const [step, setStep] = useState('input'); // 'input' | 'verify'
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Clear states when toggling tabs
-  useEffect(() => {
-    setError('');
-    setInfo('');
-    setOtp('');
-    setPassword('');
-    setStep('input');
-  }, [tab]);
+  const clearFeedback = () => { setError(''); setInfo(''); };
+  const goTo = (s) => { clearFeedback(); setOtp(''); setPassword(''); setScreen(s); };
 
-  // Clean validation helper
-  const validateIdentifier = (value) => {
-    if (!value) return 'Please enter an email address or phone number.';
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    // Basic phone format regex (optional + prefix, followed by digits)
-    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-    
-    if (value.includes('@')) {
-      if (!emailRegex.test(value)) return 'Please enter a valid email address.';
-    } else {
-      // Remove space and dash formatting for check
-      const normalized = value.replace(/[\s-()]/g, '');
-      if (!phoneRegex.test(normalized)) {
-        return 'Please enter a valid phone number (e.g. +1234567890).';
-      }
-    }
-    return '';
+  /* ── Handlers ── */
+  const handleGoogleSignIn = async () => {
+    clearFeedback();
+    setLoading(true);
+    try { await authService.federatedSignIn({ provider: 'Google' }); }
+    catch (e) { setError(e.message || 'Google Sign-In failed.'); setLoading(false); }
   };
 
-  // 1. Submit email or phone to receive OTP (Login or Register)
-  const handleSendOtp = async (e) => {
-    e.preventDefault();
-    setError('');
-    setInfo('');
-
-    const validationError = validateIdentifier(identifier);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
+  const handleSendSignInOtp = async (e) => {
+    e.preventDefault(); clearFeedback();
+    const ve = validateIdentifier(identifier);
+    if (ve) { setError(ve); return; }
     setLoading(true);
     try {
-      if (tab === 'login') {
-        // Initiate Login
-        await authService.signIn({ username: identifier });
-        setInfo(`A verification code has been sent to ${identifier}. Use code 123456 for testing.`);
-        setStep('verify');
-      } else if (tab === 'register') {
-        // Initiate Registration
-        await authService.signUp({ username: identifier });
-        setInfo(`A verification code has been sent to ${identifier}. Use code 123456 for testing.`);
-        setStep('verify');
-      }
-    } catch (err) {
-      setError(err.message || 'Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+      await authService.signIn({ username: identifier });
+      setInfo(`Verification code sent to ${identifier}. (Use 123456 for demo)`);
+      goTo('signin-otp');
+    } catch (err) { setError(err.message || 'Failed to send code.'); }
+    finally { setLoading(false); }
   };
 
-  // 2. Verify OTP code (Login or Register)
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault();
-    setError('');
-    setInfo('');
-
-    if (!otp) {
-      setError('Please enter the 6-digit confirmation code.');
-      return;
-    }
-
+  const handleVerifySignInOtp = async (e) => {
+    e.preventDefault(); clearFeedback();
+    if (otp.length < 4) { setError('Please enter the full verification code.'); return; }
     setLoading(true);
     try {
-      if (tab === 'login') {
-        // Complete custom OTP login
-        const session = await authService.mockOtpLoginDirect(identifier, otp);
-        onLoginSuccess(session);
-      } else if (tab === 'register') {
-        // Complete sign up and auto-login
-        await authService.confirmSignUp({ username: identifier, confirmationCode: otp });
-        const session = await authService.getCurrentUser();
-        onLoginSuccess(session);
-      }
-    } catch (err) {
-      setError(err.message || 'Invalid verification code.');
-    } finally {
-      setLoading(false);
-    }
+      const session = await authService.mockOtpLoginDirect(identifier, otp);
+      onLoginSuccess(session);
+    } catch (err) { setError(err.message || 'Invalid code. Please try again.'); }
+    finally { setLoading(false); }
   };
 
-  // 3. Forgot Password request
-  const handleForgotPasswordRequest = async (e) => {
-    e.preventDefault();
-    setError('');
-    setInfo('');
+  const handleSendSignUpOtp = async (e) => {
+    e.preventDefault(); clearFeedback();
+    const ve = validateIdentifier(identifier);
+    if (ve) { setError(ve); return; }
+    setLoading(true);
+    try {
+      await authService.signUp({ username: identifier });
+      setInfo(`Verification code sent to ${identifier}. (Use 123456 for demo)`);
+      goTo('signup-otp');
+    } catch (err) { setError(err.message || 'Failed to create account.'); }
+    finally { setLoading(false); }
+  };
 
-    const validationError = validateIdentifier(identifier);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+  const handleVerifySignUpOtp = async (e) => {
+    e.preventDefault(); clearFeedback();
+    if (otp.length < 4) { setError('Please enter the full verification code.'); return; }
+    setLoading(true);
+    try {
+      await authService.confirmSignUp({ username: identifier, confirmationCode: otp });
+      const session = await authService.getCurrentUser();
+      onLoginSuccess(session);
+    } catch (err) { setError(err.message || 'Invalid code.'); }
+    finally { setLoading(false); }
+  };
 
+  const handleForgotRequest = async (e) => {
+    e.preventDefault(); clearFeedback();
+    const ve = validateIdentifier(identifier);
+    if (ve) { setError(ve); return; }
     setLoading(true);
     try {
       await authService.resetPassword({ username: identifier });
-      setInfo(`A password reset code has been sent to ${identifier}. Use code 123456 for testing.`);
-      setStep('verify');
-    } catch (err) {
-      setError(err.message || 'Failed to request password reset.');
-    } finally {
-      setLoading(false);
-    }
+      setInfo(`Reset code sent to ${identifier}. (Use 123456 for demo)`);
+      goTo('forgot-otp');
+    } catch (err) { setError(err.message || 'Failed to send reset code.'); }
+    finally { setLoading(false); }
   };
 
-  // 4. Reset Password confirmation
-  const handleForgotPasswordSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setInfo('');
-
-    if (!otp) {
-      setError('Please enter the verification code.');
-      return;
-    }
-    if (!password || password.length < 8) {
-      setError('Password must be at least 8 characters long.');
-      return;
-    }
-
+  const handleForgotConfirm = async (e) => {
+    e.preventDefault(); clearFeedback();
+    if (otp.length < 4) { setError('Please enter the verification code.'); return; }
+    if (!password || password.length < 8) { setError('Password must be at least 8 characters.'); return; }
     setLoading(true);
     try {
-      // Auto-logs user in on success according to specification
-      await authService.confirmResetPassword({
-        username: identifier,
-        confirmationCode: otp,
-        newPassword: password
-      });
+      await authService.confirmResetPassword({ username: identifier, confirmationCode: otp, newPassword: password });
       const session = await authService.getCurrentUser();
       onLoginSuccess(session);
-    } catch (err) {
-      setError(err.message || 'Failed to reset password.');
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { setError(err.message || 'Failed to reset password.'); }
+    finally { setLoading(false); }
   };
 
-  // 5. Google Federated Sign-in
-  const handleGoogleSignIn = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      await authService.federatedSignIn({ provider: 'Google' });
-    } catch (err) {
-      setError(err.message || 'Failed to sign in with Google.');
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[#F5FBF7]">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-emerald-100 overflow-hidden transform transition-all duration-300 hover:shadow-2xl">
-        
-        {/* Decorative Top Bar */}
-        <div className="h-2 bg-gradient-to-r from-emerald-400 via-green-500 to-lime-400"></div>
-
-        <div className="p-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-              Simple<span className="text-emerald-600">Auth</span>
-            </h1>
-            <p className="mt-2 text-sm text-gray-500">Secure passwordless verification</p>
-          </div>
-
-          {/* Navigation Tabs (Only show if not verifying code) */}
-          {step === 'input' && (
-            <div className="flex border-b border-gray-100 mb-6">
-              <button
-                onClick={() => setTab('login')}
-                className={`flex-1 pb-3 text-sm font-semibold transition-colors duration-200 border-b-2 ${
-                  tab === 'login'
-                    ? 'border-emerald-500 text-emerald-600'
-                    : 'border-transparent text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                Sign In
-              </button>
-              <button
-                onClick={() => setTab('register')}
-                className={`flex-1 pb-3 text-sm font-semibold transition-colors duration-200 border-b-2 ${
-                  tab === 'register'
-                    ? 'border-emerald-500 text-emerald-600'
-                    : 'border-transparent text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                Register
-              </button>
-              <button
-                onClick={() => setTab('forgot')}
-                className={`flex-1 pb-3 text-sm font-semibold transition-colors duration-200 border-b-2 ${
-                  tab === 'forgot'
-                    ? 'border-emerald-500 text-emerald-600'
-                    : 'border-transparent text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                Forgot
-              </button>
-            </div>
-          )}
-
-          {/* Error and Success Feedback Alerts */}
-          {error && (
-            <div className="flex items-center gap-3 p-4 mb-5 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-sm animate-pulse">
-              <AlertCircle className="w-5 h-5 flex-shrink-0 text-rose-500" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {info && (
-            <div className="flex items-center gap-3 p-4 mb-5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-sm">
-              <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-500" />
-              <span>{info}</span>
-            </div>
-          )}
-
-          {/* Main Card Forms */}
-          {step === 'input' && (
-            <div className="space-y-6">
-              <form onSubmit={tab === 'forgot' ? handleForgotPasswordRequest : handleSendOtp} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                    Email address or Phone number
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      {identifier.includes('@') || !identifier ? (
-                        <Mail className="w-5 h-5 text-gray-400" />
-                      ) : (
-                        <Phone className="w-5 h-5 text-gray-400" />
-                      )}
-                    </div>
-                    <input
-                      type="text"
-                      value={identifier}
-                      onChange={(e) => setIdentifier(e.target.value)}
-                      placeholder="name@email.com or +1234567890"
-                      className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-sm"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl transition-all shadow-md shadow-emerald-600/20 active:scale-95 disabled:opacity-50 text-sm flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  ) : tab === 'forgot' ? (
-                    'Send Reset Code'
-                  ) : (
-                    'Continue'
-                  )}
-                </button>
-              </form>
-
-              {/* Federated Social Logins (Google) - Only for Sign In / Sign Up */}
-              {tab !== 'forgot' && (
-                <>
-                  <div className="relative flex items-center justify-center">
-                    <div className="border-t border-gray-100 w-full"></div>
-                    <span className="absolute px-3 bg-white text-xs text-gray-400 uppercase tracking-wider">
-                      Or continue with
-                    </span>
-                  </div>
-
-                  <button
-                    onClick={handleGoogleSignIn}
-                    disabled={loading}
-                    className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium rounded-xl transition-all text-sm active:scale-95"
-                  >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" width="24" height="24">
-                      <path
-                        fill="#EA4335"
-                        d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.48 14.98 1 12 1 7.35 1 3.37 3.65 1.43 7.54l3.85 2.99C6.2 7.42 8.87 5.04 12 5.04z"
-                      />
-                      <path
-                        fill="#4285F4"
-                        d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.51h6.46c-.29 1.48-1.14 2.73-2.4 3.58l3.76 2.91c2.2-2.03 3.67-5.01 3.67-8.66z"
-                      />
-                      <path
-                        fill="#FBBC05"
-                        d="M5.28 14.71c-.24-.71-.38-1.47-.38-2.26s.14-1.55.38-2.26L1.43 7.2C.52 9.02 0 11.01 0 13.1s.52 4.08 1.43 5.9l3.85-2.99c-.24-.71-.38-1.47-.38-2.26z"
-                      />
-                      <path
-                        fill="#34A853"
-                        d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.76-2.91c-1.1.74-2.52 1.18-4.2 1.18-3.13 0-5.8-2.38-6.72-5.49L1.43 16C3.37 19.89 7.35 22.5 12 22.5z"
-                      />
-                    </svg>
-                    Google
-                  </button>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Verification Code Submission Screen */}
-          {step === 'verify' && (
-            <div className="space-y-6">
-              <form
-                onSubmit={tab === 'forgot' ? handleForgotPasswordSubmit : handleVerifyOtp}
-                className="space-y-4"
-              >
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                    Enter Verification Code
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <KeyRound className="w-5 h-5 text-gray-400" />
-                    </div>
-                    <input
-                      type="text"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value)}
-                      placeholder="e.g. 123456"
-                      maxLength={6}
-                      className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-sm tracking-widest text-center font-bold"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Password field only shown for Forgot Password Flow */}
-                {tab === 'forgot' && (
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                      New Password
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Lock className="w-5 h-5 text-gray-400" />
-                      </div>
-                      <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-sm"
-                        required
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl transition-all shadow-md shadow-emerald-600/20 active:scale-95 disabled:opacity-50 text-sm flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    'Verify & Authenticate'
-                  )}
-                </button>
-              </form>
-
-              <button
-                onClick={() => setStep('input')}
-                disabled={loading}
-                className="w-full py-2 bg-transparent hover:bg-gray-50 text-gray-500 font-medium rounded-xl transition-all text-xs"
-              >
-                Go Back
-              </button>
-            </div>
-          )}
-        </div>
+  /* ── Layout wrapper ── */
+  const Card = ({ children, wide }) => (
+    <div className="min-h-screen bg-gradient-to-br from-[#F0FAF4] via-white to-[#E8F5FF] flex flex-col items-center justify-center p-4">
+      <div className={`w-full ${wide ? 'max-w-lg' : 'max-w-md'} bg-white rounded-2xl shadow-xl shadow-gray-200/60 border border-gray-100 overflow-hidden`}>
+        {children}
       </div>
     </div>
   );
+
+  const CardBody = ({ children }) => <div className="px-8 pb-8 pt-6 space-y-5">{children}</div>;
+
+  const CardTop = ({ children }) => (
+    <div className="px-8 pt-8 pb-0">
+      <div className="flex justify-center mb-6"><Logo /></div>
+      {children}
+    </div>
+  );
+
+  /* ─────────── SCREEN: Welcome ─────────── */
+  if (screen === 'welcome') return (
+    <div className="min-h-screen bg-gradient-to-br from-[#F0FAF4] via-white to-[#E8F5FF] flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl shadow-gray-200/60 border border-gray-100 overflow-hidden">
+        {/* Hero Band */}
+        <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-green-500 to-teal-400" />
+        <div className="px-8 pt-10 pb-8 text-center space-y-6">
+          <div className="flex justify-center">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+              <ShieldCheck className="w-8 h-8 text-white" />
+            </div>
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+              Simple<span className="text-emerald-600">Auth</span>
+            </h1>
+            <p className="mt-2 text-gray-500 text-sm leading-relaxed">
+              Secure, passwordless authentication.<br />Sign in with OTP or Google — no passwords needed.
+            </p>
+          </div>
+
+          <div className="space-y-3 pt-2">
+            <PrimaryBtn type="button" onClick={() => goTo('signin')}>
+              Sign In
+              <ArrowRight className="w-4 h-4" />
+            </PrimaryBtn>
+            <button
+              type="button"
+              onClick={() => goTo('signup')}
+              className="w-full py-3 px-4 border-2 border-emerald-600 text-emerald-700 hover:bg-emerald-50 font-semibold rounded-xl text-sm transition-all duration-150 active:scale-[0.98]"
+            >
+              Create Account
+            </button>
+          </div>
+
+          <Divider />
+
+          <GoogleBtn onClick={handleGoogleSignIn} loading={loading} />
+
+          {error && <Alert type="error" message={error} />}
+        </div>
+      </div>
+
+      <p className="mt-6 text-xs text-gray-400 text-center">
+        By continuing, you agree to our Terms of Service and Privacy Policy.
+      </p>
+    </div>
+  );
+
+  /* ─────────── SCREEN: Sign In ─────────── */
+  if (screen === 'signin') return (
+    <Card>
+      <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-green-500 to-teal-400" />
+      <CardTop>
+        <BackBtn onClick={() => goTo('welcome')} />
+        <h2 className="text-2xl font-bold text-gray-900">Welcome back</h2>
+        <p className="mt-1 text-sm text-gray-500">Enter your email or phone to receive a sign-in code</p>
+      </CardTop>
+      <CardBody>
+        <Alert type="error" message={error} />
+        <Alert type="info" message={info} />
+        <form onSubmit={handleSendSignInOtp} className="space-y-4">
+          <InputField
+            id="signin-identifier"
+            label="Email or Phone number"
+            icon={identifier && !identifier.includes('@') ? Phone : Mail}
+            value={identifier}
+            onChange={e => setIdentifier(e.target.value)}
+            placeholder="name@email.com or +1234567890"
+            autoFocus
+          />
+          <PrimaryBtn loading={loading}>
+            Send Verification Code
+            <ArrowRight className="w-4 h-4" />
+          </PrimaryBtn>
+        </form>
+
+        <Divider />
+        <GoogleBtn onClick={handleGoogleSignIn} loading={loading} />
+
+        {/* Footer links */}
+        <div className="flex flex-col items-center gap-2 pt-1">
+          <button
+            type="button"
+            onClick={() => { clearFeedback(); goTo('forgot'); }}
+            className="text-sm text-emerald-600 hover:text-emerald-700 font-medium hover:underline transition-colors"
+          >
+            Forgot password?
+          </button>
+          <p className="text-sm text-gray-500">
+            Don't have an account?{' '}
+            <button
+              type="button"
+              onClick={() => goTo('signup')}
+              className="text-emerald-600 font-semibold hover:underline hover:text-emerald-700"
+            >
+              Create one
+            </button>
+          </p>
+        </div>
+      </CardBody>
+    </Card>
+  );
+
+  /* ─────────── SCREEN: Sign In OTP ─────────── */
+  if (screen === 'signin-otp') return (
+    <Card>
+      <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-green-500 to-teal-400" />
+      <CardTop>
+        <BackBtn onClick={() => goTo('signin')} />
+        <h2 className="text-2xl font-bold text-gray-900">Check your inbox</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          We sent a 6-digit code to <span className="font-semibold text-gray-700">{identifier}</span>
+        </p>
+      </CardTop>
+      <CardBody>
+        <Alert type="error" message={error} />
+        <Alert type="info" message={info} />
+        <form onSubmit={handleVerifySignInOtp} className="space-y-4">
+          <InputField
+            id="signin-otp"
+            label="Verification Code"
+            icon={Smartphone}
+            value={otp}
+            onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
+            placeholder="123456"
+            maxLength={6}
+            autoFocus
+            hint="Enter the 6-digit code. For demo, use: 123456"
+          />
+          <PrimaryBtn loading={loading}>
+            Verify & Sign In
+            <ArrowRight className="w-4 h-4" />
+          </PrimaryBtn>
+        </form>
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={() => goTo('signin')}
+            className="text-sm text-gray-400 hover:text-gray-600 flex items-center gap-1.5 mx-auto transition-colors"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Resend code
+          </button>
+        </div>
+      </CardBody>
+    </Card>
+  );
+
+  /* ─────────── SCREEN: Sign Up ─────────── */
+  if (screen === 'signup') return (
+    <Card>
+      <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-green-500 to-teal-400" />
+      <CardTop>
+        <BackBtn onClick={() => goTo('welcome')} />
+        <h2 className="text-2xl font-bold text-gray-900">Create an account</h2>
+        <p className="mt-1 text-sm text-gray-500">Sign up with your email or phone — no password required</p>
+      </CardTop>
+      <CardBody>
+        <Alert type="error" message={error} />
+        <Alert type="info" message={info} />
+        <form onSubmit={handleSendSignUpOtp} className="space-y-4">
+          <InputField
+            id="signup-identifier"
+            label="Email or Phone number"
+            icon={identifier && !identifier.includes('@') ? Phone : Mail}
+            value={identifier}
+            onChange={e => setIdentifier(e.target.value)}
+            placeholder="name@email.com or +1234567890"
+            autoFocus
+          />
+          <PrimaryBtn loading={loading}>
+            Create Account
+            <ArrowRight className="w-4 h-4" />
+          </PrimaryBtn>
+        </form>
+
+        <Divider />
+        <GoogleBtn onClick={handleGoogleSignIn} loading={loading} />
+
+        <p className="text-center text-sm text-gray-500">
+          Already have an account?{' '}
+          <button
+            type="button"
+            onClick={() => goTo('signin')}
+            className="text-emerald-600 font-semibold hover:underline hover:text-emerald-700"
+          >
+            Sign in
+          </button>
+        </p>
+      </CardBody>
+    </Card>
+  );
+
+  /* ─────────── SCREEN: Sign Up OTP ─────────── */
+  if (screen === 'signup-otp') return (
+    <Card>
+      <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-green-500 to-teal-400" />
+      <CardTop>
+        <BackBtn onClick={() => goTo('signup')} />
+        <h2 className="text-2xl font-bold text-gray-900">Verify your account</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Enter the code sent to <span className="font-semibold text-gray-700">{identifier}</span>
+        </p>
+      </CardTop>
+      <CardBody>
+        <Alert type="error" message={error} />
+        <Alert type="info" message={info} />
+        <form onSubmit={handleVerifySignUpOtp} className="space-y-4">
+          <InputField
+            id="signup-otp"
+            label="Verification Code"
+            icon={Smartphone}
+            value={otp}
+            onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
+            placeholder="123456"
+            maxLength={6}
+            autoFocus
+            hint="Enter the 6-digit code. For demo, use: 123456"
+          />
+          <PrimaryBtn loading={loading}>
+            Confirm & Activate
+            <ArrowRight className="w-4 h-4" />
+          </PrimaryBtn>
+        </form>
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={() => goTo('signup')}
+            className="text-sm text-gray-400 hover:text-gray-600 flex items-center gap-1.5 mx-auto transition-colors"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Resend code
+          </button>
+        </div>
+      </CardBody>
+    </Card>
+  );
+
+  /* ─────────── SCREEN: Forgot Password ─────────── */
+  if (screen === 'forgot') return (
+    <Card>
+      <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-green-500 to-teal-400" />
+      <CardTop>
+        <BackBtn onClick={() => goTo('signin')} />
+        <h2 className="text-2xl font-bold text-gray-900">Reset your password</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Enter your registered email or phone and we'll send a reset code
+        </p>
+      </CardTop>
+      <CardBody>
+        <Alert type="error" message={error} />
+        <Alert type="info" message={info} />
+        <form onSubmit={handleForgotRequest} className="space-y-4">
+          <InputField
+            id="forgot-identifier"
+            label="Email or Phone number"
+            icon={identifier && !identifier.includes('@') ? Phone : Mail}
+            value={identifier}
+            onChange={e => setIdentifier(e.target.value)}
+            placeholder="name@email.com or +1234567890"
+            autoFocus
+          />
+          <PrimaryBtn loading={loading}>
+            Send Reset Code
+            <ArrowRight className="w-4 h-4" />
+          </PrimaryBtn>
+        </form>
+        <p className="text-center text-sm text-gray-500">
+          Remembered it?{' '}
+          <button
+            type="button"
+            onClick={() => goTo('signin')}
+            className="text-emerald-600 font-semibold hover:underline hover:text-emerald-700"
+          >
+            Sign in instead
+          </button>
+        </p>
+      </CardBody>
+    </Card>
+  );
+
+  /* ─────────── SCREEN: Forgot OTP + New Password ─────────── */
+  if (screen === 'forgot-otp') return (
+    <Card>
+      <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-green-500 to-teal-400" />
+      <CardTop>
+        <BackBtn onClick={() => goTo('forgot')} />
+        <h2 className="text-2xl font-bold text-gray-900">Set new password</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Enter the code sent to <span className="font-semibold text-gray-700">{identifier}</span> and choose a new password
+        </p>
+      </CardTop>
+      <CardBody>
+        <Alert type="error" message={error} />
+        <Alert type="info" message={info} />
+        <form onSubmit={handleForgotConfirm} className="space-y-4">
+          <InputField
+            id="forgot-otp"
+            label="Verification Code"
+            icon={Smartphone}
+            value={otp}
+            onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
+            placeholder="123456"
+            maxLength={6}
+            autoFocus
+            hint="For demo, use: 123456"
+          />
+
+          {/* Password field with show/hide toggle */}
+          <div className="space-y-1.5">
+            <label htmlFor="new-password" className="block text-sm font-medium text-gray-700">New Password</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <Lock className="w-[18px] h-[18px] text-gray-400" />
+              </div>
+              <input
+                id="new-password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Minimum 8 characters"
+                className="w-full pl-10 pr-12 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 hover:border-gray-300"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(v => !v)}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            <p className="text-xs text-gray-400">Must be at least 8 characters</p>
+          </div>
+
+          <PrimaryBtn loading={loading}>
+            Reset & Sign In
+            <ArrowRight className="w-4 h-4" />
+          </PrimaryBtn>
+        </form>
+
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={() => goTo('forgot')}
+            className="text-sm text-gray-400 hover:text-gray-600 flex items-center gap-1.5 mx-auto transition-colors"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Resend code
+          </button>
+        </div>
+      </CardBody>
+    </Card>
+  );
+
+  return null;
 }
