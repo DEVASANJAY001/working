@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import {
-  Mail, Phone, Lock, ArrowRight, ArrowLeft,
-  Eye, EyeOff, CheckCircle2, AlertCircle,
-  Smartphone, RefreshCw, ShieldCheck
+  Mail, Phone, Lock, Eye, EyeOff, ArrowRight, ArrowLeft,
+  ShieldCheck, User, AlertCircle, CheckCircle2,
+  RefreshCw, Smartphone, MessageSquare
 } from 'lucide-react';
 import { authService } from '../services/authService';
 
-/* ─────────────────── Shared helpers ─────────────────── */
+/* ═══════════════════════════════════════════
+   SHARED UI PRIMITIVES
+════════════════════════════════════════════ */
+
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" className="w-5 h-5" aria-hidden="true">
     <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.48 14.98 1 12 1 7.35 1 3.37 3.65 1.43 7.54l3.85 2.99C6.2 7.42 8.87 5.04 12 5.04z"/>
@@ -16,39 +19,110 @@ const GoogleIcon = () => (
   </svg>
 );
 
-const Logo = () => (
-  <div className="flex items-center justify-center gap-2 mb-2">
-    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
-      <ShieldCheck className="w-5 h-5 text-white" />
+const AppLogo = ({ size = 'md' }) => {
+  const iconSize = size === 'lg' ? 'w-10 h-10' : 'w-8 h-8';
+  const logoSize = size === 'lg' ? 'w-20 h-20 rounded-3xl' : 'w-12 h-12 rounded-2xl';
+  const textSize = size === 'lg' ? 'text-4xl' : 'text-xl';
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <div className={`${logoSize} bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-500/30`}>
+        <ShieldCheck className={`${iconSize} text-white`} />
+      </div>
+      {size === 'lg' && (
+        <div className="text-center">
+          <h1 className={`${textSize} font-bold text-gray-900 tracking-tight`}>
+            Simple<span className="text-emerald-600">Auth</span>
+          </h1>
+          <p className="text-gray-500 text-sm mt-1">Secure • Fast • Simple</p>
+        </div>
+      )}
     </div>
-    <span className="text-2xl font-bold text-gray-900 tracking-tight">
-      Simple<span className="text-emerald-600">Auth</span>
-    </span>
-  </div>
-);
+  );
+};
 
 const Alert = ({ type, message }) => {
   if (!message) return null;
-  const styles = type === 'error'
-    ? 'bg-red-50 border-red-200 text-red-700'
-    : 'bg-emerald-50 border-emerald-200 text-emerald-700';
-  const Icon = type === 'error' ? AlertCircle : CheckCircle2;
-  const iconStyle = type === 'error' ? 'text-red-500' : 'text-emerald-500';
+  if (type === 'error') return (
+    <div className="flex items-start gap-3 px-4 py-3 rounded-xl border bg-red-50 border-red-200 text-red-700 text-sm">
+      <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-red-500" />
+      <span>{message}</span>
+    </div>
+  );
   return (
-    <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border text-sm ${styles}`}>
-      <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${iconStyle}`} />
+    <div className="flex items-start gap-3 px-4 py-3 rounded-xl border bg-emerald-50 border-emerald-200 text-emerald-800 text-sm">
+      <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0 text-emerald-600" />
       <span>{message}</span>
     </div>
   );
 };
 
-const InputField = ({ label, id, type = 'text', icon: Icon, value, onChange, placeholder, maxLength, autoFocus, rightElement, hint }) => (
+const ChannelBadge = ({ identifier }) => {
+  const isEmail = identifier.includes('@');
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl">
+      <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${isEmail ? 'bg-blue-100' : 'bg-purple-100'}`}>
+        {isEmail
+          ? <Mail className="w-4 h-4 text-blue-600" />
+          : <MessageSquare className="w-4 h-4 text-purple-600" />}
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs text-gray-400 font-medium">{isEmail ? 'Code sent to email' : 'Code sent via SMS'}</p>
+        <p className="text-sm font-semibold text-gray-700 truncate">{identifier}</p>
+      </div>
+    </div>
+  );
+};
+
+/* OTP — 6 separate digit boxes */
+const OtpBoxes = ({ value, onChange, id = 'otp' }) => (
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-gray-700">Verification Code</label>
+    <div className="flex gap-2">
+      {Array(6).fill(0).map((_, i) => (
+        <input
+          key={i}
+          id={`${id}-${i}`}
+          type="text"
+          inputMode="numeric"
+          maxLength={1}
+          autoFocus={i === 0}
+          value={value[i] || ''}
+          onChange={e => {
+            const v = e.target.value.replace(/\D/g, '');
+            const arr = (value + '      ').split('').slice(0, 6);
+            arr[i] = v.slice(-1);
+            onChange(arr.join('').trimEnd());
+            if (v && i < 5) document.getElementById(`${id}-${i + 1}`)?.focus();
+          }}
+          onKeyDown={e => {
+            if (e.key === 'Backspace' && !value[i] && i > 0) {
+              document.getElementById(`${id}-${i - 1}`)?.focus();
+            }
+          }}
+          onPaste={e => {
+            e.preventDefault();
+            const p = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+            onChange(p);
+            document.getElementById(`${id}-${Math.min(p.length, 5)}`)?.focus();
+          }}
+          className="flex-1 h-12 min-w-0 text-center text-xl font-bold border-2 border-gray-200 rounded-xl bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all caret-transparent"
+        />
+      ))}
+    </div>
+    <p className="text-xs text-gray-400">
+      Demo code: <span className="font-semibold text-gray-600 tracking-widest">123456</span>
+    </p>
+  </div>
+);
+
+/* Single text input with optional left icon and right button */
+const Field = ({ id, label, type = 'text', icon: Icon, value, onChange, placeholder, hint, autoFocus, right, required = true }) => (
   <div className="space-y-1.5">
     <label htmlFor={id} className="block text-sm font-medium text-gray-700">{label}</label>
     <div className="relative">
       {Icon && (
         <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-          <Icon className="w-4.5 h-4.5 text-gray-400 w-[18px] h-[18px]" />
+          <Icon className="text-gray-400" style={{ width: 17, height: 17 }} />
         </div>
       )}
       <input
@@ -57,546 +131,467 @@ const InputField = ({ label, id, type = 'text', icon: Icon, value, onChange, pla
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        maxLength={maxLength}
         autoFocus={autoFocus}
-        className={`w-full ${Icon ? 'pl-10' : 'pl-4'} ${rightElement ? 'pr-12' : 'pr-4'} py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 hover:border-gray-300`}
-        required
+        required={required}
+        className={`w-full py-3 border border-gray-200 rounded-xl bg-white text-gray-900 placeholder-gray-400 text-sm
+          focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 hover:border-gray-300 transition-all
+          ${Icon ? 'pl-10' : 'pl-4'} ${right ? 'pr-12' : 'pr-4'}`}
       />
-      {rightElement && (
-        <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center">
-          {rightElement}
-        </div>
+      {right && (
+        <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center">{right}</div>
       )}
     </div>
     {hint && <p className="text-xs text-gray-400">{hint}</p>}
   </div>
 );
 
-const PrimaryBtn = ({ children, loading, disabled, onClick, type = 'submit' }) => (
-  <button
-    type={type}
-    onClick={onClick}
-    disabled={loading || disabled}
-    className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold rounded-xl text-sm shadow-md shadow-emerald-600/25 transition-all duration-150 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
-  >
-    {loading
-      ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-      : children}
-  </button>
-);
+/* Password field with show/hide */
+const PasswordField = ({ id, label, value, onChange, placeholder = '••••••••', hint, autoFocus }) => {
+  const [show, setShow] = useState(false);
+  return (
+    <Field
+      id={id} label={label} type={show ? 'text' : 'password'}
+      icon={Lock} value={value} onChange={onChange}
+      placeholder={placeholder} hint={hint} autoFocus={autoFocus}
+      right={
+        <button type="button" onClick={() => setShow(v => !v)}
+          className="text-gray-400 hover:text-gray-600 transition-colors">
+          {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+        </button>
+      }
+    />
+  );
+};
 
-const Divider = ({ label = 'or continue with' }) => (
+/* Primary CTA button */
+const Btn = ({ children, loading, type = 'submit', onClick, variant = 'primary', disabled }) => {
+  const base = 'w-full flex items-center justify-center gap-2 py-3 px-4 font-semibold rounded-xl text-sm transition-all duration-150 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed';
+  const styles = variant === 'primary'
+    ? 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-md shadow-emerald-600/25'
+    : 'bg-white border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700';
+  return (
+    <button type={type} onClick={onClick} disabled={loading || disabled} className={`${base} ${styles}`}>
+      {loading ? <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" /> : children}
+    </button>
+  );
+};
+
+const Divider = ({ label = 'or' }) => (
   <div className="flex items-center gap-3">
     <div className="flex-1 h-px bg-gray-100" />
-    <span className="text-xs text-gray-400 font-medium whitespace-nowrap">{label}</span>
+    <span className="text-xs text-gray-400 font-medium">{label}</span>
     <div className="flex-1 h-px bg-gray-100" />
   </div>
 );
 
 const GoogleBtn = ({ onClick, loading }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    disabled={loading}
-    className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white border border-gray-200 hover:bg-gray-50 active:bg-gray-100 text-gray-700 font-medium rounded-xl text-sm transition-all duration-150 active:scale-[0.98] disabled:opacity-60"
-  >
-    <GoogleIcon />
-    <span>Continue with Google</span>
+  <button type="button" onClick={onClick} disabled={loading}
+    className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium rounded-xl text-sm transition-all active:scale-[0.98] disabled:opacity-60">
+    <GoogleIcon /> Continue with Google
   </button>
 );
 
-const BackBtn = ({ onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors duration-150 mb-4"
-  >
-    <ArrowLeft className="w-4 h-4" />
-    Back
+const Back = ({ onClick, label = 'Back' }) => (
+  <button type="button" onClick={onClick}
+    className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 transition-colors mb-5">
+    <ArrowLeft className="w-4 h-4" /> {label}
   </button>
 );
 
-const validateIdentifier = (value) => {
-  if (!value?.trim()) return 'Please enter your email address or phone number.';
-  if (value.includes('@')) {
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Please enter a valid email address.';
-  } else {
-    const n = value.replace(/[\s\-()]/g, '');
-    if (!/^\+?[1-9]\d{6,14}$/.test(n)) return 'Please enter a valid phone number (e.g. +91 9876543210).';
-  }
+const FooterLink = ({ text, linkText, onClick }) => (
+  <p className="text-center text-sm text-gray-500">
+    {text}{' '}
+    <button type="button" onClick={onClick}
+      className="text-emerald-600 font-semibold hover:underline hover:text-emerald-700">
+      {linkText}
+    </button>
+  </p>
+);
+
+/* Page shell */
+const Page = ({ children }) => (
+  <div className="min-h-screen bg-gradient-to-br from-[#edfaf2] via-white to-[#e8f4ff] flex flex-col items-center justify-center p-4">
+    <div className="w-full max-w-md">
+      {children}
+    </div>
+  </div>
+);
+
+const Card = ({ children }) => (
+  <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/70 border border-gray-100 overflow-hidden">
+    <div className="h-1 bg-gradient-to-r from-emerald-400 via-green-500 to-teal-400" />
+    <div className="px-8 py-7 space-y-5">{children}</div>
+  </div>
+);
+
+/* Validation helpers */
+const validEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v?.trim());
+const validPhone = v => /^\+?[1-9]\d{6,14}$/.test(v?.replace(/[\s\-()]/g, ''));
+const validIdentifier = v => {
+  if (!v?.trim()) return 'Please enter your email or phone number.';
+  if (v.includes('@') && !validEmail(v)) return 'Enter a valid email address.';
+  if (!v.includes('@') && !validPhone(v)) return 'Enter a valid phone number (e.g. +91 98765 43210).';
   return '';
 };
 
-/* ─────────────────── Main export ─────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   MAIN COMPONENT
+══════════════════════════════════════════════════════════ */
 export default function AuthPage({ onLoginSuccess }) {
-  // screen: 'welcome' | 'signin' | 'signin-otp' | 'signup' | 'signup-otp' | 'forgot' | 'forgot-otp'
+  /**
+   * Screens:
+   *  welcome      → landing
+   *  signin       → email/phone + password
+   *  signup       → name + email/phone + password + confirm
+   *  signup-otp   → verify OTP sent to email/phone after registration
+   *  forgot       → enter email/phone to receive reset OTP
+   *  forgot-otp   → enter OTP + new password
+   */
   const [screen, setScreen] = useState('welcome');
+
+  // form fields
+  const [name, setName]             = useState('');
   const [identifier, setIdentifier] = useState('');
-  const [otp, setOtp] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [info, setInfo] = useState('');
+  const [password, setPassword]     = useState('');
+  const [confirmPw, setConfirmPw]   = useState('');
+  const [otp, setOtp]               = useState('');
+
+  const [error, setError]   = useState('');
+  const [info, setInfo]     = useState('');
   const [loading, setLoading] = useState(false);
 
   const clearFeedback = () => { setError(''); setInfo(''); };
-  const goTo = (s) => { clearFeedback(); setOtp(''); setPassword(''); setScreen(s); };
 
-  /* ── Handlers ── */
-  const handleGoogleSignIn = async () => {
+  const goTo = (s) => {
     clearFeedback();
-    setLoading(true);
+    setOtp('');
+    setScreen(s);
+  };
+
+  /* ── Google ── */
+  const handleGoogle = async () => {
+    clearFeedback(); setLoading(true);
     try { await authService.federatedSignIn({ provider: 'Google' }); }
-    catch (e) { setError(e.message || 'Google Sign-In failed.'); setLoading(false); }
+    catch (e) { setError(e.message || 'Google sign-in failed.'); setLoading(false); }
   };
 
-  const handleSendSignInOtp = async (e) => {
+  /* ── SIGN IN ── */
+  const handleSignIn = async (e) => {
     e.preventDefault(); clearFeedback();
-    const ve = validateIdentifier(identifier);
+    const ve = validIdentifier(identifier);
     if (ve) { setError(ve); return; }
+    if (!password) { setError('Please enter your password.'); return; }
     setLoading(true);
     try {
-      await authService.signIn({ username: identifier });
-      setInfo(`Verification code sent to ${identifier}. (Use 123456 for demo)`);
-      goTo('signin-otp');
-    } catch (err) { setError(err.message || 'Failed to send code.'); }
+      const result = await authService.signIn({ username: identifier.trim(), password });
+      const user = await authService.getCurrentUser();
+      onLoginSuccess(user);
+    } catch (err) { setError(err.message || 'Sign in failed. Check your credentials.'); }
     finally { setLoading(false); }
   };
 
-  const handleVerifySignInOtp = async (e) => {
+  /* ── SIGN UP: submit form ── */
+  const handleSignUp = async (e) => {
     e.preventDefault(); clearFeedback();
-    if (otp.length < 4) { setError('Please enter the full verification code.'); return; }
-    setLoading(true);
-    try {
-      const session = await authService.mockOtpLoginDirect(identifier, otp);
-      onLoginSuccess(session);
-    } catch (err) { setError(err.message || 'Invalid code. Please try again.'); }
-    finally { setLoading(false); }
-  };
-
-  const handleSendSignUpOtp = async (e) => {
-    e.preventDefault(); clearFeedback();
-    const ve = validateIdentifier(identifier);
+    if (!name.trim()) { setError('Please enter your full name.'); return; }
+    const ve = validIdentifier(identifier);
     if (ve) { setError(ve); return; }
+    if (!password || password.length < 8) { setError('Password must be at least 8 characters.'); return; }
+    if (password !== confirmPw) { setError('Passwords do not match.'); return; }
     setLoading(true);
     try {
-      await authService.signUp({ username: identifier });
-      setInfo(`Verification code sent to ${identifier}. (Use 123456 for demo)`);
+      await authService.signUp({
+        username: identifier.trim(),
+        password,
+        options: { userAttributes: { name: name.trim() } }
+      });
+      setInfo(`A 6-digit verification code has been sent to ${identifier.trim()}.`);
       goTo('signup-otp');
     } catch (err) { setError(err.message || 'Failed to create account.'); }
     finally { setLoading(false); }
   };
 
-  const handleVerifySignUpOtp = async (e) => {
+  /* ── SIGN UP: verify OTP ── */
+  const handleConfirmSignUp = async (e) => {
     e.preventDefault(); clearFeedback();
-    if (otp.length < 4) { setError('Please enter the full verification code.'); return; }
+    if (otp.replace(/\s/g, '').length < 6) { setError('Enter the complete 6-digit code.'); return; }
     setLoading(true);
     try {
-      await authService.confirmSignUp({ username: identifier, confirmationCode: otp });
-      const session = await authService.getCurrentUser();
-      onLoginSuccess(session);
-    } catch (err) { setError(err.message || 'Invalid code.'); }
+      await authService.confirmSignUp({ username: identifier.trim(), confirmationCode: otp });
+      const user = await authService.getCurrentUser();
+      onLoginSuccess(user);
+    } catch (err) { setError(err.message || 'Invalid code. Please try again.'); }
     finally { setLoading(false); }
   };
 
+  /* ── FORGOT: request OTP ── */
   const handleForgotRequest = async (e) => {
     e.preventDefault(); clearFeedback();
-    const ve = validateIdentifier(identifier);
+    const ve = validIdentifier(identifier);
     if (ve) { setError(ve); return; }
     setLoading(true);
     try {
-      await authService.resetPassword({ username: identifier });
-      setInfo(`Reset code sent to ${identifier}. (Use 123456 for demo)`);
+      await authService.resetPassword({ username: identifier.trim() });
+      setInfo(`A reset code has been sent to ${identifier.trim()}.`);
       goTo('forgot-otp');
     } catch (err) { setError(err.message || 'Failed to send reset code.'); }
     finally { setLoading(false); }
   };
 
+  /* ── FORGOT: confirm OTP + new password ── */
   const handleForgotConfirm = async (e) => {
     e.preventDefault(); clearFeedback();
-    if (otp.length < 4) { setError('Please enter the verification code.'); return; }
-    if (!password || password.length < 8) { setError('Password must be at least 8 characters.'); return; }
+    if (otp.replace(/\s/g, '').length < 6) { setError('Enter the complete 6-digit code.'); return; }
+    if (!password || password.length < 8) { setError('New password must be at least 8 characters.'); return; }
+    if (password !== confirmPw) { setError('Passwords do not match.'); return; }
     setLoading(true);
     try {
-      await authService.confirmResetPassword({ username: identifier, confirmationCode: otp, newPassword: password });
-      const session = await authService.getCurrentUser();
-      onLoginSuccess(session);
+      await authService.confirmResetPassword({ username: identifier.trim(), confirmationCode: otp, newPassword: password });
+      const user = await authService.getCurrentUser();
+      onLoginSuccess(user);
     } catch (err) { setError(err.message || 'Failed to reset password.'); }
     finally { setLoading(false); }
   };
 
-  /* ── Layout wrapper ── */
-  const Card = ({ children, wide }) => (
-    <div className="min-h-screen bg-gradient-to-br from-[#F0FAF4] via-white to-[#E8F5FF] flex flex-col items-center justify-center p-4">
-      <div className={`w-full ${wide ? 'max-w-lg' : 'max-w-md'} bg-white rounded-2xl shadow-xl shadow-gray-200/60 border border-gray-100 overflow-hidden`}>
-        {children}
-      </div>
-    </div>
-  );
-
-  const CardBody = ({ children }) => <div className="px-8 pb-8 pt-6 space-y-5">{children}</div>;
-
-  const CardTop = ({ children }) => (
-    <div className="px-8 pt-8 pb-0">
-      <div className="flex justify-center mb-6"><Logo /></div>
-      {children}
-    </div>
-  );
-
-  /* ─────────── SCREEN: Welcome ─────────── */
+  /* ══════════════════════════════════════════════
+     WELCOME
+  ════════════════════════════════════════════ */
   if (screen === 'welcome') return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F0FAF4] via-white to-[#E8F5FF] flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl shadow-gray-200/60 border border-gray-100 overflow-hidden">
-        {/* Hero Band */}
-        <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-green-500 to-teal-400" />
+    <Page>
+      <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/70 border border-gray-100 overflow-hidden">
+        <div className="h-1 bg-gradient-to-r from-emerald-400 via-green-500 to-teal-400" />
         <div className="px-8 pt-10 pb-8 text-center space-y-6">
-          <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
-              <ShieldCheck className="w-8 h-8 text-white" />
-            </div>
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-              Simple<span className="text-emerald-600">Auth</span>
-            </h1>
-            <p className="mt-2 text-gray-500 text-sm leading-relaxed">
-              Secure, passwordless authentication.<br />Sign in with OTP or Google — no passwords needed.
-            </p>
-          </div>
-
-          <div className="space-y-3 pt-2">
-            <PrimaryBtn type="button" onClick={() => goTo('signin')}>
-              Sign In
-              <ArrowRight className="w-4 h-4" />
-            </PrimaryBtn>
-            <button
-              type="button"
-              onClick={() => goTo('signup')}
-              className="w-full py-3 px-4 border-2 border-emerald-600 text-emerald-700 hover:bg-emerald-50 font-semibold rounded-xl text-sm transition-all duration-150 active:scale-[0.98]"
-            >
+          <AppLogo size="lg" />
+          <p className="text-gray-500 text-sm leading-relaxed max-w-xs mx-auto">
+            Passwordless verification powered by OTP and Google. Simple, fast, and secure.
+          </p>
+          <div className="space-y-3 pt-1">
+            <Btn type="button" onClick={() => goTo('signin')}>
+              Sign In <ArrowRight className="w-4 h-4" />
+            </Btn>
+            <Btn type="button" variant="outline" onClick={() => goTo('signup')}>
               Create Account
-            </button>
+            </Btn>
           </div>
-
           <Divider />
-
-          <GoogleBtn onClick={handleGoogleSignIn} loading={loading} />
-
+          <GoogleBtn onClick={handleGoogle} loading={loading} />
           {error && <Alert type="error" message={error} />}
         </div>
       </div>
-
-      <p className="mt-6 text-xs text-gray-400 text-center">
-        By continuing, you agree to our Terms of Service and Privacy Policy.
+      <p className="mt-5 text-center text-xs text-gray-400">
+        By continuing, you agree to our Terms & Privacy Policy.
       </p>
-    </div>
+    </Page>
   );
 
-  /* ─────────── SCREEN: Sign In ─────────── */
+  /* ══════════════════════════════════════════════
+     SIGN IN
+  ════════════════════════════════════════════ */
   if (screen === 'signin') return (
-    <Card>
-      <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-green-500 to-teal-400" />
-      <CardTop>
-        <BackBtn onClick={() => goTo('welcome')} />
-        <h2 className="text-2xl font-bold text-gray-900">Welcome back</h2>
-        <p className="mt-1 text-sm text-gray-500">Enter your email or phone to receive a sign-in code</p>
-      </CardTop>
-      <CardBody>
-        <Alert type="error" message={error} />
-        <Alert type="info" message={info} />
-        <form onSubmit={handleSendSignInOtp} className="space-y-4">
-          <InputField
-            id="signin-identifier"
-            label="Email or Phone number"
-            icon={identifier && !identifier.includes('@') ? Phone : Mail}
-            value={identifier}
-            onChange={e => setIdentifier(e.target.value)}
-            placeholder="name@email.com or +1234567890"
-            autoFocus
-          />
-          <PrimaryBtn loading={loading}>
-            Send Verification Code
-            <ArrowRight className="w-4 h-4" />
-          </PrimaryBtn>
-        </form>
-
-        <Divider />
-        <GoogleBtn onClick={handleGoogleSignIn} loading={loading} />
-
-        {/* Footer links */}
-        <div className="flex flex-col items-center gap-2 pt-1">
-          <button
-            type="button"
-            onClick={() => { clearFeedback(); goTo('forgot'); }}
-            className="text-sm text-emerald-600 hover:text-emerald-700 font-medium hover:underline transition-colors"
-          >
-            Forgot password?
-          </button>
-          <p className="text-sm text-gray-500">
-            Don't have an account?{' '}
-            <button
-              type="button"
-              onClick={() => goTo('signup')}
-              className="text-emerald-600 font-semibold hover:underline hover:text-emerald-700"
-            >
-              Create one
-            </button>
-          </p>
+    <Page>
+      <Card>
+        <Back onClick={() => goTo('welcome')} />
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Sign in</h2>
+          <p className="text-sm text-gray-500 mt-1">Welcome back! Enter your credentials.</p>
         </div>
-      </CardBody>
-    </Card>
-  );
 
-  /* ─────────── SCREEN: Sign In OTP ─────────── */
-  if (screen === 'signin-otp') return (
-    <Card>
-      <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-green-500 to-teal-400" />
-      <CardTop>
-        <BackBtn onClick={() => goTo('signin')} />
-        <h2 className="text-2xl font-bold text-gray-900">Check your inbox</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          We sent a 6-digit code to <span className="font-semibold text-gray-700">{identifier}</span>
-        </p>
-      </CardTop>
-      <CardBody>
         <Alert type="error" message={error} />
-        <Alert type="info" message={info} />
-        <form onSubmit={handleVerifySignInOtp} className="space-y-4">
-          <InputField
-            id="signin-otp"
-            label="Verification Code"
-            icon={Smartphone}
-            value={otp}
-            onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
-            placeholder="123456"
-            maxLength={6}
-            autoFocus
-            hint="Enter the 6-digit code. For demo, use: 123456"
-          />
-          <PrimaryBtn loading={loading}>
-            Verify & Sign In
-            <ArrowRight className="w-4 h-4" />
-          </PrimaryBtn>
-        </form>
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={() => goTo('signin')}
-            className="text-sm text-gray-400 hover:text-gray-600 flex items-center gap-1.5 mx-auto transition-colors"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            Resend code
-          </button>
-        </div>
-      </CardBody>
-    </Card>
-  );
 
-  /* ─────────── SCREEN: Sign Up ─────────── */
-  if (screen === 'signup') return (
-    <Card>
-      <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-green-500 to-teal-400" />
-      <CardTop>
-        <BackBtn onClick={() => goTo('welcome')} />
-        <h2 className="text-2xl font-bold text-gray-900">Create an account</h2>
-        <p className="mt-1 text-sm text-gray-500">Sign up with your email or phone — no password required</p>
-      </CardTop>
-      <CardBody>
-        <Alert type="error" message={error} />
-        <Alert type="info" message={info} />
-        <form onSubmit={handleSendSignUpOtp} className="space-y-4">
-          <InputField
-            id="signup-identifier"
-            label="Email or Phone number"
+        <form onSubmit={handleSignIn} className="space-y-4">
+          <Field
+            id="si-id" label="Email or Phone number"
             icon={identifier && !identifier.includes('@') ? Phone : Mail}
-            value={identifier}
-            onChange={e => setIdentifier(e.target.value)}
-            placeholder="name@email.com or +1234567890"
-            autoFocus
+            value={identifier} onChange={e => setIdentifier(e.target.value)}
+            placeholder="name@email.com or +91 98765 43210" autoFocus
           />
-          <PrimaryBtn loading={loading}>
-            Create Account
-            <ArrowRight className="w-4 h-4" />
-          </PrimaryBtn>
-        </form>
-
-        <Divider />
-        <GoogleBtn onClick={handleGoogleSignIn} loading={loading} />
-
-        <p className="text-center text-sm text-gray-500">
-          Already have an account?{' '}
-          <button
-            type="button"
-            onClick={() => goTo('signin')}
-            className="text-emerald-600 font-semibold hover:underline hover:text-emerald-700"
-          >
-            Sign in
-          </button>
-        </p>
-      </CardBody>
-    </Card>
-  );
-
-  /* ─────────── SCREEN: Sign Up OTP ─────────── */
-  if (screen === 'signup-otp') return (
-    <Card>
-      <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-green-500 to-teal-400" />
-      <CardTop>
-        <BackBtn onClick={() => goTo('signup')} />
-        <h2 className="text-2xl font-bold text-gray-900">Verify your account</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Enter the code sent to <span className="font-semibold text-gray-700">{identifier}</span>
-        </p>
-      </CardTop>
-      <CardBody>
-        <Alert type="error" message={error} />
-        <Alert type="info" message={info} />
-        <form onSubmit={handleVerifySignUpOtp} className="space-y-4">
-          <InputField
-            id="signup-otp"
-            label="Verification Code"
-            icon={Smartphone}
-            value={otp}
-            onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
-            placeholder="123456"
-            maxLength={6}
-            autoFocus
-            hint="Enter the 6-digit code. For demo, use: 123456"
-          />
-          <PrimaryBtn loading={loading}>
-            Confirm & Activate
-            <ArrowRight className="w-4 h-4" />
-          </PrimaryBtn>
-        </form>
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={() => goTo('signup')}
-            className="text-sm text-gray-400 hover:text-gray-600 flex items-center gap-1.5 mx-auto transition-colors"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            Resend code
-          </button>
-        </div>
-      </CardBody>
-    </Card>
-  );
-
-  /* ─────────── SCREEN: Forgot Password ─────────── */
-  if (screen === 'forgot') return (
-    <Card>
-      <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-green-500 to-teal-400" />
-      <CardTop>
-        <BackBtn onClick={() => goTo('signin')} />
-        <h2 className="text-2xl font-bold text-gray-900">Reset your password</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Enter your registered email or phone and we'll send a reset code
-        </p>
-      </CardTop>
-      <CardBody>
-        <Alert type="error" message={error} />
-        <Alert type="info" message={info} />
-        <form onSubmit={handleForgotRequest} className="space-y-4">
-          <InputField
-            id="forgot-identifier"
-            label="Email or Phone number"
-            icon={identifier && !identifier.includes('@') ? Phone : Mail}
-            value={identifier}
-            onChange={e => setIdentifier(e.target.value)}
-            placeholder="name@email.com or +1234567890"
-            autoFocus
-          />
-          <PrimaryBtn loading={loading}>
-            Send Reset Code
-            <ArrowRight className="w-4 h-4" />
-          </PrimaryBtn>
-        </form>
-        <p className="text-center text-sm text-gray-500">
-          Remembered it?{' '}
-          <button
-            type="button"
-            onClick={() => goTo('signin')}
-            className="text-emerald-600 font-semibold hover:underline hover:text-emerald-700"
-          >
-            Sign in instead
-          </button>
-        </p>
-      </CardBody>
-    </Card>
-  );
-
-  /* ─────────── SCREEN: Forgot OTP + New Password ─────────── */
-  if (screen === 'forgot-otp') return (
-    <Card>
-      <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-green-500 to-teal-400" />
-      <CardTop>
-        <BackBtn onClick={() => goTo('forgot')} />
-        <h2 className="text-2xl font-bold text-gray-900">Set new password</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Enter the code sent to <span className="font-semibold text-gray-700">{identifier}</span> and choose a new password
-        </p>
-      </CardTop>
-      <CardBody>
-        <Alert type="error" message={error} />
-        <Alert type="info" message={info} />
-        <form onSubmit={handleForgotConfirm} className="space-y-4">
-          <InputField
-            id="forgot-otp"
-            label="Verification Code"
-            icon={Smartphone}
-            value={otp}
-            onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
-            placeholder="123456"
-            maxLength={6}
-            autoFocus
-            hint="For demo, use: 123456"
-          />
-
-          {/* Password field with show/hide toggle */}
-          <div className="space-y-1.5">
-            <label htmlFor="new-password" className="block text-sm font-medium text-gray-700">New Password</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                <Lock className="w-[18px] h-[18px] text-gray-400" />
-              </div>
-              <input
-                id="new-password"
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Minimum 8 characters"
-                className="w-full pl-10 pr-12 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 hover:border-gray-300"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(v => !v)}
-                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          <div className="space-y-1">
+            <PasswordField id="si-pw" label="Password" value={password} onChange={e => setPassword(e.target.value)} />
+            {/* Forgot Password inline link */}
+            <div className="flex justify-end">
+              <button type="button" onClick={() => { clearFeedback(); goTo('forgot'); }}
+                className="text-xs text-emerald-600 hover:underline hover:text-emerald-700 font-medium pt-1">
+                Forgot password?
               </button>
             </div>
-            <p className="text-xs text-gray-400">Must be at least 8 characters</p>
           </div>
-
-          <PrimaryBtn loading={loading}>
-            Reset & Sign In
-            <ArrowRight className="w-4 h-4" />
-          </PrimaryBtn>
+          <Btn loading={loading}>
+            Sign In <ArrowRight className="w-4 h-4" />
+          </Btn>
         </form>
 
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={() => goTo('forgot')}
-            className="text-sm text-gray-400 hover:text-gray-600 flex items-center gap-1.5 mx-auto transition-colors"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            Resend code
-          </button>
+        <Divider />
+        <GoogleBtn onClick={handleGoogle} loading={loading} />
+
+        <FooterLink text="Don't have an account?" linkText="Create one" onClick={() => goTo('signup')} />
+      </Card>
+    </Page>
+  );
+
+  /* ══════════════════════════════════════════════
+     SIGN UP
+  ════════════════════════════════════════════ */
+  if (screen === 'signup') return (
+    <Page>
+      <Card>
+        <Back onClick={() => goTo('welcome')} />
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Create account</h2>
+          <p className="text-sm text-gray-500 mt-1">Fill in your details. We'll verify your email or phone with an OTP.</p>
         </div>
-      </CardBody>
-    </Card>
+
+        <Alert type="error" message={error} />
+
+        <form onSubmit={handleSignUp} className="space-y-4">
+          {/* Name */}
+          <Field
+            id="su-name" label="Full Name"
+            icon={User} value={name} onChange={e => setName(e.target.value)}
+            placeholder="Jane Doe" autoFocus
+          />
+
+          {/* Email or Phone */}
+          <Field
+            id="su-id" label="Email or Phone number"
+            icon={identifier && !identifier.includes('@') ? Phone : Mail}
+            value={identifier} onChange={e => setIdentifier(e.target.value)}
+            placeholder="name@email.com or +91 98765 43210"
+            hint="A verification code will be sent here after you submit."
+          />
+
+          {/* Password */}
+          <PasswordField
+            id="su-pw" label="Password" value={password}
+            onChange={e => setPassword(e.target.value)}
+            hint="At least 8 characters"
+          />
+
+          {/* Confirm Password */}
+          <PasswordField
+            id="su-cpw" label="Confirm Password" value={confirmPw}
+            onChange={e => setConfirmPw(e.target.value)}
+            placeholder="Re-enter password"
+          />
+
+          <Btn loading={loading}>
+            Create Account <ArrowRight className="w-4 h-4" />
+          </Btn>
+        </form>
+
+        <Divider />
+        <GoogleBtn onClick={handleGoogle} loading={loading} />
+
+        <FooterLink text="Already have an account?" linkText="Sign in" onClick={() => goTo('signin')} />
+      </Card>
+    </Page>
+  );
+
+  /* ══════════════════════════════════════════════
+     SIGN UP — OTP VERIFY
+  ════════════════════════════════════════════ */
+  if (screen === 'signup-otp') return (
+    <Page>
+      <Card>
+        <Back onClick={() => goTo('signup')} />
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Verify your account</h2>
+          <p className="text-sm text-gray-500 mt-1">Enter the 6-digit code to confirm your identity and activate your account.</p>
+        </div>
+
+        <ChannelBadge identifier={identifier} />
+        <Alert type="error" message={error} />
+        <Alert type="info" message={info} />
+
+        <form onSubmit={handleConfirmSignUp} className="space-y-4">
+          <OtpBoxes id="su-otp" value={otp} onChange={setOtp} />
+          <Btn loading={loading}>
+            Confirm & Activate <ArrowRight className="w-4 h-4" />
+          </Btn>
+        </form>
+
+        <button type="button"
+          onClick={() => handleSignUp({ preventDefault: () => {} })}
+          className="w-full flex items-center justify-center gap-1.5 text-sm text-gray-400 hover:text-emerald-600 transition-colors">
+          <RefreshCw className="w-3.5 h-3.5" /> Resend code
+        </button>
+      </Card>
+    </Page>
+  );
+
+  /* ══════════════════════════════════════════════
+     FORGOT PASSWORD — Request
+  ════════════════════════════════════════════ */
+  if (screen === 'forgot') return (
+    <Page>
+      <Card>
+        <Back onClick={() => goTo('signin')} />
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Forgot password?</h2>
+          <p className="text-sm text-gray-500 mt-1">Enter your registered email or phone and we'll send a reset code.</p>
+        </div>
+
+        <Alert type="error" message={error} />
+        <Alert type="info" message={info} />
+
+        <form onSubmit={handleForgotRequest} className="space-y-4">
+          <Field
+            id="fp-id" label="Email or Phone number"
+            icon={identifier && !identifier.includes('@') ? Phone : Mail}
+            value={identifier} onChange={e => setIdentifier(e.target.value)}
+            placeholder="name@email.com or +91 98765 43210" autoFocus
+          />
+          <Btn loading={loading}>
+            Send Reset Code <ArrowRight className="w-4 h-4" />
+          </Btn>
+        </form>
+
+        <FooterLink text="Remembered it?" linkText="Back to sign in" onClick={() => goTo('signin')} />
+      </Card>
+    </Page>
+  );
+
+  /* ══════════════════════════════════════════════
+     FORGOT PASSWORD — OTP + New Password
+  ════════════════════════════════════════════ */
+  if (screen === 'forgot-otp') return (
+    <Page>
+      <Card>
+        <Back onClick={() => goTo('forgot')} />
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Set new password</h2>
+          <p className="text-sm text-gray-500 mt-1">Enter the code we sent and choose a new password.</p>
+        </div>
+
+        <ChannelBadge identifier={identifier} />
+        <Alert type="error" message={error} />
+        <Alert type="info" message={info} />
+
+        <form onSubmit={handleForgotConfirm} className="space-y-4">
+          <OtpBoxes id="fp-otp" value={otp} onChange={setOtp} />
+
+          <PasswordField
+            id="fp-pw" label="New Password" value={password}
+            onChange={e => setPassword(e.target.value)}
+            hint="At least 8 characters"
+          />
+          <PasswordField
+            id="fp-cpw" label="Confirm New Password" value={confirmPw}
+            onChange={e => setConfirmPw(e.target.value)}
+            placeholder="Re-enter new password"
+          />
+
+          <Btn loading={loading}>
+            Reset Password & Sign In <ArrowRight className="w-4 h-4" />
+          </Btn>
+        </form>
+
+        <button type="button"
+          onClick={() => handleForgotRequest({ preventDefault: () => {} })}
+          className="w-full flex items-center justify-center gap-1.5 text-sm text-gray-400 hover:text-emerald-600 transition-colors">
+          <RefreshCw className="w-3.5 h-3.5" /> Resend code
+        </button>
+      </Card>
+    </Page>
   );
 
   return null;
