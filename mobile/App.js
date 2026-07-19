@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SafeAreaView, StyleSheet, Animated } from 'react-native';
+import { SafeAreaView, StyleSheet, Animated, Text, TextInput } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 
 // Import Screens
 import SplashScreen from './src/screens/SplashScreen';
@@ -16,9 +17,47 @@ import HomeDashboardScreen from './src/screens/HomeDashboardScreen';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 
+// Globally monkey-patch Text & TextInput to set Inter Font Family based on fontWeight
+const patchComponentFont = (Component) => {
+  let target = Component;
+  if (Component.type && Component.type.render) {
+    target = Component.type;
+  }
+  if (target && target.render) {
+    const oldRender = target.render;
+    target.render = function (...args) {
+      const origin = oldRender.apply(this, args);
+      const originStyle = StyleSheet.flatten(origin.props.style);
+      
+      let fontFamily = 'Inter-Regular';
+      if (originStyle) {
+        if (originStyle.fontWeight === 'bold' || originStyle.fontWeight === '700') {
+          fontFamily = 'Inter-Bold';
+        } else if (originStyle.fontWeight === '600' || originStyle.fontWeight === '500') {
+          fontFamily = 'Inter-Medium';
+        }
+      }
+
+      return React.cloneElement(origin, {
+        style: [{ fontFamily }, origin.props.style],
+      });
+    };
+  }
+};
+
+patchComponentFont(Text);
+patchComponentFont(TextInput);
+
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('Splash');
   const [userEmail, setUserEmail] = useState('');
+
+  const [fontsLoaded] = useFonts({
+    'Inter-Regular': Inter_400Regular,
+    'Inter-Medium': Inter_500Medium,
+    'Inter-SemiBold': Inter_600SemiBold,
+    'Inter-Bold': Inter_700Bold,
+  });
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(15)).current;
@@ -147,6 +186,10 @@ export default function App() {
         return <GetStartedScreen onLogin={() => setCurrentScreen('Login')} onRegister={() => setCurrentScreen('Register')} />;
     }
   };
+
+  if (!fontsLoaded) {
+    return <SplashScreen onFinish={() => {}} />;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
