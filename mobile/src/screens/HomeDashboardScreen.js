@@ -79,7 +79,7 @@ const initialPosts = [
   }
 ];
 
-export default function HomeDashboardScreen({ onLogout }) {
+export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
   const [activeTab, setActiveTab] = useState('Home Feed'); // Home Feed, Local Feed, Trending Feed, Following Feed
   const [posts, setPosts] = useState(initialPosts);
   
@@ -532,7 +532,7 @@ export default function HomeDashboardScreen({ onLogout }) {
         <TouchableOpacity style={styles.navItem}>
           <Ionicons name="compass-outline" size={24} color="#9CA3AF" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.addButtonContainer}>
+        <TouchableOpacity style={styles.addButtonContainer} onPress={onCreatePress}>
           <LinearGradient colors={['#7C3AED', '#F97316']} style={styles.addButtonGradient}>
             <Ionicons name="add" size={28} color="#FFFFFF" />
           </LinearGradient>

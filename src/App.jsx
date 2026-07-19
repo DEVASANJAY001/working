@@ -15,6 +15,7 @@ import InterestSelectionScreen from './components/mobile-web/InterestSelectionSc
 import HomeDashboardScreen from './components/mobile-web/HomeDashboardScreen';
 import ForgotPasswordScreen from './components/mobile-web/ForgotPasswordScreen';
 import ResetPasswordScreen from './components/mobile-web/ResetPasswordScreen';
+import CreateContentScreen from './components/mobile-web/CreateContentScreen';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('Splash');
@@ -157,7 +158,22 @@ export default function App() {
         );
       
       case 'Home':
-        return <HomeDashboardScreen onLogout={handleLogout} />;
+        return (
+          <HomeDashboardScreen 
+            onLogout={handleLogout} 
+            onCreatePress={() => setCurrentScreen('CreateContent')}
+          />
+        );
+      
+      case 'CreateContent':
+        return (
+          <CreateContentScreen
+            onBack={() => setCurrentScreen('Home')}
+            onPublish={(newPost) => {
+              setCurrentScreen('Home');
+            }}
+          />
+        );
       
       case 'ForgotPassword':
         return (

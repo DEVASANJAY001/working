@@ -16,6 +16,7 @@ import InterestSelectionScreen from './src/screens/InterestSelectionScreen';
 import HomeDashboardScreen from './src/screens/HomeDashboardScreen';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
+import CreateContentScreen from './src/screens/CreateContentScreen';
 
 // Globally monkey-patch Text & TextInput to set Inter Font Family based on fontWeight
 const patchComponentFont = (Component) => {
@@ -158,7 +159,22 @@ export default function App() {
         );
       
       case 'Home':
-        return <HomeDashboardScreen onLogout={() => setCurrentScreen('GetStarted')} />;
+        return (
+          <HomeDashboardScreen 
+            onLogout={() => setCurrentScreen('GetStarted')} 
+            onCreatePress={() => setCurrentScreen('CreateContent')}
+          />
+        );
+      
+      case 'CreateContent':
+        return (
+          <CreateContentScreen
+            onBack={() => setCurrentScreen('Home')}
+            onPublish={(newPost) => {
+              setCurrentScreen('Home');
+            }}
+          />
+        );
       
       case 'ForgotPassword':
         return (

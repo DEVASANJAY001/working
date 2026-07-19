@@ -88,7 +88,7 @@ const initialPosts = [
   }
 ];
 
-export default function HomeDashboardScreen({ onLogout }) {
+export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
   const [activeTab, setActiveTab] = useState('Home Feed'); // Home Feed, Local Feed, Trending Feed, Following Feed
   const [posts, setPosts] = useState(initialPosts);
   
@@ -591,7 +591,7 @@ export default function HomeDashboardScreen({ onLogout }) {
         <button className="p-2 text-gray-300">
           <Compass className="w-5.5 h-5.5" />
         </button>
-        <div className="w-12 h-12 rounded-full -mt-6 flex items-center justify-center text-white bg-gradient-to-r from-violet-600 to-orange-500 shadow-md shadow-violet-500/30 cursor-pointer">
+        <div onClick={onCreatePress} className="w-12 h-12 rounded-full -mt-6 flex items-center justify-center text-white bg-gradient-to-r from-violet-600 to-orange-500 shadow-md shadow-violet-500/30 cursor-pointer">
           <Plus className="w-6 h-6" />
         </div>
         <button className="p-2 text-gray-300">
