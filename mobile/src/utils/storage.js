@@ -9,7 +9,7 @@ export const safeStorage = {
         await AsyncStorage.setItem(key, value);
       }
     } catch (e) {
-      console.warn("AsyncStorage native module is null or inaccessible, using memory fallback.", e);
+      // Quiet memory fallback for Expo Go reload compatibility
     }
     memoryStore[key] = value;
   },
@@ -23,7 +23,7 @@ export const safeStorage = {
         }
       }
     } catch (e) {
-      console.warn("AsyncStorage native module is null or inaccessible, using memory fallback.", e);
+      // Quiet memory fallback for Expo Go reload compatibility
     }
     return memoryStore[key] || null;
   },
@@ -34,7 +34,7 @@ export const safeStorage = {
         await AsyncStorage.removeItem(key);
       }
     } catch (e) {
-      console.warn("AsyncStorage native module is null or inaccessible, using memory fallback.", e);
+      // Quiet memory fallback for Expo Go reload compatibility
     }
     delete memoryStore[key];
   }
