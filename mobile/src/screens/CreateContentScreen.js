@@ -645,7 +645,7 @@ export default function CreateContentScreen({ onBack, onPublish }) {
               ))}
 
               {pollOptions.length < 10 && (
-                <TouchableOpacity style={styles.addOptionBtn} onPress={handleAddOption}>
+                <TouchableOpacity style={styles.addOptionBtn} onPress={handleAddPollOption}>
                   <Ionicons name="add" size={16} color="#7C3AED" />
                   <Text style={styles.addOptionText}>Add Option</Text>
                 </TouchableOpacity>

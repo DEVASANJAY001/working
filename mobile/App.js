@@ -3,6 +3,8 @@ import { SafeAreaView, StyleSheet, Animated, Text, TextInput } from 'react-nativ
 import { StatusBar } from 'expo-status-bar';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 // Import Screens
 import SplashScreen from './src/screens/SplashScreen';
 import GetStartedScreen from './src/screens/GetStartedScreen';
@@ -52,6 +54,24 @@ patchComponentFont(TextInput);
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('Splash');
   const [userEmail, setUserEmail] = useState('');
+  const [hasSession, setHasSession] = useState(false);
+
+  useEffect(() => {
+    async function checkSession() {
+      try {
+        const val = await AsyncStorage.getItem('user_session');
+        if (val) {
+          const parsed = JSON.parse(val);
+          if (parsed && parsed.isLoggedIn) {
+            setHasSession(true);
+          }
+        }
+      } catch (e) {
+        console.log(e);
+      }
+    }
+    checkSession();
+  }, []);
 
   const [fontsLoaded] = useFonts({
     'Inter-Regular': Inter_400Regular,
@@ -85,7 +105,17 @@ export default function App() {
   const renderScreen = () => {
     switch (currentScreen) {
       case 'Splash':
-        return <SplashScreen onFinish={() => setCurrentScreen('GetStarted')} />;
+        return (
+          <SplashScreen 
+            onFinish={() => {
+              if (hasSession) {
+                setCurrentScreen('Home');
+              } else {
+                setCurrentScreen('GetStarted');
+              }
+            }} 
+          />
+        );
       
       case 'GetStarted':
         return (
@@ -161,7 +191,13 @@ export default function App() {
       case 'Home':
         return (
           <HomeDashboardScreen 
-            onLogout={() => setCurrentScreen('GetStarted')} 
+            onLogout={async () => {
+              try {
+                await AsyncStorage.removeItem('user_session');
+              } catch (e) {}
+              setHasSession(false);
+              setCurrentScreen('GetStarted');
+            }} 
             onCreatePress={() => setCurrentScreen('CreateContent')}
           />
         );
