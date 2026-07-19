@@ -1,84 +1,46 @@
-import React, { useState, useEffect } from 'react';
-import { Hub } from 'aws-amplify/utils';
-import { authService } from './services/authService';
+import React, { useState, useEffect, useRef } from 'react';
+import { SafeAreaView, StyleSheet, Animated } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 
-// Import Web Screen Components
-import SplashScreen from './components/mobile-web/SplashScreen';
-import GetStartedScreen from './components/mobile-web/GetStartedScreen';
-import LoginScreen from './components/mobile-web/LoginScreen';
-import RegisterScreen from './components/mobile-web/RegisterScreen';
-import EmailVerificationScreen from './components/mobile-web/EmailVerificationScreen';
-import PhoneNumberScreen from './components/mobile-web/PhoneNumberScreen';
-import ProfileSetupScreen from './components/mobile-web/ProfileSetupScreen';
-import LanguageSelectionScreen from './components/mobile-web/LanguageSelectionScreen';
-import InterestSelectionScreen from './components/mobile-web/InterestSelectionScreen';
-import HomeDashboardScreen from './components/mobile-web/HomeDashboardScreen';
-import ForgotPasswordScreen from './components/mobile-web/ForgotPasswordScreen';
-import ResetPasswordScreen from './components/mobile-web/ResetPasswordScreen';
+// Import Screens
+import SplashScreen from './src/screens/SplashScreen';
+import GetStartedScreen from './src/screens/GetStartedScreen';
+import LoginScreen from './src/screens/LoginScreen';
+import RegisterScreen from './src/screens/RegisterScreen';
+import EmailVerificationScreen from './src/screens/EmailVerificationScreen';
+import PhoneNumberScreen from './src/screens/PhoneNumberScreen';
+import ProfileSetupScreen from './src/screens/ProfileSetupScreen';
+import LanguageSelectionScreen from './src/screens/LanguageSelectionScreen';
+import InterestSelectionScreen from './src/screens/InterestSelectionScreen';
+import HomeDashboardScreen from './src/screens/HomeDashboardScreen';
+import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
+import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('Splash');
   const [userEmail, setUserEmail] = useState('');
-  const [loading, setLoading] = useState(true);
 
-  // ── Resolve the current user session ──
-  async function checkUserSession() {
-    try {
-      const currentUser = await authService.getCurrentUser();
-      if (currentUser) {
-        setCurrentScreen('Home');
-      } else {
-        // Only reset to Splash/GetStarted if not on auth sub-screens
-        setCurrentScreen(prev => (prev === 'Splash' ? 'GetStarted' : prev));
-      }
-    } catch (err) {
-      setCurrentScreen(prev => (prev === 'Splash' ? 'GetStarted' : prev));
-    } finally {
-      setLoading(false);
-    }
-  }
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(15)).current;
 
   useEffect(() => {
-    // 1. Check for active session on mount
-    checkUserSession();
+    // Trigger smooth fade-in and slide-up transition when screen changes
+    fadeAnim.setValue(0);
+    slideAnim.setValue(15);
 
-    // 2. Listen for Amplify auth events (Google OAuth redirects, signs in, etc.)
-    const unsubscribe = Hub.listen('auth', ({ payload }) => {
-      switch (payload.event) {
-        case 'signedIn':
-          checkUserSession();
-          break;
-
-        case 'signInWithRedirect':
-          setLoading(true);
-          break;
-
-        case 'signInWithRedirect_failure':
-          console.error('OAuth sign-in failed:', payload.data);
-          setLoading(false);
-          setCurrentScreen('GetStarted');
-          break;
-
-        case 'signedOut':
-          setCurrentScreen('GetStarted');
-          break;
-
-        default:
-          break;
-      }
-    });
-
-    return unsubscribe;
-  }, []);
-
-  const handleLogout = async () => {
-    try {
-      await authService.signOut();
-      setCurrentScreen('GetStarted');
-    } catch (err) {
-      setCurrentScreen('GetStarted');
-    }
-  };
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [currentScreen]);
 
   const renderScreen = () => {
     switch (currentScreen) {
@@ -157,7 +119,7 @@ export default function App() {
         );
       
       case 'Home':
-        return <HomeDashboardScreen onLogout={handleLogout} />;
+        return <HomeDashboardScreen onLogout={() => setCurrentScreen('GetStarted')} />;
       
       case 'ForgotPassword':
         return (
@@ -186,20 +148,30 @@ export default function App() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F5FBF7]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-violet-600 border-t-transparent rounded-full animate-spin" />
-          <span className="text-gray-500 font-medium text-sm">Initializing app...</span>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-[#F9FAFB] flex flex-col font-sans">
-      {renderScreen()}
-    </div>
+    <SafeAreaView style={styles.container}>
+      <StatusBar style="auto" />
+      <Animated.View 
+        style={[
+          styles.screenContainer, 
+          { 
+            opacity: fadeAnim, 
+            transform: [{ translateY: slideAnim }] 
+          }
+        ]}
+      >
+        {renderScreen()}
+      </Animated.View>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  screenContainer: {
+    flex: 1,
+  },
+});
