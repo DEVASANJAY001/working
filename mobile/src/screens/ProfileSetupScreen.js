@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView, Modal, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView, Modal, FlatList, ImageBackground } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -107,14 +107,13 @@ export default function ProfileSetupScreen({ onBack, onContinue }) {
 
       {/* Button */}
       <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-        <LinearGradient
-          colors={['#7C3AED', '#F97316']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
+        <ImageBackground
+          source={require('../../assets/image.png')}
           style={styles.gradientButton}
+          resizeMode="cover"
         >
           <Text style={styles.continueText}>Continue</Text>
-        </LinearGradient>
+        </ImageBackground>
       </TouchableOpacity>
 
       {/* Gender Selection Modal */}

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, ImageBackground } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { authService } from '../services/authService';
@@ -89,18 +88,17 @@ export default function LoginScreen({ onBack, onLoginSuccess, onForgotPassword, 
       {/* Buttons */}
       <View style={styles.actionContainer}>
         <TouchableOpacity style={styles.loginButton} onPress={handleLogin} disabled={loading}>
-          <LinearGradient
-            colors={['#7C3AED', '#F97316']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
+          <ImageBackground
+            source={require('../../assets/image.png')}
             style={styles.gradientButton}
+            resizeMode="cover"
           >
             {loading ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
               <Text style={styles.loginText}>Login</Text>
             )}
-          </LinearGradient>
+          </ImageBackground>
         </TouchableOpacity>
 
         {/* Divider */}

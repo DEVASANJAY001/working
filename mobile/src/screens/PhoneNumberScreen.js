@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, Image } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, Image, ImageBackground } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 
@@ -13,8 +12,8 @@ export default function PhoneNumberScreen({ onBack, onContinue }) {
       Alert.alert('Error', 'Please enter your phone number.');
       return;
     }
-    // Navigate directly to Profile Setup (skipping OTP verification as requested)
-    onContinue();
+    // As per user instructions: no OTP check required, directly route to next screen
+    onContinue(phoneNumber);
   };
 
   return (
@@ -66,14 +65,13 @@ export default function PhoneNumberScreen({ onBack, onContinue }) {
       {/* Action Footer */}
       <View style={styles.actionContainer}>
         <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-          <LinearGradient
-            colors={['#7C3AED', '#F97316']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
+          <ImageBackground
+            source={require('../../assets/image.png')}
             style={styles.gradientButton}
+            resizeMode="cover"
           >
             <Text style={styles.continueText}>Continue</Text>
-          </LinearGradient>
+          </ImageBackground>
         </TouchableOpacity>
         
         <Text style={styles.infoText}>Your number is safe with us</Text>

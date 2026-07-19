@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image, ImageBackground } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { authService } from '../services/authService';
@@ -115,18 +114,17 @@ export default function EmailVerificationScreen({ email, onBack, onVerifySuccess
       {/* Button & Resend Footer */}
       <View style={styles.actionContainer}>
         <TouchableOpacity style={styles.verifyButton} onPress={handleVerify} disabled={loading}>
-          <LinearGradient
-            colors={['#7C3AED', '#F97316']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
+          <ImageBackground
+            source={require('../../assets/image.png')}
             style={styles.gradientButton}
+            resizeMode="cover"
           >
             {loading ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
               <Text style={styles.verifyButtonText}>Verify Email</Text>
             )}
-          </LinearGradient>
+          </ImageBackground>
         </TouchableOpacity>
 
         <TouchableOpacity 

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image, ImageBackground, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { authService } from '../services/authService';
@@ -69,8 +68,7 @@ export default function ResetPasswordScreen({ email, onBack, onResetSuccess, onG
           Create a new password for your account
         </Text>
 
-        {/* Inputs */}
-        <View style={styles.form}>
+        <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Verification Code</Text>
             <TextInput
@@ -159,24 +157,23 @@ export default function ResetPasswordScreen({ email, onBack, onResetSuccess, onG
               <Text style={[styles.reqText, hasNumberOrSymbol && styles.reqTextSuccess]}>One number or symbol</Text>
             </View>
           </View>
-        </View>
+        </ScrollView>
       </View>
 
       {/* Action Footer */}
       <View style={styles.actionContainer}>
         <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={loading}>
-          <LinearGradient
-            colors={['#7C3AED', '#F97316']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
+          <ImageBackground
+            source={require('../../assets/image.png')}
             style={styles.gradientButton}
+            resizeMode="cover"
           >
             {loading ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
               <Text style={styles.saveText}>Save Password</Text>
             )}
-          </LinearGradient>
+          </ImageBackground>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={onGoToLogin} style={styles.loginLinkButton}>

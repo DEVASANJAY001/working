@@ -1,6 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ImageBackground } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
 export default function GetStartedScreen({ onLogin, onRegister }) {
@@ -30,14 +29,13 @@ export default function GetStartedScreen({ onLogin, onRegister }) {
       {/* Buttons Area */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.loginButton} onPress={onLogin}>
-          <LinearGradient
-            colors={['#7C3AED', '#F97316']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
+          <ImageBackground
+            source={require('../../assets/image.png')}
             style={styles.gradientButton}
+            resizeMode="cover"
           >
             <Text style={styles.loginText}>Login</Text>
-          </LinearGradient>
+          </ImageBackground>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.registerButton} onPress={onRegister}>

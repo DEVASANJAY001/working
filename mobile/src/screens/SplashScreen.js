@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Image } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, Image, ImageBackground } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
 export default function SplashScreen({ onFinish }) {
@@ -12,7 +11,11 @@ export default function SplashScreen({ onFinish }) {
   }, []);
 
   return (
-    <LinearGradient colors={['#7C3AED', '#EC4899', '#F97316']} style={styles.container}>
+    <ImageBackground 
+      source={require('../../assets/image.png')} 
+      style={styles.container}
+      resizeMode="cover"
+    >
       <StatusBar style="light" />
       <View style={styles.content}>
         {/* Flower / Clover Logo */}
@@ -28,14 +31,10 @@ export default function SplashScreen({ onFinish }) {
         
         <Text style={styles.title}>Inspire</Text>
         <Text style={styles.subtitle}>Connect. Share. Inspire.</Text>
-        
-        <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color="#FFFFFF" />
-        </View>
       </View>
       
       <Text style={styles.footer}>Powered by DAWNS</Text>
-    </LinearGradient>
+    </ImageBackground>
   );
 }
 

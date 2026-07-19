@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image, ImageBackground } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { authService } from '../services/authService';
@@ -52,33 +51,35 @@ export default function ForgotPasswordScreen({ onBack, onContinue, onGoToLogin }
         {/* Input */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your email"
-            placeholderTextColor="#9CA3AF"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+          <View style={styles.inputWrapper}>
+            <Ionicons name="mail-outline" size={18} color="#6B7280" style={{ marginRight: 8 }} />
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your email"
+              placeholderTextColor="#9CA3AF"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
         </View>
       </View>
 
       {/* Action Footer */}
       <View style={styles.actionContainer}>
         <TouchableOpacity style={styles.continueButton} onPress={handleContinue} disabled={loading}>
-          <LinearGradient
-            colors={['#7C3AED', '#F97316']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
+          <ImageBackground
+            source={require('../../assets/image.png')}
             style={styles.gradientButton}
+            resizeMode="cover"
           >
             {loading ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
               <Text style={styles.continueText}>Continue</Text>
             )}
-          </LinearGradient>
+          </ImageBackground>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={onGoToLogin} style={styles.loginLinkButton}>
@@ -143,16 +144,21 @@ const styles = StyleSheet.create({
     color: '#374151',
     marginBottom: 8,
   },
-  input: {
-    width: '100%',
-    height: 52,
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 12,
     paddingHorizontal: 16,
+    height: 52,
+    backgroundColor: '#F9FAFB',
+  },
+  input: {
+    flex: 1,
+    height: '100%',
     fontSize: 15,
     color: '#1F2937',
-    backgroundColor: '#F9FAFB',
   },
   actionContainer: {
     width: '100%',
