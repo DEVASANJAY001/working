@@ -1,20 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   Image, 
+  ImageBackground,
   ScrollView, 
   TouchableOpacity, 
   TextInput, 
   Modal, 
-  Dimensions 
+  Dimensions,
+  Animated,
+  Easing,
+  Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
+const headerBgImage = require('../../assets/image.png');
+
+// Helper for Time-based Dynamic Greeting
+const getDynamicGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good Morning ☀️';
+  if (hour < 17) return 'Good Afternoon 🌤️';
+  return 'Good Evening 🌙';
+};
 
 // Mock Data for Stories
 const stories = [
@@ -98,7 +111,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
   const [activeTab, setActiveTab] = useState('Home Feed'); 
   const [posts, setPosts] = useState(initialPosts);
   
-  // Profile Picture state (defaults to image, toggleable to test initial letter avatar)
+  // Profile Picture state (defaults to image, toggleable to test initial avatar)
   const [profileImage, setProfileImage] = useState('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80');
 
   // Navigation & Modal Overlays States
@@ -112,6 +125,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
   const [showSeeAllRecent, setShowSeeAllRecent] = useState(false);
   const [showStartCommunity, setShowStartCommunity] = useState(false);
   const [showSearchWindow, setShowSearchWindow] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -130,54 +144,62 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
   // Sorting for Comments
   const [commentSort, setCommentSort] = useState('Top'); 
   const [newCommentText, setNewCommentText] = useState('');
-  
-  // Mock Comments List
-  const [commentsList, setCommentsList] = useState([
-    {
-      id: 'c1',
-      author: 'James Lee',
-      handle: 'jameslee',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
-      time: '2h',
-      text: 'This is incredible! The future of clean energy looks promising. ⚡🌱',
-      likes: 8,
-      isLiked: false,
-      replies: [
-        {
-          id: 'r1',
-          author: 'British Ecological',
-          handle: 'britishecological',
-          avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80',
-          time: '1h',
-          text: "Thank you! We're working hard to make it a sustainable future.",
-          likes: 5,
-          isAuthor: true,
-        }
-      ]
-    },
-    {
-      id: 'c2',
-      author: 'Priya Natarajan',
-      handle: 'priyanatarajan',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-      time: '1h',
-      text: 'Great initiative! When will this be available for public use?',
-      likes: 5,
-      isLiked: false,
-      replies: [
-        {
-          id: 'r2',
-          author: 'British Ecological',
-          handle: 'britishecological',
-          avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80',
-          time: '45m',
-          text: "Soon! We'll share updates here. Stay tuned!",
-          likes: 3,
-          isAuthor: true,
-        }
-      ]
+
+  // Animation values for smooth 3-dots drawer fade-in and slide-up
+  const drawerFadeAnim = useRef(new Animated.Value(0)).current;
+  const drawerSlideAnim = useRef(new Animated.Value(300)).current;
+
+  useEffect(() => {
+    if (showThreeDotsDrawer) {
+      Animated.parallel([
+        Animated.timing(drawerFadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+          easing: Easing.out(Easing.quad),
+        }),
+        Animated.spring(drawerSlideAnim, {
+          toValue: 0,
+          friction: 8,
+          tension: 65,
+          useNativeDriver: true,
+        })
+      ]).start();
+    } else {
+      drawerFadeAnim.setValue(0);
+      drawerSlideAnim.setValue(300);
     }
-  ]);
+  }, [showThreeDotsDrawer]);
+
+  const closeDrawerWithAnim = (callback) => {
+    Animated.parallel([
+      Animated.timing(drawerFadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(drawerSlideAnim, {
+        toValue: 300,
+        duration: 200,
+        useNativeDriver: true,
+      })
+    ]).start(() => {
+      setShowThreeDotsDrawer(false);
+      if (callback) callback();
+    });
+  };
+
+  // Handle Logout Confirmation
+  const handleLogoutPress = () => {
+    closeDrawerWithAnim(() => {
+      setShowLogoutConfirm(true);
+    });
+  };
+
+  const confirmLogoutAction = () => {
+    setShowLogoutConfirm(false);
+    if (onLogout) onLogout();
+  };
 
   // Handle Post Like
   const handleToggleLike = (postId) => {
@@ -213,156 +235,122 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
     }
   };
 
-  // Add Comment
-  const handleAddComment = () => {
-    if (!newCommentText.trim()) return;
-    const newComment = {
-      id: `c_${Date.now()}`,
-      author: 'Devasanjay',
-      handle: 'devasanjay',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80',
-      time: 'Just now',
-      text: newCommentText,
-      likes: 0,
-      isLiked: false,
-      replies: []
-    };
-    setCommentsList([newComment, ...commentsList]);
-    setNewCommentText('');
-
-    if (selectedPost) {
-      setPosts(prev => prev.map(p => {
-        if (p.id === selectedPost.id) {
-          return { ...p, commentsCount: p.commentsCount + 1 };
-        }
-        return p;
-      }));
-      setSelectedPost(prev => ({ ...prev, commentsCount: prev.commentsCount + 1 }));
-    }
-  };
-
-  // Send Award
-  const handleSendAward = () => {
-    if (!selectedAward) return;
-    const cost = selectedAward.coins * awardQuantity;
-    if (coinsBalance < cost) {
-      alert("Insufficient coins balance!");
-      return;
-    }
-    setCoinsBalance(prev => prev - cost);
-    setShowAwards(false);
-    
-    if (selectedPost) {
-      setPosts(prev => prev.map(p => {
-        if (p.id === selectedPost.id) {
-          return { ...p, awards: p.awards + awardQuantity };
-        }
-        return p;
-      }));
-      setSelectedPost(prev => ({ ...prev, awards: prev.awards + awardQuantity }));
-    }
-    alert(`Successfully sent ${awardQuantity} ${selectedAward.label} Award(s)!`);
-  };
-
-  // Award Types Definition
-  const awardsList = [
-    { id: 'aw1', label: 'Excellent', coins: 100, icon: 'star', color: '#FBBF24' },
-    { id: 'aw2', label: 'Inspiring', coins: 200, icon: 'heart', color: '#EC4899' },
-    { id: 'aw3', label: 'Brilliant', coins: 500, icon: 'flash', color: '#3B82F6' },
-    { id: 'aw4', label: 'Superb', coins: 800, icon: 'ribbon', color: '#10B981' },
-    { id: 'aw5', label: 'Outstanding', coins: 1000, icon: 'trophy', color: '#F59E0B' },
-    { id: 'aw6', label: 'Legendary', coins: 2000, icon: 'flame', color: '#EF4444' },
-    { id: 'aw7', label: 'Epic', coins: 5000, icon: 'shield', color: '#8B5CF6' },
-    { id: 'aw8', label: 'Diamond', coins: 10000, icon: 'diamond', color: '#06B6D4' },
-  ];
-
   return (
     <View style={styles.container}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       
-      {/* 1. Header (Greeting + Brand + Avatar Fallback + Search & 3-Dots Action) */}
-      <View style={styles.topHeader}>
-        <View style={styles.headerRow}>
-          <View style={styles.userProfile}>
-            <TouchableOpacity onPress={() => setProfileImage(prev => prev ? null : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80')}>
-              {profileImage ? (
-                <Image 
-                  source={{ uri: profileImage }} 
-                  style={styles.avatarImg} 
-                />
-              ) : (
-                <LinearGradient colors={['#7C3AED', '#F97316']} style={styles.initialAvatar}>
-                  <Text style={styles.initialAvatarText}>D</Text>
-                </LinearGradient>
-              )}
-            </TouchableOpacity>
-            <View style={styles.userText}>
-              <Text style={styles.userName}>Devasanjay 👋</Text>
-              <Text style={styles.greetingText}>Good Morning</Text>
+      {/* 1. Header with Image Background (assets/image.png), Dark Overlay & Time-Based Greeting */}
+      <View style={styles.headerContainer}>
+        <ImageBackground 
+          source={headerBgImage} 
+          style={styles.headerBg}
+          imageStyle={styles.headerBgImgStyle}
+        >
+          <LinearGradient 
+            colors={['rgba(15, 23, 42, 0.65)', 'rgba(30, 27, 75, 0.85)']} 
+            style={styles.headerGradientOverlay}
+          >
+            <View style={styles.topHeader}>
+              <View style={styles.headerRow}>
+                <View style={styles.userProfile}>
+                  <TouchableOpacity onPress={() => setProfileImage(prev => prev ? null : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80')}>
+                    {profileImage ? (
+                      <Image 
+                        source={{ uri: profileImage }} 
+                        style={styles.avatarImg} 
+                      />
+                    ) : (
+                      <LinearGradient colors={['#7C3AED', '#F97316']} style={styles.initialAvatar}>
+                        <Text style={styles.initialAvatarText}>D</Text>
+                      </LinearGradient>
+                    )}
+                  </TouchableOpacity>
+                  <View style={styles.userText}>
+                    <Text style={styles.userName}>Devasanjay</Text>
+                    <Text style={styles.greetingText}>{getDynamicGreeting()}</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.headerActions}>
+                  <TouchableOpacity style={styles.actionIconButtonHeader} onPress={() => setShowSearchWindow(true)}>
+                    <Ionicons name="search" size={19} color="#FFFFFF" />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.actionIconButtonHeader} onPress={() => setShowThreeDotsDrawer(true)}>
+                    <Ionicons name="ellipsis-vertical" size={19} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
-          </View>
-          
-          <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.actionIconButton} onPress={() => setShowSearchWindow(true)}>
-              <Ionicons name="search" size={20} color="#1F2937" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionIconButton} onPress={() => setShowThreeDotsDrawer(true)}>
-              <Ionicons name="ellipsis-vertical" size={20} color="#1F2937" />
-            </TouchableOpacity>
-          </View>
+          </LinearGradient>
+        </ImageBackground>
+      </View>
+
+      {/* 2. Segmented Control Feed Tabs with Purple Sliding Accent */}
+      <View style={styles.tabsRowContainer}>
+        <View style={styles.tabsRow}>
+          {[
+            { id: 'Home Feed', label: 'For You' },
+            { id: 'Local Feed', label: 'Local' },
+            { id: 'Trending Feed', label: 'Trending' },
+            { id: 'Following Feed', label: 'Following' }
+          ].map((tab) => {
+            const isTabActive = activeTab === tab.id;
+            return (
+              <TouchableOpacity key={tab.id} style={styles.tabItem} onPress={() => setActiveTab(tab.id)}>
+                <Text style={[styles.tabText, isTabActive && styles.tabTextActive]}>{tab.label}</Text>
+                {isTabActive && <View style={styles.tabIndicator} />}
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 
-      {/* 2. Top Feeds Swiper Navigation */}
-      <View style={styles.tabsRow}>
-        {[
-          { id: 'Home Feed', label: 'For You' },
-          { id: 'Local Feed', label: 'Local' },
-          { id: 'Trending Feed', label: 'Trending' },
-          { id: 'Following Feed', label: 'Following' }
-        ].map((tab) => {
-          const isTabActive = activeTab === tab.id;
-          return (
-            <TouchableOpacity key={tab.id} style={styles.tabItem} onPress={() => setActiveTab(tab.id)}>
-              <Text style={[styles.tabText, isTabActive && styles.tabTextActive]}>{tab.label}</Text>
-              {isTabActive && <View style={styles.tabIndicator} />}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {/* 3. Feeds Container */}
+      {/* 3. Feeds Scroll Container */}
       <ScrollView style={styles.mainFeed} showsVerticalScrollIndicator={false}>
         
         {/* Render Feed HOM_001 (Home Feed) */}
         {activeTab === 'Home Feed' && (
           <View>
-            <View style={styles.trendingSection}>
+            {/* Redesigned 🔥 Trending Today Section (Horizontal Card Carousel) */}
+            <View style={styles.trendingSectionContainer}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>🔥 Top Trending Today</Text>
-                <TouchableOpacity><Text style={styles.seeAllLink}>See All</Text></TouchableOpacity>
+                <Text style={styles.sectionTitle}>🔥 Trending Today</Text>
+                <TouchableOpacity><Text style={styles.seeAllLink}>See All →</Text></TouchableOpacity>
               </View>
               
-              <View style={styles.trendingGrid}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.trendingCardsScroll}>
                 {[
-                  { tag: '# Chennai Rains', count: '12.5K posts', trend: '+22%' },
-                  { tag: '# Metro Phase 2', count: '8.7K posts', trend: '+18%' },
-                  { tag: '# Traffic Updates', count: '6.2K posts', trend: '+14%' },
-                  { tag: '# IPL 2025', count: '5.4K posts', trend: '+12%' }
+                  { tag: '# Chennai Rains', count: '12.4K Posts', trend: '+22%', icon: 'cloud-rain', color: '#06B6D4', bg: '#ECFEFF' },
+                  { tag: '# Metro Phase 2', count: '8.7K Posts', trend: '+14%', icon: 'subway', color: '#7C3AED', bg: '#F5F3FF' },
+                  { tag: '# AI Jobs', count: '6.8K Posts', trend: '+10%', icon: 'hardware-chip', color: '#10B981', bg: '#ECFDF5' },
+                  { tag: '# IPL 2025', count: '5.4K Posts', trend: '+18%', icon: 'trophy', color: '#F59E0B', bg: '#FFFBEB' }
                 ].map((item, idx) => (
-                  <View key={idx} style={styles.trendingCard}>
-                    <Text style={styles.trendingTag}>{item.tag}</Text>
-                    <Text style={styles.trendingCount}>{item.count}</Text>
-                    <Text style={styles.trendingPercentage}>▲ {item.trend}</Text>
+                  <View key={idx} style={styles.redesignedTrendingCard}>
+                    <View style={styles.cardHeaderRow}>
+                      <View style={[styles.cardIconBox, { backgroundColor: item.bg }]}>
+                        <Ionicons name={item.icon} size={16} color={item.color} />
+                      </View>
+                      <View style={styles.growthBadge}>
+                        <Text style={styles.growthText}>▲ {item.trend}</Text>
+                      </View>
+                    </View>
+
+                    <Text style={styles.cardTagText}>{item.tag}</Text>
+                    <Text style={styles.cardCountText}>{item.count}</Text>
+
+                    <View style={styles.miniTrendBarBg}>
+                      <View style={[styles.miniTrendBarFill, { width: `${65 + idx * 10}%`, backgroundColor: item.color }]} />
+                    </View>
                   </View>
                 ))}
-              </View>
+              </ScrollView>
             </View>
 
+            {/* Categories */}
             <View style={styles.categoriesSection}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Categories</Text>
-                <TouchableOpacity><Text style={styles.seeAllLink}>View All</Text></TouchableOpacity>
+                <TouchableOpacity><Text style={styles.seeAllLink}>View All →</Text></TouchableOpacity>
               </View>
               <View style={styles.categoriesRow}>
                 {[
@@ -382,6 +370,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
               </View>
             </View>
 
+            {/* Stories */}
             <View style={styles.storiesContainer}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storiesScroll}>
                 {stories.map((story) => (
@@ -432,7 +421,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
 
             <View style={styles.localPostsHeader}>
               <Text style={styles.localPostsTitle}>What's happening near you</Text>
-              <TouchableOpacity><Text style={styles.seeAllLink}>See All</Text></TouchableOpacity>
+              <TouchableOpacity><Text style={styles.seeAllLink}>See All →</Text></TouchableOpacity>
             </View>
 
             {[
@@ -504,7 +493,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
             <View style={styles.trendingTopicsCard}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>🔥 Trending Topics</Text>
-                <TouchableOpacity><Text style={styles.seeAllLink}>See All</Text></TouchableOpacity>
+                <TouchableOpacity><Text style={styles.seeAllLink}>See All →</Text></TouchableOpacity>
               </View>
 
               <View style={styles.trendingTopicsList}>
@@ -560,7 +549,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* 4. Bottom Custom Navigation bar */}
+      {/* 4. Bottom Custom Navigation Bar */}
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navItem}>
           <Ionicons name="home" size={24} color="#7C3AED" />
@@ -581,29 +570,28 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
         </TouchableOpacity>
       </View>
 
-      {/* THREE-DOTS NAVIGATION DRAWER MODAL */}
-      <Modal visible={showThreeDotsDrawer} animationType="slide" transparent>
-        <View style={styles.drawerOverlay}>
-          <View style={styles.drawerContent}>
+      {/* THREE-DOTS NAVIGATION DRAWER MODAL WITH FADE-IN BACKDROP & SPRING SLIDE-UP */}
+      <Modal visible={showThreeDotsDrawer} transparent animationType="none" onRequestClose={() => closeDrawerWithAnim()}>
+        <View style={styles.modalFullContainer}>
+          <Animated.View style={[styles.drawerOverlay, { opacity: drawerFadeAnim }]}>
+            <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => closeDrawerWithAnim()} />
+          </Animated.View>
+
+          <Animated.View style={[styles.drawerContent, { transform: [{ translateY: drawerSlideAnim }] }]}>
             <View style={styles.drawerHeader}>
               <Text style={styles.drawerTitle}>Menu</Text>
-              <TouchableOpacity onPress={() => setShowThreeDotsDrawer(false)}>
+              <TouchableOpacity onPress={() => closeDrawerWithAnim()}>
                 <Ionicons name="close" size={24} color="#1F2937" />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.drawerScroll} showsVerticalScrollIndicator={false}>
-              <TouchableOpacity style={styles.drawerNavItem} onPress={() => { setShowThreeDotsDrawer(false); alert("Navigating to Discovery"); }}>
+              <TouchableOpacity style={styles.drawerNavItem} onPress={() => closeDrawerWithAnim(() => alert("Navigating to Discovery"))}>
                 <Ionicons name="compass-outline" size={22} color="#7C3AED" />
-                <Text style={styles.drawerNavLabel}>Discovery</Text>
+                <Text style={styles.drawerNavLabel}>Discover Communities</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.drawerNavItem} onPress={() => { setShowThreeDotsDrawer(false); alert("Navigating to Communities"); }}>
-                <Ionicons name="people-outline" size={22} color="#7C3AED" />
-                <Text style={styles.drawerNavLabel}>Communities</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.drawerNavItem} onPress={() => { setShowThreeDotsDrawer(false); setShowStartCommunity(true); }}>
+              <TouchableOpacity style={styles.drawerNavItem} onPress={() => closeDrawerWithAnim(() => setShowStartCommunity(true))}>
                 <Ionicons name="add-circle-outline" size={22} color="#7C3AED" />
                 <Text style={styles.drawerNavLabel}>Start a Community</Text>
               </TouchableOpacity>
@@ -612,13 +600,13 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
 
               <View style={styles.drawerSectionHeader}>
                 <Text style={styles.drawerSectionTitle}>Recently Visited Communities</Text>
-                <TouchableOpacity onPress={() => setShowSeeAllRecent(true)}>
-                  <Text style={styles.seeAllText}>See All</Text>
+                <TouchableOpacity onPress={() => closeDrawerWithAnim(() => setShowSeeAllRecent(true))}>
+                  <Text style={styles.seeAllText}>See All →</Text>
                 </TouchableOpacity>
               </View>
 
               {recentCommunities.slice(0, 3).map(comm => (
-                <TouchableOpacity key={comm.id} style={styles.communityRow} onPress={() => { setShowThreeDotsDrawer(false); alert(`Opening ${comm.name}`); }}>
+                <TouchableOpacity key={comm.id} style={styles.communityRow} onPress={() => closeDrawerWithAnim(() => alert(`Opening ${comm.name}`))}>
                   <View style={[styles.communityIconBadge, { backgroundColor: `${comm.color}15` }]}>
                     <Ionicons name={comm.icon} size={18} color={comm.color} />
                   </View>
@@ -633,7 +621,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
 
               <Text style={styles.drawerSectionTitle}>Your Communities</Text>
               {joinedCommunities.map(comm => (
-                <TouchableOpacity key={comm.id} style={styles.communityRow} onPress={() => { setShowThreeDotsDrawer(false); alert(`Opening ${comm.name}`); }}>
+                <TouchableOpacity key={comm.id} style={styles.communityRow} onPress={() => closeDrawerWithAnim(() => alert(`Opening ${comm.name}`))}>
                   <View style={[styles.communityIconBadge, { backgroundColor: `${comm.color}15` }]}>
                     <Ionicons name={comm.icon} size={18} color={comm.color} />
                   </View>
@@ -645,10 +633,32 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
               ))}
             </ScrollView>
 
-            <TouchableOpacity style={styles.drawerLogoutBtn} onPress={onLogout}>
+            <TouchableOpacity style={styles.drawerLogoutBtn} onPress={handleLogoutPress}>
               <Ionicons name="log-out-outline" size={20} color="#EF4444" />
               <Text style={styles.drawerLogoutText}>Logout</Text>
             </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </Modal>
+
+      {/* LOGOUT CONFIRMATION MODAL */}
+      <Modal visible={showLogoutConfirm} animationType="fade" transparent>
+        <View style={styles.modalBg}>
+          <View style={styles.logoutConfirmCard}>
+            <View style={styles.logoutIconCircle}>
+              <Ionicons name="log-out" size={28} color="#EF4444" />
+            </View>
+            <Text style={styles.logoutConfirmTitle}>Are you sure you want to logout?</Text>
+            <Text style={styles.logoutConfirmSubtitle}>You will need to sign in again to access your communities and feeds.</Text>
+
+            <View style={styles.logoutActionRow}>
+              <TouchableOpacity style={styles.cancelLogoutBtn} onPress={() => setShowLogoutConfirm(false)}>
+                <Text style={styles.cancelLogoutText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.confirmLogoutBtn} onPress={confirmLogoutAction}>
+                <Text style={styles.confirmLogoutText}>Logout</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -667,7 +677,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
 
             <ScrollView style={{ flex: 1, paddingHorizontal: 20, paddingTop: 10 }}>
               {recentCommunities.map(comm => (
-                <TouchableOpacity key={comm.id} style={styles.communityRow} onPress={() => { setShowSeeAllRecent(false); setShowThreeDotsDrawer(false); alert(`Opening ${comm.name}`); }}>
+                <TouchableOpacity key={comm.id} style={styles.communityRow} onPress={() => { setShowSeeAllRecent(false); alert(`Opening ${comm.name}`); }}>
                   <View style={[styles.communityIconBadge, { backgroundColor: `${comm.color}15` }]}>
                     <Ionicons name={comm.icon} size={18} color={comm.color} />
                   </View>
@@ -723,7 +733,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
         </View>
       </Modal>
 
-      {/* UNIFIED SINGLE-PAGE SEARCH OVERLAY */}
+      {/* SPOTLIGHT SLIDE-DOWN SINGLE-PAGE SEARCH OVERLAY */}
       <Modal visible={showSearchWindow} animationType="slide" transparent={false}>
         <View style={styles.searchWindowContainer}>
           <View style={styles.searchWindowHeader}>
@@ -756,15 +766,15 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
                 index === self.findIndex((t) => t.id === comm.id) &&
                 comm.name.toLowerCase().includes(searchQuery.toLowerCase())
               );
-              const visibleCommunities = showAllCommunities ? matchedCommunities : matchedCommunities.slice(0, 2);
+              const visibleCommunities = showAllCommunities ? matchedCommunities : matchedCommunities.slice(0, 3);
 
               return (
                 <View style={styles.searchSectionBlock}>
                   <View style={styles.searchSectionHeaderRow}>
                     <Text style={styles.searchResultSectionTitle}>Communities ({matchedCommunities.length})</Text>
-                    {matchedCommunities.length > 2 && !showAllCommunities && (
+                    {matchedCommunities.length > 3 && !showAllCommunities && (
                       <TouchableOpacity onPress={() => setShowAllCommunities(true)}>
-                        <Text style={styles.seeMoreBtnText}>See More</Text>
+                        <Text style={styles.seeMoreBtnText}>See More →</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -791,18 +801,18 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
 
             <View style={styles.searchSectionDivider} />
 
-            {/* Bottom Section: Messages & Posts */}
+            {/* Bottom Section: Posts & Messages */}
             {(() => {
               const matchedPosts = posts.filter(p => p.text.toLowerCase().includes(searchQuery.toLowerCase()));
-              const visiblePosts = showAllMessages ? matchedPosts : matchedPosts.slice(0, 2);
+              const visiblePosts = showAllMessages ? matchedPosts : matchedPosts.slice(0, 3);
 
               return (
                 <View style={styles.searchSectionBlock}>
                   <View style={styles.searchSectionHeaderRow}>
-                    <Text style={styles.searchResultSectionTitle}>Messages & Posts ({matchedPosts.length})</Text>
-                    {matchedPosts.length > 2 && !showAllMessages && (
+                    <Text style={styles.searchResultSectionTitle}>Posts & Messages ({matchedPosts.length})</Text>
+                    {matchedPosts.length > 3 && !showAllMessages && (
                       <TouchableOpacity onPress={() => setShowAllMessages(true)}>
-                        <Text style={styles.seeMoreBtnText}>See More</Text>
+                        <Text style={styles.seeMoreBtnText}>See More →</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -903,14 +913,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
-  topHeader: {
+  headerContainer: {
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
+    backgroundColor: '#0F172A',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+  },
+  headerBg: {
+    width: '100%',
+  },
+  headerBgImgStyle: {
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  headerGradientOverlay: {
     paddingTop: 50,
     paddingHorizontal: 20,
-    paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    paddingBottom: 16,
   },
+  topHeader: {},
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -921,68 +946,65 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarImg: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
   initialAvatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
   initialAvatarText: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: 'bold',
   },
   userText: {
     marginLeft: 12,
   },
   userName: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#FFFFFF',
   },
   greetingText: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: '#CBD5E1',
+    marginTop: 1,
   },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
-  actionIconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F3F4F6',
+  actionIconButtonHeader: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative',
   },
-  badge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#EF4444',
-  },
-  tabsRow: {
-    flexDirection: 'row',
+  tabsRowContainer: {
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
+  },
+  tabsRow: {
+    flexDirection: 'row',
     paddingHorizontal: 12,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
     position: 'relative',
   },
   tabText: {
@@ -997,7 +1019,7 @@ const styles = StyleSheet.create({
   tabIndicator: {
     position: 'absolute',
     bottom: 0,
-    width: 24,
+    width: 28,
     height: 3,
     backgroundColor: '#7C3AED',
     borderTopLeftRadius: 3,
@@ -1008,13 +1030,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
   },
-  trendingSection: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
+
+  // REDESIGNED HORIZONTAL TRENDING CARDS
+  trendingSectionContainer: {
+    marginBottom: 20,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -1023,48 +1042,82 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
     color: '#1F2937',
   },
   seeAllLink: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: '#7C3AED',
   },
-  trendingGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    justifyContent: 'space-between',
+  trendingCardsScroll: {
+    paddingRight: 16,
+    gap: 12,
   },
-  trendingCard: {
-    width: '48%',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    padding: 10,
+  redesignedTrendingCard: {
+    width: 170,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 14,
     borderWidth: 1,
     borderColor: '#F3F4F6',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
   },
-  trendingTag: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1F2937',
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
   },
-  trendingCount: {
-    fontSize: 10,
-    color: '#9CA3AF',
-    marginTop: 2,
+  cardIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  trendingPercentage: {
+  growthBadge: {
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  growthText: {
     fontSize: 10,
     fontWeight: '700',
     color: '#10B981',
-    marginTop: 4,
   },
+  cardTagText: {
+    fontSize: 13,
+    fontWeight: '750',
+    color: '#1F2937',
+  },
+  cardCountText: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 2,
+    marginBottom: 10,
+  },
+  miniTrendBarBg: {
+    height: 4,
+    width: '100%',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  miniTrendBarFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+
   categoriesSection: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 14,
     marginBottom: 16,
     borderWidth: 1,
@@ -1092,7 +1145,7 @@ const styles = StyleSheet.create({
   },
   storiesContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 20,
     paddingVertical: 12,
     marginBottom: 16,
     borderWidth: 1,
@@ -1144,7 +1197,7 @@ const styles = StyleSheet.create({
   },
   postCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
@@ -1218,175 +1271,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#6B7280',
   },
-  localLocationBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    paddingHorizontal: 4,
-  },
-  localLocationText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginLeft: 4,
-  },
-  liveBanner: {
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  liveBannerContent: {
-    flex: 1,
-  },
-  liveBannerTitle: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  liveBannerSubtitle: {
-    color: '#F3E8FF',
-    fontSize: 11,
-    marginTop: 2,
-  },
-  viewLiveBtn: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
-    marginTop: 8,
-  },
-  viewLiveBtnText: {
-    color: '#7C3AED',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  liveBannerImg: {
-    width: 60,
-    height: 60,
-    borderRadius: 12,
-    marginLeft: 12,
-  },
-  localPostsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  localPostsTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  localPostCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-  },
-  localPostHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  localTagBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  localTagText: {
-    fontSize: 9,
-    fontWeight: '700',
-  },
-  localPostTime: {
-    fontSize: 10,
-    color: '#9CA3AF',
-  },
-  localPostTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 4,
-  },
-  localPostDesc: {
-    fontSize: 11,
-    color: '#6B7280',
-    lineHeight: 16,
-  },
-  localPostFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    gap: 14,
-  },
-  localStatBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  localStatText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  localShareBtn: {
-    marginLeft: 'auto',
-  },
-  trendingTopicsCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-  },
-  trendingTopicsList: {
-    marginTop: 8,
-  },
-  topicRankRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F9FAFB',
-  },
-  topicRankNumber: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#7C3AED',
-    width: 28,
-  },
-  topicRankInfo: {
-    flex: 1,
-  },
-  topicRankTag: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  topicRankCount: {
-    fontSize: 10,
-    color: '#9CA3AF',
-    marginTop: 1,
-  },
-  topicTrendBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  topicTrendText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#10B981',
-  },
   bottomNav: {
     flexDirection: 'row',
     height: 60,
@@ -1417,38 +1301,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  bottomSheetOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  commentSheetContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    height: '75%',
-    paddingBottom: 20,
-  },
-  sheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  sheetTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
 
-  // THREE DOTS DRAWER STYLES
-  drawerOverlay: {
+  // THREE DOTS ANIMATED DRAWER STYLES
+  modalFullContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
+  },
+  drawerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   drawerContent: {
     backgroundColor: '#FFFFFF',
@@ -1456,7 +1317,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
-    height: '80%',
+    maxHeight: height * 0.82,
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 28,
@@ -1475,7 +1336,7 @@ const styles = StyleSheet.create({
     color: '#1F2937',
   },
   drawerScroll: {
-    flex: 1,
+    flexGrow: 0,
     paddingTop: 12,
   },
   drawerNavItem: {
@@ -1546,7 +1407,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     backgroundColor: '#FEE2E2',
     borderRadius: 14,
-    marginTop: 10,
+    marginTop: 12,
   },
   drawerLogoutText: {
     fontSize: 13,
@@ -1554,14 +1415,75 @@ const styles = StyleSheet.create({
     color: '#EF4444',
   },
 
-  // START COMMUNITY MODAL STYLES
+  // LOGOUT CONFIRMATION MODAL STYLES
   modalBg: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
   },
+  logoutConfirmCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    width: '100%',
+    padding: 24,
+    alignItems: 'center',
+  },
+  logoutIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FEE2E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  logoutConfirmTitle: {
+    fontSize: 16,
+    fontWeight: '750',
+    color: '#1F2937',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  logoutConfirmSubtitle: {
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 20,
+  },
+  logoutActionRow: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  cancelLogoutBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+  },
+  cancelLogoutText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#4B5563',
+  },
+  confirmLogoutBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+  },
+  confirmLogoutText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+  // START COMMUNITY MODAL STYLES
   startCommunityContent: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
@@ -1729,5 +1651,200 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     fontStyle: 'italic',
     paddingVertical: 8,
+  },
+  localLocationBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  localLocationText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginLeft: 4,
+  },
+  liveBanner: {
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justify.content: 'space-between',
+    marginBottom: 16,
+  },
+  liveBannerContent: {
+    flex: 1,
+  },
+  liveBannerTitle: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  liveBannerSubtitle: {
+    color: '#F3E8FF',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  viewLiveBtn: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  viewLiveBtnText: {
+    color: '#7C3AED',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  liveBannerImg: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    marginLeft: 12,
+  },
+  localPostsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  localPostsTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  localPostCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  localPostHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  localTagBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  localTagText: {
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  localPostTime: {
+    fontSize: 10,
+    color: '#9CA3AF',
+  },
+  localPostTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  localPostDesc: {
+    fontSize: 11,
+    color: '#6B7280',
+    lineHeight: 16,
+  },
+  localPostFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    gap: 14,
+  },
+  localStatBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  localStatText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  localShareBtn: {
+    marginLeft: 'auto',
+  },
+  trendingTopicsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  trendingTopicsList: {
+    marginTop: 8,
+  },
+  topicRankRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F9FAFB',
+  },
+  topicRankNumber: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#7C3AED',
+    width: 28,
+  },
+  topicRankInfo: {
+    flex: 1,
+  },
+  topicRankTag: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  topicRankCount: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    marginTop: 1,
+  },
+  topicTrendBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  topicTrendText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#10B981',
+  },
+  bottomSheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  commentSheetContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    height: '75%',
+    paddingBottom: 20,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  sheetTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1F2937',
   },
 });

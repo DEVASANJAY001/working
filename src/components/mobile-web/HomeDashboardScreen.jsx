@@ -34,8 +34,19 @@ import {
   CloudRain,
   Camera,
   Cpu,
-  ChevronRight
+  ChevronRight,
+  Train,
+  Trophy,
+  AlertTriangle
 } from 'lucide-react';
+
+// Dynamic Time-Based Greeting
+const getDynamicGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good Morning ☀️';
+  if (hour < 17) return 'Good Afternoon 🌤️';
+  return 'Good Evening 🌙';
+};
 
 // Mock Data for Stories
 const stories = [
@@ -132,6 +143,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
   const [showSeeAllRecent, setShowSeeAllRecent] = useState(false);
   const [showStartCommunity, setShowStartCommunity] = useState(false);
   const [showSearchWindow, setShowSearchWindow] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Search expansion state
   const [searchQuery, setSearchQuery] = useState('');
@@ -229,66 +241,15 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
     }
   };
 
-  const handleAddComment = (e) => {
-    e.preventDefault();
-    if (!newCommentText.trim()) return;
-    const newComment = {
-      id: `c_${Date.now()}`,
-      author: 'Devasanjay',
-      handle: 'devasanjay',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80',
-      time: 'Just now',
-      text: newCommentText,
-      likes: 0,
-      isLiked: false,
-      replies: []
-    };
-    setCommentsList([newComment, ...commentsList]);
-    setNewCommentText('');
-
-    if (selectedPost) {
-      setPosts(prev => prev.map(p => {
-        if (p.id === selectedPost.id) {
-          return { ...p, commentsCount: p.commentsCount + 1 };
-        }
-        return p;
-      }));
-      setSelectedPost(prev => ({ ...prev, commentsCount: prev.commentsCount + 1 }));
-    }
+  const handleLogoutPress = () => {
+    setShowThreeDotsDrawer(false);
+    setShowLogoutConfirm(true);
   };
 
-  const handleSendAward = () => {
-    if (!selectedAward) return;
-    const cost = selectedAward.coins * awardQuantity;
-    if (coinsBalance < cost) {
-      alert("Insufficient coins balance!");
-      return;
-    }
-    setCoinsBalance(prev => prev - cost);
-    setShowAwards(false);
-    
-    if (selectedPost) {
-      setPosts(prev => prev.map(p => {
-        if (p.id === selectedPost.id) {
-          return { ...p, awards: p.awards + awardQuantity };
-        }
-        return p;
-      }));
-      setSelectedPost(prev => ({ ...prev, awards: prev.awards + awardQuantity }));
-    }
-    alert(`Successfully sent ${awardQuantity} ${selectedAward.label} Award(s)!`);
+  const confirmLogoutAction = () => {
+    setShowLogoutConfirm(false);
+    if (onLogout) onLogout();
   };
-
-  const awardsList = [
-    { id: 'aw1', label: 'Excellent', coins: 100, color: 'text-amber-400' },
-    { id: 'aw2', label: 'Inspiring', coins: 200, color: 'text-pink-500' },
-    { id: 'aw3', label: 'Brilliant', coins: 500, color: 'text-blue-500' },
-    { id: 'aw4', label: 'Superb', coins: 800, color: 'text-green-500' },
-    { id: 'aw5', label: 'Outstanding', coins: 1000, color: 'text-yellow-500' },
-    { id: 'aw6', label: 'Legendary', coins: 2000, color: 'text-red-500' },
-    { id: 'aw7', label: 'Epic', coins: 5000, color: 'text-violet-500' },
-    { id: 'aw8', label: 'Diamond', coins: 10000, color: 'text-cyan-400' },
-  ];
 
   const menuItems = [
     { name: 'Home', icon: Home },
@@ -338,7 +299,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
                 <img 
                   src={profileImage} 
                   alt="Profile" 
-                  className="w-10 h-10 rounded-full object-cover"
+                  className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
                 />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-600 to-orange-500 flex items-center justify-center text-white font-bold text-base shadow-sm">
@@ -348,12 +309,12 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
             </div>
             <div className="min-w-0">
               <p className="text-xs font-bold text-gray-900 truncate">Devasanjay</p>
-              <p className="text-[10px] text-gray-400 truncate">Good morning</p>
+              <p className="text-[10px] text-gray-400 truncate">{getDynamicGreeting()}</p>
             </div>
           </div>
 
           <button 
-            onClick={onLogout}
+            onClick={handleLogoutPress}
             className="w-full flex items-center gap-4 py-3 px-4 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 transition-all cursor-pointer"
           >
             <LogOut className="w-5 h-5" />
@@ -362,35 +323,38 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
         </div>
       </aside>
 
-      {/* Mobile Header */}
-      <header className="flex-shrink-0 pt-8 pb-4 px-5 bg-white border-b border-gray-100 md:hidden">
-        <div className="flex items-center justify-between">
+      {/* Mobile Header with Image Background (assets/image.png) & Dark Overlay */}
+      <header className="flex-shrink-0 pt-8 pb-4 px-5 bg-[#0F172A] border-b border-gray-100 md:hidden relative overflow-hidden rounded-b-3xl shadow-md">
+        <div className="absolute inset-0 bg-cover bg-center opacity-40" style={{ backgroundImage: "url('/assets/image.png')" }} />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 to-purple-950/80" />
+
+        <div className="relative z-10 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div onClick={() => setProfileImage(prev => prev ? null : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80')} className="cursor-pointer">
               {profileImage ? (
                 <img 
                   src={profileImage} 
                   alt="Profile" 
-                  className="w-9 h-9 rounded-full object-cover"
+                  className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-md"
                 />
               ) : (
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-600 to-orange-500 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-600 to-orange-500 flex items-center justify-center text-white font-bold text-base shadow-md border-2 border-white">
                   D
                 </div>
               )}
             </div>
             <div>
-              <h3 className="text-sm font-bold text-gray-900 leading-normal">Devasanjay</h3>
-              <p className="text-[10px] text-gray-400">Good Morning</p>
+              <h3 className="text-sm font-bold text-white leading-normal shadow-sm">Devasanjay</h3>
+              <p className="text-[10px] text-slate-300 font-medium">{getDynamicGreeting()}</p>
             </div>
           </div>
           
           <div className="flex gap-2">
-            <button onClick={() => setShowSearchWindow(true)} className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center cursor-pointer">
-              <Search className="w-4 h-4 text-gray-500" />
+            <button onClick={() => setShowSearchWindow(true)} className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center cursor-pointer hover:bg-white/30 transition-colors">
+              <Search className="w-4 h-4 text-white" />
             </button>
-            <button onClick={() => setShowThreeDotsDrawer(true)} className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center cursor-pointer">
-              <MoreVertical className="w-4 h-4 text-gray-500" />
+            <button onClick={() => setShowThreeDotsDrawer(true)} className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center cursor-pointer hover:bg-white/30 transition-colors">
+              <MoreVertical className="w-4 h-4 text-white" />
             </button>
           </div>
         </div>
@@ -399,7 +363,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
       {/* 2. Middle Main Feed Column */}
       <main className="flex-1 flex flex-col h-full bg-white md:bg-[#F9FAFB] overflow-hidden">
         
-        {/* Tab Selection */}
+        {/* Animated Segmented Control Tabs */}
         <div className="flex justify-between border-b border-gray-100 bg-white px-6">
           {[
             { id: 'Home Feed', label: 'For You' },
@@ -429,25 +393,39 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
             {/* HOM_001 (Home Feed) view */}
             {activeTab === 'Home Feed' && (
               <div className="space-y-6">
-                {/* Top Trending Header */}
-                <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-bold text-gray-900">🔥 Top Trending Today</span>
-                    <span className="text-[11px] text-violet-600 font-bold cursor-pointer">See All</span>
+                {/* Redesigned 🔥 Trending Today Section (Horizontal Scroll Carousel) */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-xs font-bold text-gray-900">🔥 Trending Today</span>
+                    <span className="text-[11px] text-violet-600 font-bold cursor-pointer hover:opacity-80">See All →</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+
+                  <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
                     {[
-                      { tag: '# Chennai Rains', count: '12.5K posts', trend: '+22%' },
-                      { tag: '# Metro Phase 2', count: '8.7K posts', trend: '+18%' },
-                      { tag: '# Traffic Updates', count: '6.2K posts', trend: '+14%' },
-                      { tag: '# IPL 2025', count: '5.4K posts', trend: '+12%' }
-                    ].map((item, idx) => (
-                      <div key={idx} className="border border-gray-100 rounded-xl p-3 bg-gray-50">
-                        <p className="text-xs font-bold text-gray-800">{item.tag}</p>
-                        <p className="text-[10px] text-gray-400 mt-1">{item.count}</p>
-                        <p className="text-[10px] text-green-500 font-bold mt-1">▲ {item.trend}</p>
-                      </div>
-                    ))}
+                      { tag: '# Chennai Rains', count: '12.4K Posts', trend: '+22%', icon: CloudRain, color: 'text-cyan-500 bg-cyan-50', barColor: 'bg-cyan-500' },
+                      { tag: '# Metro Phase 2', count: '8.7K Posts', trend: '+14%', icon: Train, color: 'text-purple-600 bg-purple-50', barColor: 'bg-purple-600' },
+                      { tag: '# AI Jobs', count: '6.8K Posts', trend: '+10%', icon: Cpu, color: 'text-emerald-500 bg-emerald-50', barColor: 'bg-emerald-500' },
+                      { tag: '# IPL 2025', count: '5.4K Posts', trend: '+18%', icon: Trophy, color: 'text-amber-500 bg-amber-50', barColor: 'bg-amber-500' }
+                    ].map((item, idx) => {
+                      const Icon = item.icon;
+                      return (
+                        <div key={idx} className="w-44 flex-shrink-0 bg-white border border-gray-100 rounded-2xl p-3.5 shadow-sm space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${item.color}`}>
+                              <Icon className="w-4 h-4" />
+                            </div>
+                            <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md">▲ {item.trend}</span>
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-gray-800 truncate">{item.tag}</p>
+                            <p className="text-[10px] text-gray-400 mt-0.5">{item.count}</p>
+                          </div>
+                          <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
+                            <div className={`h-full ${item.barColor} rounded-full`} style={{ width: `${60 + idx * 10}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -455,7 +433,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
                 <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-bold text-gray-900">Categories</span>
-                    <span className="text-[11px] text-violet-600 font-bold cursor-pointer">View All</span>
+                    <span className="text-[11px] text-violet-600 font-bold cursor-pointer">View All →</span>
                   </div>
                   <div className="flex justify-between">
                     {[
@@ -524,7 +502,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
 
                 <div className="flex items-center justify-between px-1">
                   <span className="text-xs font-bold text-gray-900">What's happening near you</span>
-                  <span className="text-[11px] text-violet-600 font-bold cursor-pointer">See All</span>
+                  <span className="text-[11px] text-violet-600 font-bold cursor-pointer">See All →</span>
                 </div>
 
                 {[
@@ -555,7 +533,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
                 <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-xs font-bold text-gray-900">🔥 Trending Topics</span>
-                    <span className="text-[11px] text-violet-600 font-bold cursor-pointer">See All</span>
+                    <span className="text-[11px] text-violet-600 font-bold cursor-pointer">See All →</span>
                   </div>
                   <div className="divide-y divide-gray-50">
                     {[
@@ -611,60 +589,6 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
         </div>
       </main>
 
-      {/* 3. Right Sidebar Widgets */}
-      <aside className="w-80 border-l border-gray-100 bg-white h-full hidden lg:flex flex-col p-6 space-y-6">
-        <div onClick={() => setShowSearchWindow(true)} className="relative cursor-pointer">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
-          <input
-            type="text"
-            readOnly
-            placeholder="Search Inspire communities or topics..."
-            className="w-full py-2.5 pl-10 pr-4 border border-gray-150 rounded-xl bg-gray-50 focus:outline-none transition-all text-xs font-medium cursor-pointer"
-          />
-        </div>
-
-        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-gray-900">Notifications</span>
-            <Bell className="w-4 h-4 text-violet-600" />
-          </div>
-          <div className="space-y-3">
-            <div className="p-2.5 bg-white border border-gray-100 rounded-xl flex items-center gap-3">
-              <div className="w-2 h-2 bg-violet-600 rounded-full flex-shrink-0" />
-              <p className="text-[11px] text-gray-500 leading-normal">Nicole liked your comment on <span className="font-semibold text-gray-700">British Ecological</span></p>
-            </div>
-            <div className="p-2.5 bg-white border border-gray-100 rounded-xl flex items-center gap-3">
-              <div className="w-2 h-2 bg-violet-600 rounded-full flex-shrink-0" />
-              <p className="text-[11px] text-gray-500 leading-normal">Welcome to Inspire! Get started by exploring communities.</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex-1 flex flex-col justify-end text-[10px] text-gray-400 px-2 leading-relaxed">
-          <p>© 2026 Inspire Portal Inc.</p>
-          <p>Powered by DAWNS Security Suite.</p>
-        </div>
-      </aside>
-
-      {/* Mobile Bottom Navigation Bar */}
-      <div className="flex-shrink-0 flex items-center justify-around h-16 border-t border-gray-100 bg-white pb-2 relative md:hidden">
-        <button className="p-2 text-violet-600">
-          <Home className="w-5.5 h-5.5" />
-        </button>
-        <button className="p-2 text-gray-300">
-          <Compass className="w-5.5 h-5.5" />
-        </button>
-        <div onClick={onCreatePress} className="w-12 h-12 rounded-full -mt-6 flex items-center justify-center text-white bg-gradient-to-r from-violet-600 to-orange-500 shadow-md shadow-violet-500/30 cursor-pointer">
-          <Plus className="w-6 h-6" />
-        </div>
-        <button className="p-2 text-gray-300">
-          <MessageSquare className="w-5.5 h-5.5" />
-        </button>
-        <button className="p-2 text-gray-300">
-          <User className="w-5.5 h-5.5" />
-        </button>
-      </div>
-
       {/* THREE-DOTS NAVIGATION DRAWER OVERLAY (SLIDES UP FROM BOTTOM WITH DARK FADE BACKGROUND) */}
       {showThreeDotsDrawer && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center transition-opacity duration-300 animate-fade-in">
@@ -679,11 +603,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
               <div className="space-y-2">
                 <button onClick={() => { setShowThreeDotsDrawer(false); alert("Navigating to Discovery"); }} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer">
                   <Compass className="w-4.5 h-4.5 text-violet-600" />
-                  <span>Discovery</span>
-                </button>
-                <button onClick={() => { setShowThreeDotsDrawer(false); alert("Navigating to Communities"); }} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer">
-                  <Users className="w-4.5 h-4.5 text-violet-600" />
-                  <span>Communities</span>
+                  <span>Discover Communities</span>
                 </button>
                 <button onClick={() => { setShowThreeDotsDrawer(false); setShowStartCommunity(true); }} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-violet-50 text-xs font-bold text-violet-600 cursor-pointer">
                   <PlusCircle className="w-4.5 h-4.5" />
@@ -695,7 +615,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
               <div className="border-t border-gray-100 pt-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Recently Visited</span>
-                  <button onClick={() => setShowSeeAllRecent(true)} className="text-[11px] font-bold text-violet-600 cursor-pointer">See All</button>
+                  <button onClick={() => setShowSeeAllRecent(true)} className="text-[11px] font-bold text-violet-600 cursor-pointer">See All →</button>
                 </div>
                 {recentCommunities.slice(0, 3).map(comm => {
                   const Icon = comm.icon;
@@ -734,10 +654,33 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
             </div>
 
             {/* Logout fixed at bottom */}
-            <button onClick={onLogout} className="w-full flex items-center justify-center gap-2 py-3 bg-red-50 text-red-500 rounded-xl font-bold text-xs hover:bg-red-100 transition-colors cursor-pointer">
+            <button onClick={handleLogoutPress} className="w-full flex items-center justify-center gap-2 py-3 bg-red-50 text-red-500 rounded-xl font-bold text-xs hover:bg-red-100 transition-colors cursor-pointer">
               <LogOut className="w-4 h-4" />
               <span>Logout</span>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* LOGOUT CONFIRMATION MODAL */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl text-center space-y-4 animate-fade-in">
+            <div className="w-14 h-14 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto">
+              <LogOut className="w-7 h-7" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-gray-900">Are you sure you want to logout?</h3>
+              <p className="text-xs text-gray-500 mt-1 leading-relaxed">You will need to sign in again to access your communities and feeds.</p>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl text-xs hover:bg-gray-200 cursor-pointer">
+                Cancel
+              </button>
+              <button onClick={confirmLogoutAction} className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl text-xs hover:bg-red-600 cursor-pointer shadow-md">
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -807,7 +750,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
         </div>
       )}
 
-      {/* UNIFIED SINGLE-PAGE SEARCH WINDOW OVERLAY (TOP: COMMUNITIES + SEE MORE, BOTTOM: MESSAGES + SEE MORE) */}
+      {/* UNIFIED SPOTLIGHT SINGLE-PAGE SEARCH WINDOW OVERLAY */}
       {showSearchWindow && (
         <div className="fixed inset-0 bg-white z-50 flex flex-col animate-fade-in">
           {/* Header */}
@@ -840,15 +783,15 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
                 index === self.findIndex((t) => t.id === comm.id) &&
                 comm.name.toLowerCase().includes(searchQuery.toLowerCase())
               );
-              const visibleCommunities = showAllCommunities ? matchedCommunities : matchedCommunities.slice(0, 2);
+              const visibleCommunities = showAllCommunities ? matchedCommunities : matchedCommunities.slice(0, 3);
 
               return (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Communities ({matchedCommunities.length})</span>
-                    {matchedCommunities.length > 2 && !showAllCommunities && (
+                    {matchedCommunities.length > 3 && !showAllCommunities && (
                       <button onClick={() => setShowAllCommunities(true)} className="text-[11px] font-bold text-violet-600 cursor-pointer hover:opacity-80">
-                        See More
+                        See More →
                       </button>
                     )}
                   </div>
@@ -878,18 +821,18 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
 
             <div className="border-t border-gray-100 my-2" />
 
-            {/* Bottom Section: Messages & Posts */}
+            {/* Bottom Section: Posts & Messages */}
             {(() => {
               const matchedPosts = posts.filter(p => p.text.toLowerCase().includes(searchQuery.toLowerCase()));
-              const visiblePosts = showAllMessages ? matchedPosts : matchedPosts.slice(0, 2);
+              const visiblePosts = showAllMessages ? matchedPosts : matchedPosts.slice(0, 3);
 
               return (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Messages & Posts ({matchedPosts.length})</span>
-                    {matchedPosts.length > 2 && !showAllMessages && (
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Posts & Messages ({matchedPosts.length})</span>
+                    {matchedPosts.length > 3 && !showAllMessages && (
                       <button onClick={() => setShowAllMessages(true)} className="text-[11px] font-bold text-violet-600 cursor-pointer hover:opacity-80">
-                        See More
+                        See More →
                       </button>
                     )}
                   </div>
@@ -912,252 +855,6 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
               );
             })()}
 
-          </div>
-        </div>
-      )}
-
-      {/* 5. POST DETAIL VIEW (PST_001) OVERLAY */}
-      {selectedPost && (
-        <div className="absolute inset-0 bg-white z-40 flex flex-col">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-            <button onClick={() => setSelectedPost(null)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-50 cursor-pointer">
-              <ArrowLeft className="w-5 h-5 text-gray-800" />
-            </button>
-            <span className="text-sm font-bold text-gray-800">Post</span>
-            <button className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-50 cursor-pointer">
-              <MoreHorizontal className="w-5 h-5 text-gray-800" />
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-xl mx-auto w-full">
-            <div className="flex items-center gap-3">
-              <img src={selectedPost.authorAvatar} alt="Avatar" className="w-11 h-11 rounded-full object-cover" />
-              <div className="flex-1">
-                <h4 className="text-sm font-bold text-gray-900">{selectedPost.authorName}</h4>
-                <p className="text-[11px] text-gray-400">@{selectedPost.authorHandle}</p>
-              </div>
-              <button 
-                onClick={() => handleToggleFollow(selectedPost.id)}
-                className={`text-xs font-bold px-4 py-1.5 rounded-full border border-violet-600 transition-colors cursor-pointer
-                  ${selectedPost.isFollowing ? 'bg-violet-600 text-white' : 'text-violet-600 bg-white hover:bg-violet-50'}`}
-              >
-                {selectedPost.isFollowing ? 'Following' : 'Follow'}
-              </button>
-            </div>
-
-            <p className="text-sm text-gray-700 leading-relaxed">{selectedPost.text}</p>
-
-            {selectedPost.image && (
-              <div className="w-full rounded-2xl overflow-hidden">
-                <img src={selectedPost.image} alt="Media" className="w-full object-cover" />
-              </div>
-            )}
-
-            {selectedPost.images && (
-              <div className="grid grid-cols-3 gap-2">
-                {selectedPost.images.map((img, idx) => (
-                  <img key={idx} src={img} alt="Grid media" className="w-full h-32 object-cover rounded-xl" />
-                ))}
-              </div>
-            )}
-
-            <p className="text-[11px] text-gray-400">9:41 AM - 20 May 2026</p>
-
-            <div className="border-t border-b border-gray-50 py-3 flex justify-between text-xs text-gray-500">
-              <span><strong className="text-gray-850">{selectedPost.likes}</strong> Likes</span>
-              <span><strong className="text-gray-850">{selectedPost.commentsCount}</strong> Comments</span>
-              <span><strong className="text-gray-850">{selectedPost.shares}</strong> Shares</span>
-              <span><strong className="text-gray-850">{selectedPost.awards}</strong> Awards</span>
-            </div>
-
-            <div className="flex justify-between py-2 border-b border-gray-50">
-              <button onClick={() => handleToggleLike(selectedPost.id)} className="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-red-500 cursor-pointer">
-                <Heart className={`w-5 h-5 ${selectedPost.isLiked ? 'fill-red-500 text-red-500' : ''}`} />
-                <span>Like</span>
-              </button>
-              <button onClick={() => setShowComments(true)} className="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-violet-600 cursor-pointer">
-                <MessageCircle className="w-5 h-5" />
-                <span>Comment</span>
-              </button>
-              <button onClick={() => setShowShare(true)} className="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-violet-600 cursor-pointer">
-                <Share2 className="w-5 h-5" />
-                <span>Share</span>
-              </button>
-              <button onClick={() => setShowAwards(true)} className="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-violet-600 cursor-pointer">
-                <Gift className="w-5 h-5" />
-                <span>Award</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 6. COMMENT THREAD OVERLAY (CMT_001) */}
-      {showComments && (
-        <div className="absolute inset-0 bg-black/40 z-50 flex justify-end">
-          <div className="w-full max-w-md bg-white h-full flex flex-col shadow-xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <button onClick={() => setShowComments(false)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-50 cursor-pointer">
-                <X className="w-5 h-5 text-gray-800" />
-              </button>
-              <span className="text-sm font-bold text-gray-800">Comments</span>
-              <div className="w-8" />
-            </div>
-
-            <div className="flex gap-4 px-6 py-2 border-b border-gray-50">
-              {['Top', 'Latest'].map(sort => (
-                <button 
-                  key={sort}
-                  onClick={() => setCommentSort(sort)}
-                  className={`text-xs font-bold px-3 py-1 rounded-full cursor-pointer
-                    ${commentSort === sort ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:bg-gray-50'}`}
-                >
-                  {sort}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {commentsList.map(comment => (
-                <div key={comment.id} className="space-y-3 pb-3 border-b border-gray-50">
-                  <div className="flex gap-3">
-                    <img src={comment.avatar} alt="Comment avatar" className="w-8 h-8 rounded-full object-cover" />
-                    <div>
-                      <p className="text-xs font-bold text-gray-800">{comment.author} <span className="font-normal text-gray-400">@{comment.handle}</span></p>
-                      <p className="text-xs text-gray-600 mt-1">{comment.text}</p>
-                    </div>
-                  </div>
-
-                  {comment.replies.map(reply => (
-                    <div key={reply.id} className="ml-10 flex gap-3 border-l-2 border-gray-100 pl-3">
-                      <img src={reply.avatar} alt="Reply avatar" className="w-7 h-7 rounded-full object-cover" />
-                      <div>
-                        <p className="text-xs font-bold text-gray-800">
-                          {reply.author} <span className="font-normal text-gray-400">@{reply.handle}</span>
-                          {reply.isAuthor && <span className="ml-2 text-[9px] font-bold text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded">Author</span>}
-                        </p>
-                        <p className="text-xs text-gray-600 mt-1">{reply.text}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-
-            <form onSubmit={handleAddComment} className="p-4 border-t border-gray-100 flex gap-2">
-              <input
-                type="text"
-                placeholder="Add a comment..."
-                value={newCommentText}
-                onChange={e => setNewCommentText(e.target.value)}
-                className="flex-1 py-2 px-4 bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-violet-500 focus:bg-white text-xs font-medium"
-              />
-              <button type="submit" className="w-8 h-8 rounded-full bg-violet-600 text-white flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer">
-                <Send className="w-4 h-4" />
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* 7. SHARE SHEET OVERLAY (SHR_001) */}
-      {showShare && (
-        <div className="absolute inset-0 bg-black/40 z-50 flex items-end justify-center">
-          <div className="w-full max-w-md bg-white rounded-t-2xl p-6 space-y-6 shadow-2xl">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm font-bold text-gray-900">Share Post</h3>
-              <button onClick={() => setShowShare(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
-            </div>
-
-            <div className="grid grid-cols-4 gap-4">
-              {[
-                { icon: (props) => <span {...props}>🟢</span>, label: 'WhatsApp', color: 'bg-green-50' },
-                { icon: Send, label: 'Telegram', color: 'text-blue-500 bg-blue-50' },
-                { icon: (props) => <span {...props}>📸</span>, label: 'Stories', color: 'bg-pink-50' },
-                { icon: MessageSquare, label: 'Messages', color: 'text-green-400 bg-green-50' },
-                { icon: Copy, label: 'Copy Link', color: 'text-gray-500 bg-gray-100' },
-                { icon: (props) => <span {...props}>👤</span>, label: 'Facebook', color: 'bg-blue-50' },
-                { icon: (props) => <span {...props}>🐦</span>, label: 'X (Twitter)', color: 'bg-gray-100' }
-              ].map((app, idx) => {
-                const Icon = app.icon;
-                return (
-                  <button 
-                    key={idx} 
-                    onClick={() => { setShowShare(false); alert("Link copied / Shared successfully!"); }}
-                    className="flex flex-col items-center gap-1.5 cursor-pointer hover:scale-105 transition-transform"
-                  >
-                    <div className={`w-11 h-11 rounded-full flex items-center justify-center ${app.color}`}>
-                      <Icon className="w-5 h-5 flex items-center justify-center text-sm" />
-                    </div>
-                    <span className="text-[10px] text-gray-500 font-medium">{app.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <button onClick={() => setShowShare(false)} className="w-full py-3 bg-red-50 text-red-500 font-bold rounded-xl text-xs hover:bg-red-100 transition-colors cursor-pointer">
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* 8. AWARD SHEET OVERLAY (AWD_001) */}
-      {showAwards && (
-        <div className="absolute inset-0 bg-black/40 z-50 flex items-end justify-center">
-          <div className="w-full max-w-md bg-white rounded-t-2xl p-6 space-y-6 shadow-2xl">
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-sm font-bold text-gray-900">Give an award</h3>
-                <p className="text-[10px] text-gray-400 mt-0.5">Support the creator</p>
-              </div>
-              <button onClick={() => setShowAwards(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
-            </div>
-
-            <div className="bg-amber-50 border border-amber-100 rounded-xl p-2.5 flex items-center justify-center gap-2 text-xs text-amber-700 font-bold">
-              <span>Your balance: {coinsBalance} Coins</span>
-            </div>
-
-            <div className="grid grid-cols-4 gap-2.5 max-h-48 overflow-y-auto no-scrollbar">
-              {awardsList.map(award => {
-                const isSelected = selectedAward?.id === award.id;
-                return (
-                  <button 
-                    key={award.id}
-                    onClick={() => setSelectedAward(award)}
-                    className={`border p-2 rounded-xl flex flex-col items-center gap-1 transition-all cursor-pointer
-                      ${isSelected ? 'border-violet-600 bg-violet-50/50' : 'border-gray-150 bg-gray-50 hover:bg-gray-100'}`}
-                  >
-                    <Gift className={`w-6 h-6 ${award.color}`} />
-                    <span className="text-[10px] font-bold text-gray-800">{award.label}</span>
-                    <span className="text-[9px] text-gray-400">{award.coins} c</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex items-center justify-center gap-4">
-              <button 
-                onClick={() => setAwardQuantity(prev => Math.max(1, prev - 1))}
-                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold hover:bg-gray-200 cursor-pointer"
-              >
-                -
-              </button>
-              <span className="font-bold text-sm text-gray-800">{awardQuantity}</span>
-              <button 
-                onClick={() => setAwardQuantity(prev => prev + 1)}
-                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold hover:bg-gray-200 cursor-pointer"
-              >
-                +
-              </button>
-            </div>
-
-            <button 
-              onClick={handleSendAward}
-              className="w-full py-3 bg-gradient-to-r from-violet-600 to-orange-500 text-white font-bold rounded-full text-xs hover:opacity-95 transition-opacity cursor-pointer shadow-lg"
-            >
-              Send Award {selectedAward ? `(${selectedAward.coins * awardQuantity} Coins)` : ''}
-            </button>
           </div>
         </div>
       )}
