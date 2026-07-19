@@ -122,18 +122,18 @@ export const authService = {
         }
     },
 
-    /* ---------------- GOOGLE ---------------- */
+    /* ---------------- GOOGLE / SOCIAL SIGN-IN ---------------- */
 
-    async federatedSignIn() {
+    // Fixed: now correctly accepts and uses the `provider` argument.
+    // Previously, the function signature ignored its argument and hard-coded "Google".
+    async federatedSignIn(provider = "Google") {
         try {
-            return await signInWithRedirect({
-                provider: "Google",
-            });
+            return await signInWithRedirect({ provider });
         } catch (err) {
-            console.log("FULL ERROR:", err);
-            console.log("ERROR NAME:", err.name);
-            console.log("ERROR MESSAGE:", err.message);
-            console.log("ERROR OBJECT:", JSON.stringify(err, null, 2));
+            // Log the full error for debugging OAuth issues
+            console.error("[federatedSignIn] Full error:", err);
+            console.error("[federatedSignIn] Name:", err.name);
+            console.error("[federatedSignIn] Message:", err.message);
             throw err;
         }
     },

@@ -303,7 +303,7 @@ export default function AuthPage({ onLoginSuccess }) {
   /* ── Google ── */
   const handleGoogle = async () => {
     clearFeedback(); setLoading(true);
-    try { await authService.federatedSignIn({ provider: 'Google' }); }
+    try { await authService.federatedSignIn('Google'); }
     catch (e) { setError(e.message || 'Google sign-in failed.'); setLoading(false); }
   };
 

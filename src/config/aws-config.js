@@ -11,10 +11,16 @@ Amplify.configure({
         oauth: {
           domain: import.meta.env.VITE_AWS_COGNITO_DOMAIN,
 
+          // "phone" is intentionally removed:
+          //   - Google does NOT return a phone scope.
+          //   - Cognito rejects the token exchange with HTTP 400 invalid_scope
+          //     when the App Client scope list doesn't include "phone" OR when
+          //     the upstream IdP (Google) doesn't grant it.
+          // "profile" is required to map the Google "name" attribute into Cognito.
           scopes: [
             "openid",
             "email",
-            "phone",
+            "profile",
           ],
 
           redirectSignIn: [
