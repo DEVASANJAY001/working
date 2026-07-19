@@ -335,6 +335,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   formContainer: {
-    width: '100%',
+    alignSelf: 'stretch',
   },
 });
