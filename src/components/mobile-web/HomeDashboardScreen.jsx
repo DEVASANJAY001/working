@@ -23,7 +23,17 @@ import {
   X,
   Smartphone,
   Copy,
-  Gift
+  Gift,
+  MoreVertical,
+  Users,
+  PlusCircle,
+  Code,
+  Utensils,
+  Leaf,
+  Rocket,
+  CloudRain,
+  Camera,
+  Cpu
 } from 'lucide-react';
 
 // Mock Data for Stories
@@ -88,15 +98,47 @@ const initialPosts = [
   }
 ];
 
+const recentCommunities = [
+  { id: 'rc1', name: 'Chennai Techies', members: '12.4k', icon: Code, color: 'text-violet-600 bg-violet-50' },
+  { id: 'rc2', name: 'Desi Foodies', members: '45.2k', icon: Utensils, color: 'text-red-500 bg-red-50' },
+  { id: 'rc3', name: 'Green Earth India', members: '8.1k', icon: Leaf, color: 'text-green-500 bg-green-50' },
+  { id: 'rc4', name: 'Startup Founders', members: '19.8k', icon: Rocket, color: 'text-blue-500 bg-blue-50' },
+  { id: 'rc5', name: 'Chennai Rains Alert', members: '34.1k', icon: CloudRain, color: 'text-cyan-500 bg-cyan-50' },
+];
+
+const joinedCommunities = [
+  { id: 'jc1', name: 'Chennai Techies', members: '12.4k', icon: Code, color: 'text-violet-600 bg-violet-50' },
+  { id: 'jc2', name: 'Desi Foodies', members: '45.2k', icon: Utensils, color: 'text-red-500 bg-red-50' },
+  { id: 'jc3', name: 'TN Photography', members: '15.6k', icon: Camera, color: 'text-amber-500 bg-amber-50' },
+  { id: 'jc4', name: 'Crypto & AI South', members: '9.3k', icon: Cpu, color: 'text-purple-500 bg-purple-50' },
+];
+
 export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
-  const [activeTab, setActiveTab] = useState('Home Feed'); // Home Feed, Local Feed, Trending Feed, Following Feed
+  const [activeTab, setActiveTab] = useState('Home Feed'); 
   const [posts, setPosts] = useState(initialPosts);
   
+  // Profile picture image or initial fallback
+  const [profileImage, setProfileImage] = useState('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80');
+
   // Navigation & Overlays
-  const [selectedPost, setSelectedPost] = useState(null); // PST_001
-  const [showComments, setShowComments] = useState(false); // CMT_001
-  const [showShare, setShowShare] = useState(false); // SHR_001
-  const [showAwards, setShowAwards] = useState(false); // AWD_001
+  const [selectedPost, setSelectedPost] = useState(null); 
+  const [showComments, setShowComments] = useState(false); 
+  const [showShare, setShowShare] = useState(false); 
+  const [showAwards, setShowAwards] = useState(false); 
+
+  // Three-Dots Drawer & Search Overlays
+  const [showThreeDotsDrawer, setShowThreeDotsDrawer] = useState(false);
+  const [showSeeAllRecent, setShowSeeAllRecent] = useState(false);
+  const [showStartCommunity, setShowStartCommunity] = useState(false);
+  const [showSearchWindow, setShowSearchWindow] = useState(false);
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchTab, setSearchTab] = useState('Communities'); 
+
+  // Form state for new community
+  const [communityName, setCommunityName] = useState('');
+  const [communityDesc, setCommunityDesc] = useState('');
 
   // Coins balance and award inputs
   const [coinsBalance, setCoinsBalance] = useState(1250);
@@ -259,11 +301,16 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
       {/* 1. Left Sidebar Navigation */}
       <aside className="w-64 border-r border-gray-100 bg-white h-full hidden md:flex flex-col justify-between p-6">
         <div className="space-y-8">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-600 to-orange-500 flex items-center justify-center shadow-md">
-              <span className="text-white text-xl font-extrabold">I</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-600 to-orange-500 flex items-center justify-center shadow-md">
+                <span className="text-white text-xl font-extrabold">I</span>
+              </div>
+              <span className="text-xl font-black bg-gradient-to-r from-violet-600 to-orange-500 bg-clip-text text-transparent">Inspire</span>
             </div>
-            <span className="text-xl font-black bg-gradient-to-r from-violet-600 to-orange-500 bg-clip-text text-transparent">Inspire</span>
+            <button onClick={() => setShowThreeDotsDrawer(true)} className="p-2 text-gray-400 hover:text-gray-600 rounded-xl hover:bg-gray-50 cursor-pointer">
+              <MoreVertical className="w-5 h-5" />
+            </button>
           </div>
 
           <nav className="space-y-1">
@@ -284,11 +331,19 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
 
         <div className="space-y-4 pt-4 border-t border-gray-100">
           <div className="flex items-center gap-3 px-2">
-            <img 
-              src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80" 
-              alt="Profile" 
-              className="w-10 h-10 rounded-full object-cover"
-            />
+            <div onClick={() => setProfileImage(prev => prev ? null : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80')} className="cursor-pointer">
+              {profileImage ? (
+                <img 
+                  src={profileImage} 
+                  alt="Profile" 
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-600 to-orange-500 flex items-center justify-center text-white font-bold text-base shadow-sm">
+                  D
+                </div>
+              )}
+            </div>
             <div className="min-w-0">
               <p className="text-xs font-bold text-gray-900 truncate">Devasanjay</p>
               <p className="text-[10px] text-gray-400 truncate">Good morning</p>
@@ -309,12 +364,18 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
       <header className="flex-shrink-0 pt-8 pb-4 px-5 bg-white border-b border-gray-100 md:hidden">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div onClick={onLogout} className="w-9 h-9 rounded-full overflow-hidden cursor-pointer">
-              <img 
-                src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80" 
-                alt="Profile" 
-                className="w-full h-full object-cover"
-              />
+            <div onClick={() => setProfileImage(prev => prev ? null : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80')} className="cursor-pointer">
+              {profileImage ? (
+                <img 
+                  src={profileImage} 
+                  alt="Profile" 
+                  className="w-9 h-9 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-600 to-orange-500 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                  D
+                </div>
+              )}
             </div>
             <div>
               <h3 className="text-sm font-bold text-gray-900 leading-normal">Devasanjay</h3>
@@ -323,12 +384,11 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
           </div>
           
           <div className="flex gap-2">
-            <button className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center">
+            <button onClick={() => setShowSearchWindow(true)} className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center cursor-pointer">
               <Search className="w-4 h-4 text-gray-500" />
             </button>
-            <button className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center relative">
-              <Bell className="w-4 h-4 text-gray-500" />
-              <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-red-500 rounded-full" />
+            <button onClick={() => setShowThreeDotsDrawer(true)} className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center cursor-pointer">
+              <MoreVertical className="w-4 h-4 text-gray-500" />
             </button>
           </div>
         </div>
@@ -551,12 +611,13 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
 
       {/* 3. Right Sidebar Widgets */}
       <aside className="w-80 border-l border-gray-100 bg-white h-full hidden lg:flex flex-col p-6 space-y-6">
-        <div className="relative">
+        <div onClick={() => setShowSearchWindow(true)} className="relative cursor-pointer">
           <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
           <input
             type="text"
-            placeholder="Search Inspire..."
-            className="w-full py-2.5 pl-10 pr-4 border border-gray-150 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:bg-white transition-all text-xs font-medium"
+            readOnly
+            placeholder="Search Inspire communities or topics..."
+            className="w-full py-2.5 pl-10 pr-4 border border-gray-150 rounded-xl bg-gray-50 focus:outline-none transition-all text-xs font-medium cursor-pointer"
           />
         </div>
 
@@ -572,7 +633,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
             </div>
             <div className="p-2.5 bg-white border border-gray-100 rounded-xl flex items-center gap-3">
               <div className="w-2 h-2 bg-violet-600 rounded-full flex-shrink-0" />
-              <p className="text-[11px] text-gray-500 leading-normal">Welcome to Inspire! Get started by verifying your Cognito details.</p>
+              <p className="text-[11px] text-gray-500 leading-normal">Welcome to Inspire! Get started by exploring communities.</p>
             </div>
           </div>
         </div>
@@ -602,10 +663,237 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
         </button>
       </div>
 
+      {/* THREE-DOTS NAVIGATION DRAWER OVERLAY */}
+      {showThreeDotsDrawer && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex justify-end">
+          <div className="w-full max-w-sm bg-white h-full flex flex-col p-6 shadow-2xl space-y-6">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <h3 className="text-sm font-bold text-gray-900">Menu Navigation</h3>
+              <button onClick={() => setShowThreeDotsDrawer(false)} className="text-gray-400 hover:text-gray-600 cursor-pointer"><X className="w-5 h-5" /></button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-6 pr-1 no-scrollbar">
+              {/* Core links */}
+              <div className="space-y-2">
+                <button onClick={() => { setShowThreeDotsDrawer(false); alert("Navigating to Discovery"); }} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer">
+                  <Compass className="w-4.5 h-4.5 text-violet-600" />
+                  <span>Discovery</span>
+                </button>
+                <button onClick={() => { setShowThreeDotsDrawer(false); alert("Navigating to Communities"); }} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 text-xs font-bold text-gray-700 cursor-pointer">
+                  <Users className="w-4.5 h-4.5 text-violet-600" />
+                  <span>Communities</span>
+                </button>
+                <button onClick={() => { setShowThreeDotsDrawer(false); setShowStartCommunity(true); }} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-violet-50 text-xs font-bold text-violet-600 cursor-pointer">
+                  <PlusCircle className="w-4.5 h-4.5" />
+                  <span>Start a Community</span>
+                </button>
+              </div>
+
+              {/* Recently Visited */}
+              <div className="border-t border-gray-100 pt-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Recently Visited</span>
+                  <button onClick={() => setShowSeeAllRecent(true)} className="text-[11px] font-bold text-violet-600 cursor-pointer">See All</button>
+                </div>
+                {recentCommunities.slice(0, 3).map(comm => {
+                  const Icon = comm.icon;
+                  return (
+                    <div key={comm.id} onClick={() => { setShowThreeDotsDrawer(false); alert(`Opening ${comm.name}`); }} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 cursor-pointer">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${comm.color}`}>
+                        <Icon className="w-4.5 h-4.5" />
+                      </div>
+                      <div className="min-w-0 flex-1 text-left">
+                        <p className="text-xs font-bold text-gray-800 truncate">{comm.name}</p>
+                        <p className="text-[10px] text-gray-400">{comm.members} members</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Your Communities */}
+              <div className="border-t border-gray-100 pt-4 space-y-3">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Your Communities</span>
+                {joinedCommunities.map(comm => {
+                  const Icon = comm.icon;
+                  return (
+                    <div key={comm.id} onClick={() => { setShowThreeDotsDrawer(false); alert(`Opening ${comm.name}`); }} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 cursor-pointer">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${comm.color}`}>
+                        <Icon className="w-4.5 h-4.5" />
+                      </div>
+                      <div className="min-w-0 flex-1 text-left">
+                        <p className="text-xs font-bold text-gray-800 truncate">{comm.name}</p>
+                        <p className="text-[10px] text-gray-400">{comm.members} members</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Logout fixed at bottom */}
+            <button onClick={onLogout} className="w-full flex items-center justify-center gap-2 py-3 bg-red-50 text-red-500 rounded-xl font-bold text-xs hover:bg-red-100 transition-colors cursor-pointer">
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* SEE ALL RECENT COMMUNITIES MODAL */}
+      {showSeeAllRecent && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+              <h3 className="text-sm font-bold text-gray-900">Recently Visited Communities</h3>
+              <button onClick={() => setShowSeeAllRecent(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="max-h-80 overflow-y-auto space-y-2 no-scrollbar">
+              {recentCommunities.map(comm => {
+                const Icon = comm.icon;
+                return (
+                  <div key={comm.id} onClick={() => { setShowSeeAllRecent(false); setShowThreeDotsDrawer(false); alert(`Opening ${comm.name}`); }} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 cursor-pointer border border-gray-50">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${comm.color}`}>
+                      <Icon className="w-4.5 h-4.5" />
+                    </div>
+                    <div className="min-w-0 flex-1 text-left">
+                      <p className="text-xs font-bold text-gray-800 truncate">{comm.name}</p>
+                      <p className="text-[10px] text-gray-400">{comm.members} members</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* START A COMMUNITY MODAL */}
+      {showStartCommunity && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl space-y-4">
+            <h3 className="text-sm font-bold text-gray-900 text-center">Start a Community</h3>
+            <input 
+              type="text" 
+              placeholder="Community Name" 
+              value={communityName} 
+              onChange={e => setCommunityName(e.target.value)} 
+              className="w-full py-2.5 px-3 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-violet-500" 
+            />
+            <textarea 
+              placeholder="Description (Optional)" 
+              value={communityDesc} 
+              onChange={e => setCommunityDesc(e.target.value)} 
+              className="w-full min-h-[80px] py-2.5 px-3 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none" 
+            />
+            <div className="flex justify-end gap-2 pt-2">
+              <button onClick={() => setShowStartCommunity(false)} className="px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold hover:bg-gray-200">Cancel</button>
+              <button 
+                onClick={() => {
+                  if (!communityName.trim()) return alert("Please enter community name.");
+                  alert(`Community "${communityName}" created!`);
+                  setCommunityName('');
+                  setCommunityDesc('');
+                  setShowStartCommunity(false);
+                }} 
+                className="px-5 py-2 bg-violet-600 text-white rounded-xl text-xs font-bold hover:opacity-90"
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FULL-SCREEN SLIDE-DOWN SEARCH WINDOW OVERLAY */}
+      {showSearchWindow && (
+        <div className="fixed inset-0 bg-white z-50 flex flex-col animate-fade-in">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-100 max-w-2xl mx-auto w-full gap-3">
+            <div className="flex-1 relative">
+              <Search className="w-4 h-4 text-violet-600 absolute left-3.5 top-3" />
+              <input
+                type="text"
+                autoFocus
+                placeholder="Search communities, topics, or messages..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full py-2 pl-10 pr-8 border border-gray-200 rounded-full bg-gray-50 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:bg-white text-xs font-medium"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            <button onClick={() => setShowSearchWindow(false)} className="text-xs font-bold text-violet-600 hover:opacity-80">Close</button>
+          </div>
+
+          {/* Search Category Tabs */}
+          <div className="flex border-b border-gray-100 bg-white max-w-2xl mx-auto w-full">
+            {['Communities', 'Messages'].map(st => (
+              <button 
+                key={st}
+                onClick={() => setSearchTab(st)}
+                className={`flex-1 py-3 text-xs font-bold transition-all relative ${searchTab === st ? 'text-violet-600' : 'text-gray-400'}`}
+              >
+                {st}
+                {searchTab === st && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.75 bg-violet-600 rounded-t-full" />}
+              </button>
+            ))}
+          </div>
+
+          {/* Search results list */}
+          <div className="flex-1 overflow-y-auto p-6 max-w-2xl mx-auto w-full space-y-4">
+            {searchTab === 'Communities' && (
+              <div className="space-y-3">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Communities</span>
+                {[...recentCommunities, ...joinedCommunities]
+                  .filter((comm, index, self) => 
+                    index === self.findIndex((t) => t.id === comm.id) &&
+                    comm.name.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+                  .map(comm => {
+                    const Icon = comm.icon;
+                    return (
+                      <div key={comm.id} onClick={() => { setShowSearchWindow(false); alert(`Opening ${comm.name}`); }} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer border border-gray-100">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${comm.color}`}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div className="min-w-0 flex-1 text-left">
+                          <p className="text-xs font-bold text-gray-800 truncate">{comm.name}</p>
+                          <p className="text-[10px] text-gray-400">{comm.members} members</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+
+            {searchTab === 'Messages' && (
+              <div className="space-y-3">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Messages & Posts</span>
+                {posts
+                  .filter(p => p.text.toLowerCase().includes(searchQuery.toLowerCase()))
+                  .map(post => (
+                    <div key={post.id} onClick={() => { setShowSearchWindow(false); setSelectedPost(post); }} className="p-4 rounded-xl border border-gray-100 bg-gray-50 hover:bg-white transition-colors cursor-pointer space-y-2 text-left">
+                      <div className="flex items-center gap-2">
+                        <img src={post.authorAvatar} alt="Avatar" className="w-5 h-5 rounded-full object-cover" />
+                        <span className="text-xs font-bold text-gray-800">{post.authorName}</span>
+                        <span className="text-[10px] text-gray-400">• {post.time}</span>
+                      </div>
+                      <p className="text-xs text-gray-600 line-clamp-2">{post.text}</p>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 5. POST DETAIL VIEW (PST_001) OVERLAY */}
       {selectedPost && (
         <div className="absolute inset-0 bg-white z-40 flex flex-col">
-          {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <button onClick={() => setSelectedPost(null)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-50 cursor-pointer">
               <ArrowLeft className="w-5 h-5 text-gray-800" />
@@ -617,7 +905,6 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
           </div>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-xl mx-auto w-full">
-            {/* Author */}
             <div className="flex items-center gap-3">
               <img src={selectedPost.authorAvatar} alt="Avatar" className="w-11 h-11 rounded-full object-cover" />
               <div className="flex-1">
@@ -633,7 +920,6 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
               </button>
             </div>
 
-            {/* Content */}
             <p className="text-sm text-gray-700 leading-relaxed">{selectedPost.text}</p>
 
             {selectedPost.image && (
@@ -659,7 +945,6 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
               <span><strong className="text-gray-850">{selectedPost.awards}</strong> Awards</span>
             </div>
 
-            {/* Interaction bar */}
             <div className="flex justify-between py-2 border-b border-gray-50">
               <button onClick={() => handleToggleLike(selectedPost.id)} className="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-red-500 cursor-pointer">
                 <Heart className={`w-5 h-5 ${selectedPost.isLiked ? 'fill-red-500 text-red-500' : ''}`} />
@@ -826,7 +1111,6 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
               })}
             </div>
 
-            {/* Quantity Selector */}
             <div className="flex items-center justify-center gap-4">
               <button 
                 onClick={() => setAwardQuantity(prev => Math.max(1, prev - 1))}
