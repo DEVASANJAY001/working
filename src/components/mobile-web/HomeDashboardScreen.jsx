@@ -33,7 +33,8 @@ import {
   Rocket,
   CloudRain,
   Camera,
-  Cpu
+  Cpu,
+  ChevronRight
 } from 'lucide-react';
 
 // Mock Data for Stories
@@ -132,9 +133,10 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
   const [showStartCommunity, setShowStartCommunity] = useState(false);
   const [showSearchWindow, setShowSearchWindow] = useState(false);
 
-  // Search state
+  // Search expansion state
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchTab, setSearchTab] = useState('Communities'); 
+  const [showAllCommunities, setShowAllCommunities] = useState(false);
+  const [showAllMessages, setShowAllMessages] = useState(false);
 
   // Form state for new community
   const [communityName, setCommunityName] = useState('');
@@ -663,10 +665,10 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
         </button>
       </div>
 
-      {/* THREE-DOTS NAVIGATION DRAWER OVERLAY */}
+      {/* THREE-DOTS NAVIGATION DRAWER OVERLAY (SLIDES UP FROM BOTTOM WITH DARK FADE BACKGROUND) */}
       {showThreeDotsDrawer && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex justify-end">
-          <div className="w-full max-w-sm bg-white h-full flex flex-col p-6 shadow-2xl space-y-6">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center transition-opacity duration-300 animate-fade-in">
+          <div className="w-full max-w-md bg-white rounded-t-3xl flex flex-col p-6 shadow-2xl space-y-6 max-h-[85vh] transition-transform duration-300 border-b-0">
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <h3 className="text-sm font-bold text-gray-900">Menu Navigation</h3>
               <button onClick={() => setShowThreeDotsDrawer(false)} className="text-gray-400 hover:text-gray-600 cursor-pointer"><X className="w-5 h-5" /></button>
@@ -805,7 +807,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
         </div>
       )}
 
-      {/* FULL-SCREEN SLIDE-DOWN SEARCH WINDOW OVERLAY */}
+      {/* UNIFIED SINGLE-PAGE SEARCH WINDOW OVERLAY (TOP: COMMUNITIES + SEE MORE, BOTTOM: MESSAGES + SEE MORE) */}
       {showSearchWindow && (
         <div className="fixed inset-0 bg-white z-50 flex flex-col animate-fade-in">
           {/* Header */}
@@ -829,64 +831,87 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
             <button onClick={() => setShowSearchWindow(false)} className="text-xs font-bold text-violet-600 hover:opacity-80">Close</button>
           </div>
 
-          {/* Search Category Tabs */}
-          <div className="flex border-b border-gray-100 bg-white max-w-2xl mx-auto w-full">
-            {['Communities', 'Messages'].map(st => (
-              <button 
-                key={st}
-                onClick={() => setSearchTab(st)}
-                className={`flex-1 py-3 text-xs font-bold transition-all relative ${searchTab === st ? 'text-violet-600' : 'text-gray-400'}`}
-              >
-                {st}
-                {searchTab === st && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.75 bg-violet-600 rounded-t-full" />}
-              </button>
-            ))}
-          </div>
+          {/* Unified Single-Page Search List */}
+          <div className="flex-1 overflow-y-auto p-6 max-w-2xl mx-auto w-full space-y-6">
+            
+            {/* Top Section: Communities */}
+            {(() => {
+              const matchedCommunities = [...recentCommunities, ...joinedCommunities].filter((comm, index, self) => 
+                index === self.findIndex((t) => t.id === comm.id) &&
+                comm.name.toLowerCase().includes(searchQuery.toLowerCase())
+              );
+              const visibleCommunities = showAllCommunities ? matchedCommunities : matchedCommunities.slice(0, 2);
 
-          {/* Search results list */}
-          <div className="flex-1 overflow-y-auto p-6 max-w-2xl mx-auto w-full space-y-4">
-            {searchTab === 'Communities' && (
-              <div className="space-y-3">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Communities</span>
-                {[...recentCommunities, ...joinedCommunities]
-                  .filter((comm, index, self) => 
-                    index === self.findIndex((t) => t.id === comm.id) &&
-                    comm.name.toLowerCase().includes(searchQuery.toLowerCase())
-                  )
-                  .map(comm => {
-                    const Icon = comm.icon;
-                    return (
-                      <div key={comm.id} onClick={() => { setShowSearchWindow(false); alert(`Opening ${comm.name}`); }} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer border border-gray-100">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${comm.color}`}>
-                          <Icon className="w-5 h-5" />
-                        </div>
-                        <div className="min-w-0 flex-1 text-left">
-                          <p className="text-xs font-bold text-gray-800 truncate">{comm.name}</p>
-                          <p className="text-[10px] text-gray-400">{comm.members} members</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            )}
+              return (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Communities ({matchedCommunities.length})</span>
+                    {matchedCommunities.length > 2 && !showAllCommunities && (
+                      <button onClick={() => setShowAllCommunities(true)} className="text-[11px] font-bold text-violet-600 cursor-pointer hover:opacity-80">
+                        See More
+                      </button>
+                    )}
+                  </div>
 
-            {searchTab === 'Messages' && (
-              <div className="space-y-3">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Messages & Posts</span>
-                {posts
-                  .filter(p => p.text.toLowerCase().includes(searchQuery.toLowerCase()))
-                  .map(post => (
-                    <div key={post.id} onClick={() => { setShowSearchWindow(false); setSelectedPost(post); }} className="p-4 rounded-xl border border-gray-100 bg-gray-50 hover:bg-white transition-colors cursor-pointer space-y-2 text-left">
-                      <div className="flex items-center gap-2">
-                        <img src={post.authorAvatar} alt="Avatar" className="w-5 h-5 rounded-full object-cover" />
-                        <span className="text-xs font-bold text-gray-800">{post.authorName}</span>
-                        <span className="text-[10px] text-gray-400">• {post.time}</span>
+                  {visibleCommunities.length > 0 ? (
+                    visibleCommunities.map(comm => {
+                      const Icon = comm.icon;
+                      return (
+                        <div key={comm.id} onClick={() => { setShowSearchWindow(false); alert(`Opening ${comm.name}`); }} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer border border-gray-100">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${comm.color}`}>
+                            <Icon className="w-5 h-5" />
+                          </div>
+                          <div className="min-w-0 flex-1 text-left">
+                            <p className="text-xs font-bold text-gray-800 truncate">{comm.name}</p>
+                            <p className="text-[10px] text-gray-400">{comm.members} members</p>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-gray-400" />
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="text-xs text-gray-400 italic text-left">No matching communities found.</p>
+                  )}
+                </div>
+              );
+            })()}
+
+            <div className="border-t border-gray-100 my-2" />
+
+            {/* Bottom Section: Messages & Posts */}
+            {(() => {
+              const matchedPosts = posts.filter(p => p.text.toLowerCase().includes(searchQuery.toLowerCase()));
+              const visiblePosts = showAllMessages ? matchedPosts : matchedPosts.slice(0, 2);
+
+              return (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Messages & Posts ({matchedPosts.length})</span>
+                    {matchedPosts.length > 2 && !showAllMessages && (
+                      <button onClick={() => setShowAllMessages(true)} className="text-[11px] font-bold text-violet-600 cursor-pointer hover:opacity-80">
+                        See More
+                      </button>
+                    )}
+                  </div>
+
+                  {visiblePosts.length > 0 ? (
+                    visiblePosts.map(post => (
+                      <div key={post.id} onClick={() => { setShowSearchWindow(false); setSelectedPost(post); }} className="p-4 rounded-xl border border-gray-100 bg-gray-50 hover:bg-white transition-colors cursor-pointer space-y-2 text-left">
+                        <div className="flex items-center gap-2">
+                          <img src={post.authorAvatar} alt="Avatar" className="w-5 h-5 rounded-full object-cover" />
+                          <span className="text-xs font-bold text-gray-800">{post.authorName}</span>
+                          <span className="text-[10px] text-gray-400">• {post.time}</span>
+                        </div>
+                        <p className="text-xs text-gray-600 line-clamp-2">{post.text}</p>
                       </div>
-                      <p className="text-xs text-gray-600 line-clamp-2">{post.text}</p>
-                    </div>
-                  ))}
-              </div>
-            )}
+                    ))
+                  ) : (
+                    <p className="text-xs text-gray-400 italic text-left">No matching posts found.</p>
+                  )}
+                </div>
+              );
+            })()}
+
           </div>
         </div>
       )}

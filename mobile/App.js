@@ -55,6 +55,7 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState('Splash');
   const [userEmail, setUserEmail] = useState('');
   const [hasSession, setHasSession] = useState(false);
+  const [isSessionLoaded, setIsSessionLoaded] = useState(false);
 
   useEffect(() => {
     async function checkSession() {
@@ -68,10 +69,18 @@ export default function App() {
         }
       } catch (e) {
         console.log(e);
+      } finally {
+        setIsSessionLoaded(true);
       }
     }
     checkSession();
   }, []);
+
+  useEffect(() => {
+    if (isSessionLoaded && hasSession) {
+      setCurrentScreen('Home');
+    }
+  }, [isSessionLoaded, hasSession]);
 
   const [fontsLoaded] = useFonts({
     'Inter-Regular': Inter_400Regular,

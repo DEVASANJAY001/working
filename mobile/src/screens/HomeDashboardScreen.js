@@ -8,8 +8,7 @@ import {
   TouchableOpacity, 
   TextInput, 
   Modal, 
-  Dimensions,
-  Share 
+  Dimensions 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -116,7 +115,8 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchTab, setSearchTab] = useState('Communities'); 
+  const [showAllCommunities, setShowAllCommunities] = useState(false);
+  const [showAllMessages, setShowAllMessages] = useState(false);
 
   // New Community form state
   const [communityName, setCommunityName] = useState('');
@@ -337,7 +337,6 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
         {/* Render Feed HOM_001 (Home Feed) */}
         {activeTab === 'Home Feed' && (
           <View>
-            {/* Top Trending Header section */}
             <View style={styles.trendingSection}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>🔥 Top Trending Today</Text>
@@ -360,7 +359,6 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
               </View>
             </View>
 
-            {/* Categories Horizontal */}
             <View style={styles.categoriesSection}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Categories</Text>
@@ -384,7 +382,6 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
               </View>
             </View>
 
-            {/* Stories Horizontal */}
             <View style={styles.storiesContainer}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storiesScroll}>
                 {stories.map((story) => (
@@ -406,7 +403,6 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
               </ScrollView>
             </View>
 
-            {/* Infinite Feed - Post 1 */}
             {posts.filter(p => p.id === 'post_1').map(post => renderPostCard(post))}
           </View>
         )}
@@ -585,262 +581,6 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
         </TouchableOpacity>
       </View>
 
-      {/* 5. POST DETAIL VIEW (PST_001) MODAL */}
-      {selectedPost && (
-        <Modal visible={true} animationType="slide" onRequestClose={() => setSelectedPost(null)}>
-          <View style={styles.detailContainer}>
-            <View style={styles.detailHeader}>
-              <TouchableOpacity onPress={() => setSelectedPost(null)} style={styles.backBtnWrapper}>
-                <Ionicons name="arrow-back" size={24} color="#1F2937" />
-              </TouchableOpacity>
-              <Text style={styles.detailHeaderTitle}>Post</Text>
-              <TouchableOpacity>
-                <Ionicons name="ellipsis-horizontal" size={20} color="#1F2937" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.detailContent} showsVerticalScrollIndicator={false}>
-              <View style={styles.detailAuthorRow}>
-                <Image source={{ uri: selectedPost.authorAvatar }} style={styles.detailAvatar} />
-                <View style={styles.detailAuthorText}>
-                  <Text style={styles.detailAuthorName}>{selectedPost.authorName}</Text>
-                  <Text style={styles.detailAuthorHandle}>@{selectedPost.authorHandle}</Text>
-                </View>
-                <TouchableOpacity 
-                  style={[styles.followBtn, selectedPost.isFollowing && styles.followingBtn]} 
-                  onPress={() => handleToggleFollow(selectedPost.id)}
-                >
-                  <Text style={[styles.followBtnText, selectedPost.isFollowing && styles.followingBtnText]}>
-                    {selectedPost.isFollowing ? 'Following' : 'Follow'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <Text style={styles.detailBodyText}>{selectedPost.text}</Text>
-
-              {selectedPost.image && (
-                <Image source={{ uri: selectedPost.image }} style={styles.detailPostImage} resizeMode="cover" />
-              )}
-              {selectedPost.images && (
-                <View style={styles.imageGrid}>
-                  {selectedPost.images.map((img, idx) => (
-                    <Image key={idx} source={{ uri: img }} style={styles.gridImageItem} />
-                  ))}
-                </View>
-              )}
-
-              <Text style={styles.detailTimestamp}>9:41 AM - 20 May 2026</Text>
-              
-              <View style={styles.statsDivider} />
-              <View style={styles.statsRow}>
-                <Text style={styles.statItem}><Text style={styles.statBold}>{selectedPost.likes}</Text> Likes</Text>
-                <Text style={styles.statItem}><Text style={styles.statBold}>{selectedPost.commentsCount}</Text> Comments</Text>
-                <Text style={styles.statItem}><Text style={styles.statBold}>{selectedPost.shares}</Text> Shares</Text>
-                <Text style={styles.statItem}><Text style={styles.statBold}>{selectedPost.awards}</Text> Awards</Text>
-              </View>
-              <View style={styles.statsDivider} />
-
-              <View style={styles.interactionRow}>
-                <TouchableOpacity style={styles.interactBtn} onPress={() => handleToggleLike(selectedPost.id)}>
-                  <Ionicons name={selectedPost.isLiked ? "heart" : "heart-outline"} size={22} color={selectedPost.isLiked ? "#EF4444" : "#4B5563"} />
-                  <Text style={styles.interactBtnText}>Like</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.interactBtn} onPress={() => setShowComments(true)}>
-                  <Ionicons name="chatbubble-outline" size={20} color="#4B5563" />
-                  <Text style={styles.interactBtnText}>Comment</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.interactBtn} onPress={() => setShowShare(true)}>
-                  <Ionicons name="share-social-outline" size={20} color="#4B5563" />
-                  <Text style={styles.interactBtnText}>Share</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.interactBtn} onPress={() => setShowAwards(true)}>
-                  <Ionicons name="gift-outline" size={20} color="#4B5563" />
-                  <Text style={styles.interactBtnText}>Award</Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={{ height: 40 }} />
-            </ScrollView>
-          </View>
-
-          {/* 6. COMMENT THREAD MODAL (CMT_001) */}
-          <Modal visible={showComments} animationType="slide" transparent>
-            <View style={styles.bottomSheetOverlay}>
-              <View style={styles.commentSheetContent}>
-                <View style={styles.sheetHeader}>
-                  <TouchableOpacity onPress={() => setShowComments(false)}>
-                    <Ionicons name="chevron-down" size={24} color="#4B5563" />
-                  </TouchableOpacity>
-                  <Text style={styles.sheetTitle}>Comments</Text>
-                  <View style={{ width: 24 }} />
-                </View>
-
-                <View style={styles.commentSortTabs}>
-                  {['Top', 'Latest'].map(sort => (
-                    <TouchableOpacity 
-                      key={sort} 
-                      style={[styles.sortTab, commentSort === sort && styles.sortTabActive]}
-                      onPress={() => setCommentSort(sort)}
-                    >
-                      <Text style={[styles.sortTabText, commentSort === sort && styles.sortTabTextActive]}>{sort}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                <ScrollView style={styles.commentsList} showsVerticalScrollIndicator={false}>
-                  {commentsList.map(comment => (
-                    <View key={comment.id} style={styles.commentItem}>
-                      <View style={styles.commentMain}>
-                        <Image source={{ uri: comment.avatar }} style={styles.commentAvatar} />
-                        <View style={styles.commentTextContent}>
-                          <Text style={styles.commentAuthor}>
-                            {comment.author} <Text style={styles.commentHandle}>@{comment.handle}</Text>
-                          </Text>
-                          <Text style={styles.commentText}>{comment.text}</Text>
-                        </View>
-                      </View>
-
-                      {comment.replies && comment.replies.map(reply => (
-                        <View key={reply.id} style={styles.replyItem}>
-                          <Image source={{ uri: reply.avatar }} style={styles.replyAvatar} />
-                          <View style={styles.commentTextContent}>
-                            <Text style={styles.commentAuthor}>
-                              {reply.author} <Text style={styles.commentHandle}>@{reply.handle}</Text>
-                              {reply.isAuthor && <Text style={styles.authorBadge}> • Author</Text>}
-                            </Text>
-                            <Text style={styles.commentText}>{reply.text}</Text>
-                          </View>
-                        </View>
-                      ))}
-                    </View>
-                  ))}
-                </ScrollView>
-
-                <View style={styles.commentInputRow}>
-                  <TextInput
-                    style={styles.commentTextInput}
-                    placeholder="Add a comment..."
-                    placeholderTextColor="#9CA3AF"
-                    value={newCommentText}
-                    onChangeText={setNewCommentText}
-                  />
-                  <TouchableOpacity style={styles.sendCommentBtn} onPress={handleAddComment}>
-                    <Ionicons name="send" size={16} color="#FFFFFF" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          </Modal>
-
-          {/* 7. SHARE SHEET MODAL (SHR_001) */}
-          <Modal visible={showShare} animationType="slide" transparent>
-            <View style={styles.bottomSheetOverlay}>
-              <View style={styles.shareSheetContent}>
-                <View style={styles.sheetHeader}>
-                  <Text style={styles.sheetTitle}>Share Post</Text>
-                  <TouchableOpacity onPress={() => setShowShare(false)}>
-                    <Ionicons name="close" size={22} color="#4B5563" />
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.shareGrid}>
-                  {[
-                    { label: 'WhatsApp', icon: 'logo-whatsapp', color: '#25D366', bg: '#DCFCE7' },
-                    { label: 'Telegram', icon: 'paper-plane', color: '#0088CC', bg: '#E0F2FE' },
-                    { label: 'Stories', icon: 'camera', color: '#E1306C', bg: '#FCE7F3' },
-                    { label: 'Messages', icon: 'chatbox', color: '#10B981', bg: '#D1FAE5' },
-                    { label: 'Copy Link', icon: 'link', color: '#6B7280', bg: '#F3F4F6' },
-                    { label: 'Facebook', icon: 'logo-facebook', color: '#1877F2', bg: '#DBEAFE' },
-                    { label: 'X (Twitter)', icon: 'logo-twitter', color: '#1DA1F2', bg: '#E0F2FE' },
-                  ].map((app, idx) => (
-                    <TouchableOpacity 
-                      key={idx} 
-                      style={styles.shareItem}
-                      onPress={() => {
-                        setShowShare(false);
-                        alert(`Shared to ${app.label}!`);
-                      }}
-                    >
-                      <View style={[styles.shareIconBg, { backgroundColor: app.bg }]}>
-                        <Ionicons name={app.icon} size={22} color={app.color} />
-                      </View>
-                      <Text style={styles.shareLabel}>{app.label}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                <TouchableOpacity style={styles.cancelShareBtn} onPress={() => setShowShare(false)}>
-                  <Text style={styles.cancelShareText}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
-
-          {/* 8. AWARD SHEET MODAL (AWD_001) */}
-          <Modal visible={showAwards} animationType="slide" transparent>
-            <View style={styles.bottomSheetOverlay}>
-              <View style={styles.awardSheetContent}>
-                <View style={styles.sheetHeader}>
-                  <View>
-                    <Text style={styles.sheetTitle}>Give an Award</Text>
-                    <Text style={styles.sheetSubtitle}>Support the creator</Text>
-                  </View>
-                  <TouchableOpacity onPress={() => setShowAwards(false)}>
-                    <Ionicons name="close" size={22} color="#4B5563" />
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.coinBalanceBar}>
-                  <Ionicons name="wallet-outline" size={16} color="#D97706" />
-                  <Text style={styles.coinBalanceText}>Your balance: {coinsBalance} Coins</Text>
-                </View>
-
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.awardsGridScroll}>
-                  <View style={styles.awardsGridRow}>
-                    {awardsList.map(award => {
-                      const isSelected = selectedAward?.id === award.id;
-                      return (
-                        <TouchableOpacity 
-                          key={award.id}
-                          style={[styles.awardCard, isSelected && styles.awardCardSelected]}
-                          onPress={() => setSelectedAward(award)}
-                        >
-                          <Ionicons name={award.icon} size={28} color={award.color} />
-                          <Text style={styles.awardLabel}>{award.label}</Text>
-                          <Text style={styles.awardCoins}>{award.coins} c</Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </ScrollView>
-
-                <View style={styles.quantitySelectorRow}>
-                  <TouchableOpacity 
-                    style={styles.quantityBtn}
-                    onPress={() => setAwardQuantity(prev => Math.max(1, prev - 1))}
-                  >
-                    <Text style={styles.quantityBtnText}>-</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.quantityValue}>{awardQuantity}</Text>
-                  <TouchableOpacity 
-                    style={styles.quantityBtn}
-                    onPress={() => setAwardQuantity(prev => prev + 1)}
-                  >
-                    <Text style={styles.quantityBtnText}>+</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <TouchableOpacity style={styles.sendAwardBtn} onPress={handleSendAward}>
-                  <Text style={styles.sendAwardText}>
-                    Send Award {selectedAward ? `(${selectedAward.coins * awardQuantity} Coins)` : ''}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
-        </Modal>
-      )}
-
       {/* THREE-DOTS NAVIGATION DRAWER MODAL */}
       <Modal visible={showThreeDotsDrawer} animationType="slide" transparent>
         <View style={styles.drawerOverlay}>
@@ -983,7 +723,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
         </View>
       </Modal>
 
-      {/* FULL-SCREEN SLIDE-DOWN SEARCH OVERLAY */}
+      {/* UNIFIED SINGLE-PAGE SEARCH OVERLAY */}
       <Modal visible={showSearchWindow} animationType="slide" transparent={false}>
         <View style={styles.searchWindowContainer}>
           <View style={styles.searchWindowHeader}>
@@ -1008,60 +748,84 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.searchTabsRow}>
-            {['Communities', 'Messages'].map(st => (
-              <TouchableOpacity 
-                key={st} 
-                style={[styles.searchTabItem, searchTab === st && styles.searchTabItemActive]}
-                onPress={() => setSearchTab(st)}
-              >
-                <Text style={[styles.searchTabText, searchTab === st && styles.searchTabTextActive]}>{st}</Text>
-                {searchTab === st && <View style={styles.searchTabIndicator} />}
-              </TouchableOpacity>
-            ))}
-          </View>
-
+          {/* Single-Page Search Scroll view */}
           <ScrollView style={styles.searchResultsScroll} showsVerticalScrollIndicator={false}>
-            {searchTab === 'Communities' && (
-              <View>
-                <Text style={styles.searchResultSectionTitle}>Communities</Text>
-                {[...recentCommunities, ...joinedCommunities]
-                  .filter((comm, index, self) => 
-                    index === self.findIndex((t) => t.id === comm.id) &&
-                    comm.name.toLowerCase().includes(searchQuery.toLowerCase())
-                  )
-                  .map(comm => (
-                    <TouchableOpacity key={comm.id} style={styles.searchResultRow} onPress={() => { setShowSearchWindow(false); alert(`Navigating to ${comm.name}`); }}>
-                      <View style={[styles.communityIconBadge, { backgroundColor: `${comm.color}15` }]}>
-                        <Ionicons name={comm.icon} size={18} color={comm.color} />
-                      </View>
-                      <View style={styles.communityMeta}>
-                        <Text style={styles.communityName}>{comm.name}</Text>
-                        <Text style={styles.communityMembers}>{comm.members} members</Text>
-                      </View>
-                      <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
-                    </TouchableOpacity>
-                  ))}
-              </View>
-            )}
+            {/* Top Section: Communities */}
+            {(() => {
+              const matchedCommunities = [...recentCommunities, ...joinedCommunities].filter((comm, index, self) => 
+                index === self.findIndex((t) => t.id === comm.id) &&
+                comm.name.toLowerCase().includes(searchQuery.toLowerCase())
+              );
+              const visibleCommunities = showAllCommunities ? matchedCommunities : matchedCommunities.slice(0, 2);
 
-            {searchTab === 'Messages' && (
-              <View>
-                <Text style={styles.searchResultSectionTitle}>Messages & Posts</Text>
-                {posts
-                  .filter(p => p.text.toLowerCase().includes(searchQuery.toLowerCase()))
-                  .map(post => (
-                    <TouchableOpacity key={post.id} style={styles.searchPostResultCard} onPress={() => { setShowSearchWindow(false); setSelectedPost(post); }}>
-                      <View style={styles.searchPostAuthorRow}>
-                        <Image source={{ uri: post.authorAvatar }} style={styles.searchPostAvatar} />
-                        <Text style={styles.searchPostAuthorName}>{post.authorName}</Text>
-                        <Text style={styles.searchPostTime}>• {post.time}</Text>
-                      </View>
-                      <Text style={styles.searchPostText} numberOfLines={2}>{post.text}</Text>
-                    </TouchableOpacity>
-                  ))}
-              </View>
-            )}
+              return (
+                <View style={styles.searchSectionBlock}>
+                  <View style={styles.searchSectionHeaderRow}>
+                    <Text style={styles.searchResultSectionTitle}>Communities ({matchedCommunities.length})</Text>
+                    {matchedCommunities.length > 2 && !showAllCommunities && (
+                      <TouchableOpacity onPress={() => setShowAllCommunities(true)}>
+                        <Text style={styles.seeMoreBtnText}>See More</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
+                  {visibleCommunities.length > 0 ? (
+                    visibleCommunities.map(comm => (
+                      <TouchableOpacity key={comm.id} style={styles.searchResultRow} onPress={() => { setShowSearchWindow(false); alert(`Navigating to ${comm.name}`); }}>
+                        <View style={[styles.communityIconBadge, { backgroundColor: `${comm.color}15` }]}>
+                          <Ionicons name={comm.icon} size={18} color={comm.color} />
+                        </View>
+                        <View style={styles.communityMeta}>
+                          <Text style={styles.communityName}>{comm.name}</Text>
+                          <Text style={styles.communityMembers}>{comm.members} members</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                      </TouchableOpacity>
+                    ))
+                  ) : (
+                    <Text style={styles.emptySearchText}>No matching communities found.</Text>
+                  )}
+                </View>
+              );
+            })()}
+
+            <View style={styles.searchSectionDivider} />
+
+            {/* Bottom Section: Messages & Posts */}
+            {(() => {
+              const matchedPosts = posts.filter(p => p.text.toLowerCase().includes(searchQuery.toLowerCase()));
+              const visiblePosts = showAllMessages ? matchedPosts : matchedPosts.slice(0, 2);
+
+              return (
+                <View style={styles.searchSectionBlock}>
+                  <View style={styles.searchSectionHeaderRow}>
+                    <Text style={styles.searchResultSectionTitle}>Messages & Posts ({matchedPosts.length})</Text>
+                    {matchedPosts.length > 2 && !showAllMessages && (
+                      <TouchableOpacity onPress={() => setShowAllMessages(true)}>
+                        <Text style={styles.seeMoreBtnText}>See More</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
+                  {visiblePosts.length > 0 ? (
+                    visiblePosts.map(post => (
+                      <TouchableOpacity key={post.id} style={styles.searchPostResultCard} onPress={() => { setShowSearchWindow(false); setSelectedPost(post); }}>
+                        <View style={styles.searchPostAuthorRow}>
+                          <Image source={{ uri: post.authorAvatar }} style={styles.searchPostAvatar} />
+                          <Text style={styles.searchPostAuthorName}>{post.authorName}</Text>
+                          <Text style={styles.searchPostTime}>• {post.time}</Text>
+                        </View>
+                        <Text style={styles.searchPostText} numberOfLines={2}>{post.text}</Text>
+                      </TouchableOpacity>
+                    ))
+                  ) : (
+                    <Text style={styles.emptySearchText}>No matching posts found.</Text>
+                  )}
+                </View>
+              );
+            })()}
+
+            <View style={{ height: 40 }} />
           </ScrollView>
         </View>
       </Modal>
@@ -1653,138 +1417,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  detailContainer: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  detailHeader: {
-    flexDirection: 'row',
-    height: 90,
-    paddingTop: 44,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  backBtnWrapper: {
-    padding: 4,
-  },
-  detailHeaderTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  detailContent: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-  },
-  detailAuthorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  detailAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-  },
-  detailAuthorText: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  detailAuthorName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  detailAuthorHandle: {
-    fontSize: 11,
-    color: '#9CA3AF',
-  },
-  followBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: '#7C3AED',
-  },
-  followingBtn: {
-    backgroundColor: '#7C3AED',
-  },
-  followBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#7C3AED',
-  },
-  followingBtnText: {
-    color: '#FFFFFF',
-  },
-  detailBodyText: {
-    fontSize: 15,
-    color: '#1F2937',
-    lineHeight: 22,
-    marginBottom: 14,
-  },
-  detailPostImage: {
-    width: '100%',
-    height: 260,
-    borderRadius: 16,
-    marginBottom: 14,
-  },
-  imageGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 14,
-  },
-  gridImageItem: {
-    width: '32%',
-    height: 100,
-    borderRadius: 10,
-  },
-  detailTimestamp: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    marginBottom: 12,
-  },
-  statsDivider: {
-    height: 1,
-    backgroundColor: '#F3F4F6',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-  },
-  statItem: {
-    fontSize: 11,
-    color: '#6B7280',
-  },
-  statBold: {
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  interactionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 8,
-  },
-  interactBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    padding: 6,
-  },
-  interactBtnText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#4B5563',
-  },
   bottomSheetOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   commentSheetContent: {
@@ -1808,247 +1443,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1F2937',
   },
-  sheetSubtitle: {
-    fontSize: 10,
-    color: '#9CA3AF',
-  },
-  commentSortTabs: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  sortTab: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  sortTabActive: {
-    backgroundColor: '#F3E8FF',
-  },
-  sortTabText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#9CA3AF',
-  },
-  sortTabTextActive: {
-    color: '#7C3AED',
-    fontWeight: '700',
-  },
-  commentsList: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-  },
-  commentItem: {
-    marginBottom: 16,
-  },
-  commentMain: {
-    flexDirection: 'row',
-  },
-  commentAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  commentTextContent: {
-    flex: 1,
-    marginLeft: 10,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    padding: 10,
-  },
-  commentAuthor: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  commentHandle: {
-    fontWeight: '400',
-    color: '#9CA3AF',
-  },
-  commentText: {
-    fontSize: 12,
-    color: '#374151',
-    marginTop: 3,
-    lineHeight: 17,
-  },
-  replyItem: {
-    flexDirection: 'row',
-    marginLeft: 36,
-    marginTop: 8,
-  },
-  replyAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-  },
-  authorBadge: {
-    color: '#7C3AED',
-    fontWeight: '700',
-    fontSize: 10,
-  },
-  commentInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    gap: 8,
-  },
-  commentTextInput: {
-    flex: 1,
-    height: 40,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    fontSize: 12,
-    color: '#1F2937',
-  },
-  sendCommentBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#7C3AED',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  shareSheetContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-  },
-  shareGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-    marginVertical: 16,
-    justifyContent: 'flex-start',
-  },
-  shareItem: {
-    alignItems: 'center',
-    width: '21%',
-  },
-  shareIconBg: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  shareLabel: {
-    fontSize: 10,
-    color: '#6B7280',
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  cancelShareBtn: {
-    backgroundColor: '#FEE2E2',
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  cancelShareText: {
-    color: '#EF4444',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  awardSheetContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-  },
-  coinBalanceBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FEF3C7',
-    paddingVertical: 8,
-    borderRadius: 12,
-    marginVertical: 12,
-    gap: 6,
-  },
-  coinBalanceText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#D97706',
-  },
-  awardsGridScroll: {
-    marginVertical: 10,
-  },
-  awardsGridRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  awardCard: {
-    width: 80,
-    height: 90,
-    borderRadius: 14,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 6,
-  },
-  awardCardSelected: {
-    borderColor: '#7C3AED',
-    backgroundColor: '#F3E8FF',
-  },
-  awardLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginTop: 4,
-  },
-  awardCoins: {
-    fontSize: 9,
-    color: '#9CA3AF',
-    marginTop: 2,
-  },
-  quantitySelectorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 16,
-  },
-  quantityBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  quantityBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  quantityValue: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginHorizontal: 16,
-  },
-  sendAwardBtn: {
-    backgroundColor: '#7C3AED',
-    paddingVertical: 12,
-    borderRadius: 25,
-    alignItems: 'center',
-  },
-  sendAwardText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
+
   // THREE DOTS DRAWER STYLES
   drawerOverlay: {
     flex: 1,
@@ -2059,8 +1454,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     height: '80%',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 28,
   },
   drawerHeader: {
     flexDirection: 'row',
@@ -2154,6 +1553,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#EF4444',
   },
+
   // START COMMUNITY MODAL STYLES
   modalBg: {
     flex: 1,
@@ -2214,7 +1614,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  // SEARCH SLIDE DOWN STYLES
+
+  // UNIFIED SEARCH SLIDE DOWN STYLES
   searchWindowContainer: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -2252,52 +1653,35 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#7C3AED',
   },
-  searchTabsRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  searchTabItem: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 12,
-    position: 'relative',
-  },
-  searchTabItemActive: {},
-  searchTabText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#9CA3AF',
-  },
-  searchTabTextActive: {
-    color: '#7C3AED',
-    fontWeight: '700',
-  },
-  searchTabIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    width: 32,
-    height: 3,
-    backgroundColor: '#7C3AED',
-    borderTopLeftRadius: 3,
-    borderTopRightRadius: 3,
-  },
   searchResultsScroll: {
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 16,
+  },
+  searchSectionBlock: {
+    marginBottom: 20,
+  },
+  searchSectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
   },
   searchResultSectionTitle: {
     fontSize: 12,
     fontWeight: '700',
     color: '#9CA3AF',
     textTransform: 'uppercase',
-    marginBottom: 10,
+  },
+  seeMoreBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#7C3AED',
   },
   searchResultRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#F9FAFB',
   },
@@ -2334,5 +1718,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#4B5563',
     lineHeight: 17,
+  },
+  searchSectionDivider: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginVertical: 12,
+  },
+  emptySearchText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontStyle: 'italic',
+    paddingVertical: 8,
   },
 });
