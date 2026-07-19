@@ -41,7 +41,6 @@ const patchComponentFont = (Component) => {
           fontFamily = 'Inter-Medium';
         }
       }
-
       return React.cloneElement(origin, {
         style: [{ fontFamily }, origin.props.style],
       });
@@ -56,16 +55,24 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState('Splash');
   const [userEmail, setUserEmail] = useState('');
   const [hasSession, setHasSession] = useState(false);
+  const [isProfileCompleted, setIsProfileCompleted] = useState(false);
   const [isSessionLoaded, setIsSessionLoaded] = useState(false);
 
   useEffect(() => {
     async function checkSession() {
       try {
         const val = await safeStorage.getItem('user_session');
+        const prof = await safeStorage.getItem('user_profile');
         if (val) {
           const parsed = JSON.parse(val);
           if (parsed && parsed.isLoggedIn) {
             setHasSession(true);
+            if (prof) {
+              const parsedProf = JSON.parse(prof);
+              if (parsedProf && parsedProf.isProfileCompleted) {
+                setIsProfileCompleted(true);
+              }
+            }
           }
         }
       } catch (e) {
@@ -79,9 +86,13 @@ export default function App() {
 
   useEffect(() => {
     if (isSessionLoaded && hasSession) {
-      setCurrentScreen('Home');
+      if (isProfileCompleted) {
+        setCurrentScreen('Home');
+      } else {
+        setCurrentScreen('ProfileSetup');
+      }
     }
-  }, [isSessionLoaded, hasSession]);
+  }, [isSessionLoaded, hasSession, isProfileCompleted]);
 
   const [fontsLoaded] = useFonts({
     'Inter-Regular': Inter_400Regular,
@@ -119,7 +130,11 @@ export default function App() {
           <SplashScreen 
             onFinish={() => {
               if (hasSession) {
-                setCurrentScreen('Home');
+                if (isProfileCompleted) {
+                  setCurrentScreen('Home');
+                } else {
+                  setCurrentScreen('ProfileSetup');
+                }
               } else {
                 setCurrentScreen('GetStarted');
               }
@@ -139,7 +154,21 @@ export default function App() {
         return (
           <LoginScreen
             onBack={() => setCurrentScreen('GetStarted')}
-            onLoginSuccess={() => setCurrentScreen('Home')}
+            onLoginSuccess={async () => {
+              const prof = await safeStorage.getItem('user_profile');
+              if (prof) {
+                const parsed = JSON.parse(prof);
+                if (parsed && parsed.isProfileCompleted) {
+                  setHasSession(true);
+                  setIsProfileCompleted(true);
+                  setCurrentScreen('Home');
+                  return;
+                }
+              }
+              setHasSession(true);
+              setIsProfileCompleted(false);
+              setCurrentScreen('ProfileSetup');
+            }}
             onForgotPassword={() => setCurrentScreen('ForgotPassword')}
             onGoToRegister={() => setCurrentScreen('Register')}
           />
@@ -178,7 +207,11 @@ export default function App() {
         return (
           <ProfileSetupScreen
             onBack={() => setCurrentScreen('PhoneNumber')}
-            onContinue={(profileData) => setCurrentScreen('AllSet')}
+            onContinue={(profileData) => {
+              setIsProfileCompleted(true);
+              setHasSession(true);
+              setCurrentScreen('AllSet');
+            }}
           />
         );
 
@@ -211,8 +244,10 @@ export default function App() {
             onLogout={async () => {
               try {
                 await safeStorage.removeItem('user_session');
+                await safeStorage.removeItem('user_profile');
               } catch (e) {}
               setHasSession(false);
+              setIsProfileCompleted(false);
               setCurrentScreen('GetStarted');
             }} 
             onCreatePress={() => setCurrentScreen('CreateContent')}
@@ -233,11 +268,10 @@ export default function App() {
         return (
           <ForgotPasswordScreen
             onBack={() => setCurrentScreen('Login')}
-            onContinue={(email) => {
+            onCodeSent={(email) => {
               setUserEmail(email);
               setCurrentScreen('ResetPassword');
             }}
-            onGoToLogin={() => setCurrentScreen('Login')}
           />
         );
       
@@ -247,27 +281,31 @@ export default function App() {
             email={userEmail}
             onBack={() => setCurrentScreen('ForgotPassword')}
             onResetSuccess={() => setCurrentScreen('Login')}
-            onGoToLogin={() => setCurrentScreen('Login')}
           />
         );
       
       default:
-        return <GetStartedScreen onLogin={() => setCurrentScreen('Login')} onRegister={() => setCurrentScreen('Register')} />;
+        return (
+          <GetStartedScreen
+            onLogin={() => setCurrentScreen('Login')}
+            onRegister={() => setCurrentScreen('Register')}
+          />
+        );
     }
   };
 
   if (!fontsLoaded) {
-    return <SplashScreen onFinish={() => {}} />;
+    return null;
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar style="auto" />
+      <StatusBar style="dark" />
       <Animated.View 
         style={[
-          styles.screenContainer, 
+          styles.animatedScreen, 
           { 
-            opacity: fadeAnim, 
+            opacity: fadeAnim,
             transform: [{ translateY: slideAnim }] 
           }
         ]}
@@ -283,7 +321,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  screenContainer: {
+  animatedScreen: {
     flex: 1,
   },
 });

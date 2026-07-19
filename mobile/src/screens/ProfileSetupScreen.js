@@ -61,6 +61,7 @@ export default function ProfileSetupScreen({ onBack, onContinue, initialUserData
       gender: gender,
       bio: bio.trim(),
       isLoggedIn: true,
+      isProfileCompleted: true,
       updatedAt: new Date().toISOString()
     };
 
