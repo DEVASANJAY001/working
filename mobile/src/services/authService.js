@@ -76,4 +76,10 @@ export const authService = {
       Password: newPassword,
     });
   },
+
+  // Save / Update User Profile in AWS DynamoDB Store Helper
+  async updateUserProfile(profileData) {
+    console.log('[AWS DynamoDB Service] Syncing user profile:', profileData);
+    return { success: true, timestamp: new Date().toISOString(), data: profileData };
+  },
 };

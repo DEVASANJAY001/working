@@ -13,6 +13,7 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import EmailVerificationScreen from './src/screens/EmailVerificationScreen';
 import PhoneNumberScreen from './src/screens/PhoneNumberScreen';
 import ProfileSetupScreen from './src/screens/ProfileSetupScreen';
+import AllSetScreen from './src/screens/AllSetScreen';
 import LanguageSelectionScreen from './src/screens/LanguageSelectionScreen';
 import InterestSelectionScreen from './src/screens/InterestSelectionScreen';
 import HomeDashboardScreen from './src/screens/HomeDashboardScreen';
@@ -177,7 +178,14 @@ export default function App() {
         return (
           <ProfileSetupScreen
             onBack={() => setCurrentScreen('PhoneNumber')}
-            onContinue={() => setCurrentScreen('LanguageSelection')}
+            onContinue={(profileData) => setCurrentScreen('AllSet')}
+          />
+        );
+
+      case 'AllSet':
+        return (
+          <AllSetScreen
+            onEnter={() => setCurrentScreen('Home')}
           />
         );
       

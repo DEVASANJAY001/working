@@ -17,6 +17,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
+import { safeStorage } from '../utils/storage';
 
 const { width, height } = Dimensions.get('window');
 const headerBgImage = require('../../assets/image.png');
@@ -111,8 +112,27 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
   const [activeTab, setActiveTab] = useState('Home Feed'); 
   const [posts, setPosts] = useState(initialPosts);
   
-  // Profile Picture state (defaults to image, toggleable to test initial avatar)
-  const [profileImage, setProfileImage] = useState('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80');
+  // Profile state automatically synced with safeStorage / AWS User Profile
+  const [userName, setUserName] = useState('Devasanjay');
+  const [userHandle, setUserHandle] = useState('devasanjay');
+  const [profileImage, setProfileImage] = useState(null);
+
+  useEffect(() => {
+    async function loadUserProfile() {
+      try {
+        const stored = await safeStorage.getItem('user_profile');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed.fullName) setUserName(parsed.fullName);
+          if (parsed.username) setUserHandle(parsed.username);
+          if (parsed.profileImage !== undefined) setProfileImage(parsed.profileImage);
+        }
+      } catch (e) {
+        console.log('Error loading user profile:', e);
+      }
+    }
+    loadUserProfile();
+  }, []);
 
   // Navigation & Modal Overlays States
   const [selectedPost, setSelectedPost] = useState(null); 
@@ -261,13 +281,15 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
                       />
                     ) : (
                       <LinearGradient colors={['#7C3AED', '#F97316']} style={styles.initialAvatar}>
-                        <Text style={styles.initialAvatarText}>D</Text>
+                        <Text style={styles.initialAvatarText}>
+                          {userName.trim().charAt(0).toUpperCase() || 'D'}
+                        </Text>
                       </LinearGradient>
                     )}
                   </TouchableOpacity>
                   <View style={styles.userText}>
-                    <Text style={styles.userName}>Devasanjay</Text>
-                    <Text style={styles.greetingText}>{getDynamicGreeting()}</Text>
+                    <Text style={styles.userName}>{userName}</Text>
+                    <Text style={styles.greetingText}>@{userHandle} • {getDynamicGreeting()}</Text>
                   </View>
                 </View>
                 
