@@ -1,1782 +1,1334 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Image, 
-  ScrollView, 
-  TouchableOpacity, 
-  TextInput, 
-  Modal, 
-  Dimensions, 
-  Animated 
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  ScrollView,
+  FlatList,
+  TouchableOpacity,
+  TextInput,
+  Modal,
+  Dimensions,
+  Animated,
+  ActivityIndicator,
+  RefreshControl,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { postsService, communitiesService, notificationsService } from '../services/apiService';
 
 const { width, height } = Dimensions.get('window');
 
-// Mock Data for Stories
-const stories = [
-  { id: '1', name: 'Your Story', image: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80', active: false },
-  { id: '2', name: 'Nicole', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80', active: true },
-  { id: '3', name: 'Algar Tech', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80', active: true },
-  { id: '4', name: 'Green India', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80', active: true },
-  { id: '5', name: 'Tech World', image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&auto=format&fit=crop&q=80', active: true },
+// ─── Category Data ─────────────────────────────────────────────────────────────
+const CATEGORIES = [
+  { id: 'cat1', icon: '🏏', label: 'Cricket' },
+  { id: 'cat2', icon: '🎬', label: 'Bollywood' },
+  { id: 'cat3', icon: '🍛', label: 'Food' },
+  { id: 'cat4', icon: '💻', label: 'Tech' },
+  { id: 'cat5', icon: '🎵', label: 'Music' },
+  { id: 'cat6', icon: '📰', label: 'News' },
+  { id: 'cat7', icon: '🧘', label: 'Wellness' },
+  { id: 'cat8', icon: '🌆', label: 'Local' },
+  { id: 'cat9', icon: '🗳️', label: 'Politics' },
+  { id: 'cat10', icon: '🎭', label: 'Culture' },
 ];
 
-// Mock Feed Posts Data
-const initialPosts = [
-  {
-    id: 'post_1',
-    authorName: 'British Ecological',
-    authorHandle: 'britishecological',
-    authorAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80',
-    time: '2h',
-    text: 'Introducing our groundbreaking technology for wind turbines, designed to harness the power of nature more efficiently than ever before.',
-    image: 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=600&auto=format&fit=crop&q=80',
-    likes: 784,
-    commentsCount: 14,
-    shares: 160,
-    awards: 32,
-    isLiked: false,
-    isFollowing: false,
-  },
-  {
-    id: 'post_2',
-    authorName: 'Tech World',
-    authorHandle: 'techworldindia',
-    authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-    time: '3h',
-    text: 'BREAKING: New AI model achieves 98% accuracy in solving real-world problems.',
-    image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
-    likes: 128,
-    commentsCount: 24,
-    shares: 89,
-    awards: 12,
-    isLiked: false,
-    isFollowing: true,
-  },
-  {
-    id: 'post_3',
-    authorName: 'Nicole Edison',
-    authorHandle: 'nicole_edison',
-    authorAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80',
-    time: '1h',
-    text: 'Just finished an amazing photoshoot for our new eco-friendly product line! 📸🌿',
-    images: [
-      'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=300&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=300&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1472214222555-d404758b1c42?w=300&auto=format&fit=crop&q=80'
-    ],
-    likes: 64,
-    commentsCount: 8,
-    shares: 23,
-    awards: 4,
-    isLiked: false,
-    isFollowing: true,
-  }
+// ─── Stories Data ──────────────────────────────────────────────────────────────
+const STATIC_STORIES = [
+  { id: 's2', name: 'Rahul', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80', active: true },
+  { id: 's3', name: 'Priya', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80', active: true },
+  { id: 's4', name: 'Arjun', image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&auto=format&fit=crop&q=80', active: true },
+  { id: 's5', name: 'Meera', image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&auto=format&fit=crop&q=80', active: true },
+  { id: 's6', name: 'Dev', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80', active: false },
+  { id: 's7', name: 'Kavya', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80', active: true },
 ];
 
-export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
-  const [activeTab, setActiveTab] = useState('Home Feed'); // Home Feed, Local Feed, Trending Feed, Following Feed
-  const [posts, setPosts] = useState(initialPosts);
-  
-  // Navigation & Modal Overlays States
-  const [selectedPost, setSelectedPost] = useState(null); // PST_001 Post Detail
-  const [showComments, setShowComments] = useState(false); // CMT_001 Comment Thread Overlay
-  const [showShare, setShowShare] = useState(false); // SHR_001 Share Overlay
-  const [showAwards, setShowAwards] = useState(false); // AWD_001 Award Overlay
-  
-  // Coin Balance
+const FEED_TABS = [
+  { id: 'home', label: '🎯 For You' },
+  { id: 'local', label: '📍 Local' },
+  { id: 'trending', label: '🔥 Trending' },
+  { id: 'following', label: '⭐ Following' },
+];
+
+const AWARD_TYPES = [
+  { id: 'aw1', label: 'Excellent', coins: 100, icon: 'star', color: '#FBBF24' },
+  { id: 'aw2', label: 'Inspiring', coins: 200, icon: 'heart', color: '#EC4899' },
+  { id: 'aw3', label: 'Brilliant', coins: 500, icon: 'flash', color: '#3B82F6' },
+  { id: 'aw4', label: 'Superb', coins: 800, icon: 'ribbon', color: '#10B981' },
+  { id: 'aw5', label: 'Outstanding', coins: 1000, icon: 'trophy', color: '#F59E0B' },
+  { id: 'aw6', label: 'Legendary', coins: 2000, icon: 'flame', color: '#EF4444' },
+  { id: 'aw7', label: 'Epic', coins: 5000, icon: 'shield', color: '#8B5CF6' },
+  { id: 'aw8', label: 'Diamond', coins: 10000, icon: 'diamond', color: '#06B6D4' },
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const formatCount = (n) => {
+  if (!n) return '0';
+  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+  return String(n);
+};
+
+const getGreeting = () => {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+};
+
+const getFirstName = (name) => {
+  if (!name) return 'there';
+  return name.split(' ')[0];
+};
+
+// ─── Sub-Components ────────────────────────────────────────────────────────────
+const PollWidget = ({ poll, onVote }) => {
+  const total = poll.totalVotes || 1;
+  return (
+    <View style={styles.pollContainer}>
+      {poll.options.map(opt => {
+        const pct = Math.round((opt.votes / total) * 100);
+        const isVoted = poll.voted === opt.id;
+        return (
+          <TouchableOpacity key={opt.id} style={styles.pollOption} onPress={() => onVote && onVote(opt.id)}>
+            <View style={[styles.pollBar, { width: `${pct}%` }]} />
+            <View style={styles.pollOptionContent}>
+              <Text style={[styles.pollOptionText, isVoted && styles.pollOptionVoted]}>{opt.text}</Text>
+              <Text style={styles.pollPct}>{pct}%</Text>
+            </View>
+          </TouchableOpacity>
+        );
+      })}
+      <Text style={styles.pollMeta}>{formatCount(total)} votes • Ends in {poll.endsIn}</Text>
+    </View>
+  );
+};
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
+export default function HomeDashboardScreen({ currentUser, onLogout, onCreatePress, onNavigate }) {
+  const [activeTab, setActiveTab] = useState('home');
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [notifCount, setNotifCount] = useState(3);
+  const [msgCount, setMsgCount] = useState(4);
+
+  // Overlay states
+  const [selectedPost, setSelectedPost] = useState(null);   // PST_001
+  const [showComments, setShowComments] = useState(false);  // CMT_001
+  const [showShare, setShowShare] = useState(false);        // SHR_001
+  const [showAwards, setShowAwards] = useState(false);      // AWD_001
+  const [showProfile, setShowProfile] = useState(false);    // Profile menu
+
+  // Comments
+  const [commentsList, setCommentsList] = useState([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [newCommentText, setNewCommentText] = useState('');
+  const [commentSort, setCommentSort] = useState('Top');
+
+  // Awards
   const [coinsBalance, setCoinsBalance] = useState(1250);
   const [selectedAward, setSelectedAward] = useState(null);
   const [awardQuantity, setAwardQuantity] = useState(1);
 
-  // Sorting for Comments
-  const [commentSort, setCommentSort] = useState('Top'); // Top, Latest
-  const [newCommentText, setNewCommentText] = useState('');
-  
-  // Mock Comments List
-  const [commentsList, setCommentsList] = useState([
-    {
-      id: 'c1',
-      author: 'James Lee',
-      handle: 'jameslee',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
-      time: '2h',
-      text: 'This is incredible! The future of clean energy looks promising. ⚡🌱',
-      likes: 8,
-      isLiked: false,
-      replies: [
-        {
-          id: 'r1',
-          author: 'British Ecological',
-          handle: 'britishecological',
-          avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80',
-          time: '1h',
-          text: "Thank you! We're working hard to make it a sustainable future.",
-          likes: 5,
-          isAuthor: true,
-        }
-      ]
-    },
-    {
-      id: 'c2',
-      author: 'Priya Natarajan',
-      handle: 'priyanatarajan',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-      time: '1h',
-      text: 'Great initiative! When will this be available for public use?',
-      likes: 5,
-      isLiked: false,
-      replies: [
-        {
-          id: 'r2',
-          author: 'British Ecological',
-          handle: 'britishecological',
-          avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80',
-          time: '45m',
-          text: "Soon! We'll share updates here. Stay tuned!",
-          likes: 3,
-          isAuthor: true,
-        }
-      ]
-    }
-  ]);
+  // Bottom Nav
+  const [activeNav, setActiveNav] = useState('home');
 
-  // Handle Post Like
-  const handleToggleLike = (postId) => {
+  // Animated FAB
+  const fabScale = useRef(new Animated.Value(1)).current;
+
+  // ─── Load Feed ──────────────────────────────────────────────────────────────
+  const loadFeed = useCallback(async (tab = activeTab, isRefresh = false) => {
+    if (!isRefresh) setLoading(true);
+    try {
+      const data = await postsService.getFeed(tab);
+      setPosts(data);
+    } catch (e) {
+      console.warn('Feed error:', e);
+    }
+    setLoading(false);
+    setRefreshing(false);
+  }, [activeTab]);
+
+  useEffect(() => { loadFeed(); }, []);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setLoading(true);
+    postsService.getFeed(tab).then(data => {
+      setPosts(data);
+      setLoading(false);
+    });
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadFeed(activeTab, true);
+  };
+
+  // ─── Post Actions ────────────────────────────────────────────────────────────
+  const handleToggleLike = async (postId) => {
     setPosts(prev => prev.map(p => {
       if (p.id === postId) {
-        return {
-          ...p,
-          isLiked: !p.isLiked,
-          likes: p.isLiked ? p.likes - 1 : p.likes + 1
-        };
+        return { ...p, isLiked: !p.isLiked, likes: p.isLiked ? p.likes - 1 : p.likes + 1 };
       }
       return p;
     }));
-    if (selectedPost && selectedPost.id === postId) {
-      setSelectedPost(prev => ({
-        ...prev,
-        isLiked: !prev.isLiked,
-        likes: prev.isLiked ? prev.likes - 1 : prev.likes + 1
-      }));
+    if (selectedPost?.id === postId) {
+      setSelectedPost(prev => ({ ...prev, isLiked: !prev.isLiked, likes: prev.isLiked ? prev.likes - 1 : prev.likes + 1 }));
     }
+    await postsService.likePost(postId);
   };
 
-  // Handle Follow
-  const handleToggleFollow = (postId) => {
+  const handleToggleSave = async (postId) => {
     setPosts(prev => prev.map(p => {
-      if (p.id === postId) {
-        return { ...p, isFollowing: !p.isFollowing };
-      }
+      if (p.id === postId) return { ...p, isSaved: !p.isSaved };
       return p;
     }));
-    if (selectedPost && selectedPost.id === postId) {
-      setSelectedPost(prev => ({ ...prev, isFollowing: !prev.isFollowing }));
+    if (selectedPost?.id === postId) {
+      setSelectedPost(prev => ({ ...prev, isSaved: !prev.isSaved }));
     }
+    await postsService.savePost(postId);
   };
 
-  // Add Comment
-  const handleAddComment = () => {
+  const handleOpenPost = async (post) => {
+    setSelectedPost(post);
+    setShowComments(false);
+    setCommentsLoading(true);
+    const comments = await postsService.getComments(post.id);
+    setCommentsList(comments);
+    setCommentsLoading(false);
+  };
+
+  const handleAddComment = async () => {
     if (!newCommentText.trim()) return;
+    const userDisplayName = currentUser?.name || 'You';
+    const userHandle = currentUser?.username || 'user';
+    const userAvatar = currentUser?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80';
     const newComment = {
       id: `c_${Date.now()}`,
-      author: 'Devasanjay',
-      handle: 'devasanjay',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80',
+      authorName: userDisplayName,
+      authorHandle: `@${userHandle}`,
+      authorAvatar: userAvatar,
+      badgeLabel: null,
       time: 'Just now',
       text: newCommentText,
       likes: 0,
       isLiked: false,
-      replies: []
+      replies: [],
     };
-    setCommentsList([newComment, ...commentsList]);
+    setCommentsList(prev => [newComment, ...prev]);
     setNewCommentText('');
-
-    // Update comment count on post
     if (selectedPost) {
-      setPosts(prev => prev.map(p => {
-        if (p.id === selectedPost.id) {
-          return { ...p, commentsCount: p.commentsCount + 1 };
-        }
-        return p;
-      }));
+      setPosts(prev => prev.map(p => p.id === selectedPost.id ? { ...p, commentsCount: p.commentsCount + 1 } : p));
       setSelectedPost(prev => ({ ...prev, commentsCount: prev.commentsCount + 1 }));
     }
+    await postsService.addComment(selectedPost?.id, newCommentText);
   };
 
-  // Send Award
+  const handleVotePoll = (postId, optionId) => {
+    setPosts(prev => prev.map(p => {
+      if (p.id === postId && p.poll && !p.poll.voted) {
+        const updatedOptions = p.poll.options.map(o =>
+          o.id === optionId ? { ...o, votes: o.votes + 1 } : o
+        );
+        return { ...p, poll: { ...p.poll, options: updatedOptions, voted: optionId, totalVotes: p.poll.totalVotes + 1 } };
+      }
+      return p;
+    }));
+  };
+
   const handleSendAward = () => {
     if (!selectedAward) return;
     const cost = selectedAward.coins * awardQuantity;
     if (coinsBalance < cost) {
-      alert("Insufficient coins balance!");
+      Alert.alert('Insufficient Coins', 'You don\'t have enough coins for this award.');
       return;
     }
     setCoinsBalance(prev => prev - cost);
-    setShowAwards(false);
-    
-    // Increment award count
     if (selectedPost) {
-      setPosts(prev => prev.map(p => {
-        if (p.id === selectedPost.id) {
-          return { ...p, awards: p.awards + awardQuantity };
-        }
-        return p;
-      }));
+      setPosts(prev => prev.map(p => p.id === selectedPost.id ? { ...p, awards: p.awards + awardQuantity } : p));
       setSelectedPost(prev => ({ ...prev, awards: prev.awards + awardQuantity }));
     }
-    alert(`Successfully sent ${awardQuantity} ${selectedAward.label} Award(s)!`);
+    setShowAwards(false);
+    setSelectedAward(null);
+    setAwardQuantity(1);
+    Alert.alert('Award Sent! 🏆', `You sent ${awardQuantity}x ${selectedAward.label} award!`);
   };
 
-  // Award Types Definition
-  const awardsList = [
-    { id: 'aw1', label: 'Excellent', coins: 100, icon: 'star', color: '#FBBF24' },
-    { id: 'aw2', label: 'Inspiring', coins: 200, icon: 'heart', color: '#EC4899' },
-    { id: 'aw3', label: 'Brilliant', coins: 500, icon: 'flash', color: '#3B82F6' },
-    { id: 'aw4', label: 'Superb', coins: 800, icon: 'ribbon', color: '#10B981' },
-    { id: 'aw5', label: 'Outstanding', coins: 1000, icon: 'trophy', color: '#F59E0B' },
-    { id: 'aw6', label: 'Legendary', coins: 2000, icon: 'flame', color: '#EF4444' },
-    { id: 'aw7', label: 'Epic', coins: 5000, icon: 'shield', color: '#8B5CF6' },
-    { id: 'aw8', label: 'Diamond', coins: 10000, icon: 'diamond', color: '#06B6D4' },
-  ];
+  // ─── User Info ───────────────────────────────────────────────────────────────
+  const displayName = getFirstName(currentUser?.name);
+  const userAvatar = currentUser?.avatar;
 
-  return (
-    <View style={styles.container}>
-      <StatusBar style="dark" />
-      
-      {/* 1. Header (Greeting + Brand + Notification Badge) */}
-      <View style={styles.topHeader}>
-        <View style={styles.headerRow}>
-          <View style={styles.userProfile}>
-            <TouchableOpacity onPress={onLogout}>
-              <Image 
-                source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80' }} 
-                style={styles.avatarImg} 
-              />
-            </TouchableOpacity>
-            <View style={styles.userText}>
-              <Text style={styles.userName}>Devasanjay 👋</Text>
-              <Text style={styles.greetingText}>Good Morning</Text>
+  // ─── Render Post Card ────────────────────────────────────────────────────────
+  const renderPostCard = ({ item: post }) => (
+    <TouchableOpacity
+      style={styles.postCard}
+      activeOpacity={0.97}
+      onPress={() => handleOpenPost(post)}
+    >
+      {/* Post Header */}
+      <View style={styles.postHeader}>
+        <View style={styles.postHeaderLeft}>
+          <View style={styles.communityIconBox}>
+            <Text style={styles.communityIconText}>{post.communityIcon}</Text>
+          </View>
+          <View style={styles.postHeaderInfo}>
+            <Text style={styles.postCommunity}>{post.community}</Text>
+            <Text style={styles.postMeta}>
+              <Text style={styles.postAuthor}>{post.authorHandle}</Text>
+              {' • '}{post.time}
+            </Text>
+          </View>
+        </View>
+        <TouchableOpacity style={styles.postMoreBtn}>
+          <Ionicons name="ellipsis-horizontal" size={18} color="#9CA3AF" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Badge */}
+      {post.badgeLabel && (
+        <View style={styles.badgeRow}>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>⭐ {post.badgeLabel}</Text>
+          </View>
+        </View>
+      )}
+
+      {/* Post Text */}
+      <Text style={styles.postText} numberOfLines={3}>{post.text}</Text>
+
+      {/* Post Media */}
+      {post.type === 'image' && post.image && (
+        <Image source={{ uri: post.image }} style={styles.postImage} resizeMode="cover" />
+      )}
+      {post.type === 'gallery' && post.images?.length > 0 && (
+        <View style={styles.galleryRow}>
+          <Image source={{ uri: post.images[0] }} style={styles.galleryMain} resizeMode="cover" />
+          {post.images.length > 1 && (
+            <View style={styles.galleryCol}>
+              <Image source={{ uri: post.images[1] }} style={styles.galleryThumb} resizeMode="cover" />
+              {post.images.length > 2 && (
+                <View style={styles.galleryThumbExtra}>
+                  <Image source={{ uri: post.images[2] }} style={styles.galleryThumb} resizeMode="cover" />
+                  {post.images.length > 3 && (
+                    <View style={styles.galleryMore}>
+                      <Text style={styles.galleryMoreText}>+{post.images.length - 3}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
             </View>
+          )}
+        </View>
+      )}
+      {post.type === 'poll' && post.poll && (
+        <PollWidget poll={post.poll} onVote={(optId) => handleVotePoll(post.id, optId)} />
+      )}
+
+      {/* Post Actions */}
+      <View style={styles.postActions}>
+        {/* Vote */}
+        <View style={styles.voteGroup}>
+          <TouchableOpacity
+            style={[styles.voteBtn, post.isLiked && styles.voteBtnActive]}
+            onPress={() => handleToggleLike(post.id)}
+          >
+            <Ionicons
+              name={post.isLiked ? 'arrow-up-circle' : 'arrow-up-circle-outline'}
+              size={22}
+              color={post.isLiked ? '#FF6B00' : '#6B7280'}
+            />
+            <Text style={[styles.voteCount, post.isLiked && styles.voteCountActive]}>
+              {formatCount(post.likes)}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.voteBtn}>
+            <Ionicons name="arrow-down-circle-outline" size={22} color="#6B7280" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Comments */}
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={() => { handleOpenPost(post); setShowComments(true); }}
+        >
+          <Ionicons name="chatbubble-outline" size={20} color="#6B7280" />
+          <Text style={styles.actionBtnText}>{formatCount(post.commentsCount)}</Text>
+        </TouchableOpacity>
+
+        {/* Share */}
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={() => { setSelectedPost(post); setShowShare(true); }}
+        >
+          <Ionicons name="share-social-outline" size={20} color="#6B7280" />
+          <Text style={styles.actionBtnText}>{formatCount(post.shares)}</Text>
+        </TouchableOpacity>
+
+        {/* Save */}
+        <TouchableOpacity style={styles.actionBtn} onPress={() => handleToggleSave(post.id)}>
+          <Ionicons
+            name={post.isSaved ? 'bookmark' : 'bookmark-outline'}
+            size={20}
+            color={post.isSaved ? '#FF6B00' : '#6B7280'}
+          />
+        </TouchableOpacity>
+
+        {/* Award */}
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={() => { setSelectedPost(post); setSelectedAward(null); setAwardQuantity(1); setShowAwards(true); }}
+        >
+          <Ionicons name="trophy-outline" size={20} color="#6B7280" />
+          {post.awards > 0 && <Text style={styles.actionBtnText}>{formatCount(post.awards)}</Text>}
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  );
+
+  // ─── Story Item ──────────────────────────────────────────────────────────────
+  const renderStory = (item) => (
+    <TouchableOpacity key={item.id} style={styles.storyItem}>
+      <View style={[styles.storyRing, item.active && styles.storyRingActive]}>
+        <Image source={{ uri: item.image }} style={styles.storyAvatar} />
+      </View>
+      <Text style={styles.storyName} numberOfLines={1}>{item.name}</Text>
+    </TouchableOpacity>
+  );
+
+  // ─── Header ──────────────────────────────────────────────────────────────────
+  const renderHeader = () => (
+    <View style={styles.feedHeader}>
+      {/* App Header */}
+      <View style={styles.appHeader}>
+        <View style={styles.appHeaderLeft}>
+          <View style={styles.appLogo}>
+            <LinearGradient colors={['#FF6B00', '#FF9F4A']} style={styles.logoGradient}>
+              <Text style={styles.logoText}>D</Text>
+            </LinearGradient>
           </View>
-          
-          <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.actionIconButton}>
-              <Ionicons name="search" size={20} color="#1F2937" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionIconButton}>
-              <Ionicons name="notifications-outline" size={20} color="#1F2937" />
-              <View style={styles.badge} />
-            </TouchableOpacity>
+          <View>
+            <Text style={styles.greetingText}>{getGreeting()},</Text>
+            <Text style={styles.userNameText}>{displayName} 👋</Text>
           </View>
+        </View>
+        <View style={styles.appHeaderRight}>
+          <TouchableOpacity style={styles.headerIconBtn} onPress={() => onNavigate && onNavigate('Discover')}>
+            <Ionicons name="search-outline" size={24} color="#1F2937" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerIconBtn} onPress={() => onNavigate && onNavigate('Notifications')}>
+            <Ionicons name="notifications-outline" size={24} color="#1F2937" />
+            {notifCount > 0 && (
+              <View style={styles.badge2}>
+                <Text style={styles.badge2Text}>{notifCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerIconBtn} onPress={() => onNavigate && onNavigate('Messages')}>
+            <Ionicons name="chatbubble-outline" size={23} color="#1F2937" />
+            {msgCount > 0 && (
+              <View style={styles.badge2}>
+                <Text style={styles.badge2Text}>{msgCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowProfile(true)}>
+            {userAvatar ? (
+              <Image source={{ uri: userAvatar }} style={styles.headerAvatar} />
+            ) : (
+              <View style={styles.headerAvatarFallback}>
+                <Text style={styles.headerAvatarFallbackText}>
+                  {(currentUser?.name || 'U')[0].toUpperCase()}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* 2. Top Feeds Swiper Navigation */}
-      <View style={styles.tabsRow}>
+      {/* Feed Tabs */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.tabsContainer}
+        contentContainerStyle={styles.tabsContent}
+      >
+        {FEED_TABS.map(tab => (
+          <TouchableOpacity
+            key={tab.id}
+            style={[styles.tab, activeTab === tab.id && styles.tabActive]}
+            onPress={() => handleTabChange(tab.id)}
+          >
+            <Text style={[styles.tabText, activeTab === tab.id && styles.tabTextActive]}>
+              {tab.label}
+            </Text>
+            {activeTab === tab.id && <View style={styles.tabIndicator} />}
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {/* ── Categories ── (separate container per blueprint) */}
+      <View style={styles.categoriesSection}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoriesList}
+        >
+          {CATEGORIES.map(cat => (
+            <TouchableOpacity
+              key={cat.id}
+              style={[styles.categoryChip, selectedCategory === cat.id && styles.categoryChipActive]}
+              onPress={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}
+            >
+              <Text style={styles.categoryIcon}>{cat.icon}</Text>
+              <Text style={[styles.categoryLabel, selectedCategory === cat.id && styles.categoryLabelActive]}>
+                {cat.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* ── Stories ── (separate container per blueprint) */}
+      <View style={styles.storiesSection}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.storiesList}
+        >
+          {/* My Story */}
+          <TouchableOpacity style={styles.storyItem}>
+            <View style={styles.myStoryBox}>
+              {userAvatar ? (
+                <Image source={{ uri: userAvatar }} style={styles.storyAvatar} />
+              ) : (
+                <View style={styles.myStoryPlaceholder}>
+                  <Text style={styles.myStoryInitial}>
+                    {(currentUser?.name || 'U')[0].toUpperCase()}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.addStoryBtn}>
+                <Ionicons name="add" size={12} color="#fff" />
+              </View>
+            </View>
+            <Text style={styles.storyName} numberOfLines={1}>Your Story</Text>
+          </TouchableOpacity>
+          {STATIC_STORIES.map(s => renderStory(s))}
+        </ScrollView>
+      </View>
+    </View>
+  );
+
+  // ─── Post Detail Modal (PST_001) ──────────────────────────────────────────────
+  const renderPostDetail = () => {
+    if (!selectedPost) return null;
+    return (
+      <Modal visible={!!selectedPost} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setSelectedPost(null)}>
+        <View style={styles.modalContainer}>
+          {/* Header */}
+          <View style={styles.modalHeader}>
+            <TouchableOpacity style={styles.modalBack} onPress={() => { setSelectedPost(null); setShowComments(false); }}>
+              <Ionicons name="arrow-back" size={24} color="#1F2937" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>{selectedPost.community}</Text>
+            <TouchableOpacity style={styles.modalBack}>
+              <Ionicons name="ellipsis-horizontal" size={24} color="#1F2937" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
+            {/* Author */}
+            <View style={styles.detailAuthorRow}>
+              <Image source={{ uri: selectedPost.authorAvatar }} style={styles.detailAvatar} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.detailAuthorName}>{selectedPost.authorName}</Text>
+                <Text style={styles.detailAuthorMeta}>{selectedPost.authorHandle} • {selectedPost.time}</Text>
+              </View>
+            </View>
+
+            {/* Content */}
+            <Text style={styles.detailText}>{selectedPost.text}</Text>
+            {selectedPost.type === 'image' && selectedPost.image && (
+              <Image source={{ uri: selectedPost.image }} style={styles.detailImage} resizeMode="cover" />
+            )}
+            {selectedPost.type === 'gallery' && selectedPost.images?.length > 0 && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 12 }}>
+                {selectedPost.images.map((img, i) => (
+                  <Image key={i} source={{ uri: img }} style={styles.detailGalleryImg} resizeMode="cover" />
+                ))}
+              </ScrollView>
+            )}
+            {selectedPost.type === 'poll' && selectedPost.poll && (
+              <PollWidget poll={selectedPost.poll} onVote={(optId) => handleVotePoll(selectedPost.id, optId)} />
+            )}
+
+            {/* Actions */}
+            <View style={styles.detailActions}>
+              <TouchableOpacity
+                style={[styles.detailActionBtn, selectedPost.isLiked && styles.detailActionActive]}
+                onPress={() => handleToggleLike(selectedPost.id)}
+              >
+                <Ionicons name={selectedPost.isLiked ? 'arrow-up-circle' : 'arrow-up-circle-outline'} size={22} color={selectedPost.isLiked ? '#FF6B00' : '#6B7280'} />
+                <Text style={[styles.detailActionText, selectedPost.isLiked && { color: '#FF6B00' }]}>{formatCount(selectedPost.likes)}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.detailActionBtn} onPress={() => setShowComments(!showComments)}>
+                <Ionicons name="chatbubble-outline" size={20} color="#6B7280" />
+                <Text style={styles.detailActionText}>{formatCount(selectedPost.commentsCount)}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.detailActionBtn} onPress={() => setShowShare(true)}>
+                <Ionicons name="share-social-outline" size={20} color="#6B7280" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.detailActionBtn} onPress={() => handleToggleSave(selectedPost.id)}>
+                <Ionicons name={selectedPost.isSaved ? 'bookmark' : 'bookmark-outline'} size={20} color={selectedPost.isSaved ? '#FF6B00' : '#6B7280'} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.detailActionBtn} onPress={() => { setShowAwards(true); }}>
+                <Ionicons name="trophy-outline" size={20} color="#6B7280" />
+                <Text style={styles.detailActionText}>{formatCount(selectedPost.awards)}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Comments Section */}
+            <View style={styles.commentsSection}>
+              <View style={styles.commentsSectionHeader}>
+                <Text style={styles.commentsSectionTitle}>
+                  💬 {formatCount(selectedPost.commentsCount)} Comments
+                </Text>
+                <View style={styles.sortRow}>
+                  {['Top', 'Latest'].map(s => (
+                    <TouchableOpacity key={s} onPress={() => setCommentSort(s)}>
+                      <Text style={[styles.sortBtn, commentSort === s && styles.sortBtnActive]}>{s}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {commentsLoading ? (
+                <ActivityIndicator color="#FF6B00" style={{ marginVertical: 20 }} />
+              ) : (
+                commentsList.map(comment => (
+                  <View key={comment.id} style={styles.commentItem}>
+                    <Image source={{ uri: comment.authorAvatar }} style={styles.commentAvatar} />
+                    <View style={styles.commentBody}>
+                      <View style={styles.commentHeaderRow}>
+                        <Text style={styles.commentAuthor}>{comment.authorName}</Text>
+                        {comment.badgeLabel && <Text style={styles.commentBadge}> • {comment.badgeLabel}</Text>}
+                        <Text style={styles.commentTime}> • {comment.time}</Text>
+                      </View>
+                      <Text style={styles.commentText}>{comment.text}</Text>
+                      <View style={styles.commentActions}>
+                        <TouchableOpacity style={styles.commentActionBtn}>
+                          <Ionicons name={comment.isLiked ? 'heart' : 'heart-outline'} size={16} color={comment.isLiked ? '#FF6B00' : '#9CA3AF'} />
+                          <Text style={styles.commentActionText}>{comment.likes}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.commentActionBtn}>
+                          <Text style={styles.commentReplyBtn}>Reply</Text>
+                        </TouchableOpacity>
+                      </View>
+                      {/* Replies */}
+                      {comment.replies?.map(reply => (
+                        <View key={reply.id} style={styles.replyItem}>
+                          <Image source={{ uri: reply.authorAvatar }} style={styles.replyAvatar} />
+                          <View style={styles.replyBody}>
+                            <Text style={styles.replyAuthor}>{reply.authorName} <Text style={styles.replyTime}>• {reply.time}</Text></Text>
+                            <Text style={styles.replyText}>{reply.text}</Text>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                ))
+              )}
+            </View>
+          </ScrollView>
+
+          {/* Comment Input */}
+          <View style={styles.commentInput}>
+            {userAvatar ? (
+              <Image source={{ uri: userAvatar }} style={styles.commentInputAvatar} />
+            ) : (
+              <View style={styles.commentInputAvatarFallback}>
+                <Text style={styles.commentInputAvatarText}>
+                  {(currentUser?.name || 'U')[0].toUpperCase()}
+                </Text>
+              </View>
+            )}
+            <TextInput
+              style={styles.commentInputField}
+              placeholder="Add a comment..."
+              placeholderTextColor="#9CA3AF"
+              value={newCommentText}
+              onChangeText={setNewCommentText}
+              multiline
+            />
+            <TouchableOpacity
+              style={[styles.commentSendBtn, !newCommentText.trim() && styles.commentSendBtnDisabled]}
+              onPress={handleAddComment}
+              disabled={!newCommentText.trim()}
+            >
+              <Ionicons name="send" size={18} color={newCommentText.trim() ? '#FF6B00' : '#D1D5DB'} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+  // ─── Share Sheet (SHR_001) ────────────────────────────────────────────────────
+  const renderShareSheet = () => (
+    <Modal visible={showShare} animationType="slide" transparent onRequestClose={() => setShowShare(false)}>
+      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowShare(false)} />
+      <View style={styles.bottomSheet}>
+        <View style={styles.sheetHandle} />
+        <Text style={styles.sheetTitle}>Share Post</Text>
+        <View style={styles.shareGrid}>
+          {[
+            { icon: '💬', label: 'WhatsApp', color: '#25D366' },
+            { icon: '✈️', label: 'Telegram', color: '#2AABEE' },
+            { icon: '✉️', label: 'Messages', color: '#5AC8FA' },
+            { icon: '🐦', label: 'X (Twitter)', color: '#000000' },
+            { icon: '📘', label: 'Facebook', color: '#1877F2' },
+            { icon: '🔗', label: 'Copy Link', color: '#6B7280' },
+          ].map(item => (
+            <TouchableOpacity key={item.label} style={styles.shareItem} onPress={() => setShowShare(false)}>
+              <View style={[styles.shareIconBox, { backgroundColor: item.color + '20' }]}>
+                <Text style={styles.shareIconText}>{item.icon}</Text>
+              </View>
+              <Text style={styles.shareLabel}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <TouchableOpacity style={styles.sheetCancelBtn} onPress={() => setShowShare(false)}>
+          <Text style={styles.sheetCancelText}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
+    </Modal>
+  );
+
+  // ─── Award Sheet (AWD_001) ────────────────────────────────────────────────────
+  const renderAwardSheet = () => (
+    <Modal visible={showAwards} animationType="slide" transparent onRequestClose={() => setShowAwards(false)}>
+      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowAwards(false)} />
+      <View style={[styles.bottomSheet, { paddingBottom: 30 }]}>
+        <View style={styles.sheetHandle} />
+        <View style={styles.awardHeader}>
+          <Text style={styles.sheetTitle}>Give Award</Text>
+          <View style={styles.coinBadge}>
+            <Text style={styles.coinText}>🪙 {coinsBalance.toLocaleString()}</Text>
+          </View>
+        </View>
+        <View style={styles.awardGrid}>
+          {AWARD_TYPES.map(award => (
+            <TouchableOpacity
+              key={award.id}
+              style={[styles.awardItem, selectedAward?.id === award.id && styles.awardItemSelected]}
+              onPress={() => setSelectedAward(award)}
+            >
+              <View style={[styles.awardIconBox, { backgroundColor: award.color + '20' }]}>
+                <Ionicons name={award.icon} size={26} color={award.color} />
+              </View>
+              <Text style={styles.awardLabel}>{award.label}</Text>
+              <Text style={styles.awardCost}>🪙 {award.coins}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        {selectedAward && (
+          <View style={styles.awardControls}>
+            <View style={styles.qtyRow}>
+              <TouchableOpacity style={styles.qtyBtn} onPress={() => setAwardQuantity(q => Math.max(1, q - 1))}>
+                <Text style={styles.qtyBtnText}>−</Text>
+              </TouchableOpacity>
+              <Text style={styles.qtyValue}>{awardQuantity}</Text>
+              <TouchableOpacity style={styles.qtyBtn} onPress={() => setAwardQuantity(q => q + 1)}>
+                <Text style={styles.qtyBtnText}>+</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity style={styles.awardSendBtn} onPress={handleSendAward}>
+              <LinearGradient colors={['#FF6B00', '#FF9F4A']} style={styles.awardSendGradient}>
+                <Text style={styles.awardSendText}>Send 🏆 ({awardQuantity * selectedAward.coins} coins)</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        )}
+        <TouchableOpacity style={styles.sheetCancelBtn} onPress={() => setShowAwards(false)}>
+          <Text style={styles.sheetCancelText}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
+    </Modal>
+  );
+
+  // ─── Profile Menu Modal ───────────────────────────────────────────────────────
+  const renderProfileMenu = () => (
+    <Modal visible={showProfile} animationType="slide" transparent onRequestClose={() => setShowProfile(false)}>
+      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setShowProfile(false)} />
+      <View style={styles.bottomSheet}>
+        <View style={styles.sheetHandle} />
+        {/* User Info */}
+        <View style={styles.profileMenuUser}>
+          {userAvatar ? (
+            <Image source={{ uri: userAvatar }} style={styles.profileMenuAvatar} />
+          ) : (
+            <View style={styles.profileMenuAvatarFallback}>
+              <Text style={styles.profileMenuAvatarText}>
+                {(currentUser?.name || 'U')[0].toUpperCase()}
+              </Text>
+            </View>
+          )}
+          <View style={{ marginLeft: 12 }}>
+            <Text style={styles.profileMenuName}>{currentUser?.name || 'User'}</Text>
+            <Text style={styles.profileMenuEmail}>{currentUser?.email || ''}</Text>
+          </View>
+        </View>
+
         {[
-          { id: 'Home Feed', label: 'For You' },
-          { id: 'Local Feed', label: 'Local' },
-          { id: 'Trending Feed', label: 'Trending' },
-          { id: 'Following Feed', label: 'Following' }
-        ].map((tab) => {
-          const isTabActive = activeTab === tab.id;
+          { icon: 'person-outline', label: 'My Profile' },
+          { icon: 'bookmark-outline', label: 'Saved Posts' },
+          { icon: 'trophy-outline', label: 'My Awards' },
+          { icon: 'settings-outline', label: 'Settings' },
+          { icon: 'help-circle-outline', label: 'Help Center' },
+        ].map(item => (
+          <TouchableOpacity key={item.label} style={styles.profileMenuItem} onPress={() => setShowProfile(false)}>
+            <Ionicons name={item.icon} size={20} color="#374151" />
+            <Text style={styles.profileMenuItemText}>{item.label}</Text>
+            <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+          </TouchableOpacity>
+        ))}
+
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          onPress={() => {
+            setShowProfile(false);
+            Alert.alert('Logout', 'Are you sure you want to logout?', [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Logout', style: 'destructive', onPress: onLogout },
+            ]);
+          }}
+        >
+          <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+          <Text style={styles.logoutBtnText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
+    </Modal>
+  );
+
+  // ─── Main Return ──────────────────────────────────────────────────────────────
+  return (
+    <View style={styles.container}>
+      <StatusBar style="dark" />
+
+      {/* Feed */}
+      {loading && !refreshing ? (
+        <View style={styles.loadingCenter}>
+          <ActivityIndicator size="large" color="#FF6B00" />
+          <Text style={styles.loadingText}>Loading your feed...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={posts}
+          keyExtractor={item => item.id}
+          renderItem={renderPostCard}
+          ListHeaderComponent={renderHeader}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.feedList}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#FF6B00']} tintColor="#FF6B00" />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyIcon}>🏜️</Text>
+              <Text style={styles.emptyTitle}>Nothing here yet</Text>
+              <Text style={styles.emptySubtitle}>Be the first to post in this feed!</Text>
+            </View>
+          }
+        />
+      )}
+
+      {/* FAB */}
+      <Animated.View style={[styles.fab, { transform: [{ scale: fabScale }] }]}>
+        <TouchableOpacity onPress={onCreatePress} activeOpacity={0.85}>
+          <LinearGradient colors={['#FF6B00', '#FF9F4A']} style={styles.fabGradient}>
+            <Ionicons name="add" size={28} color="#FFFFFF" />
+          </LinearGradient>
+        </TouchableOpacity>
+      </Animated.View>
+
+      {/* Bottom Navigation */}
+      <View style={styles.bottomNav}>
+        {[
+          { id: 'home', icon: 'home', label: 'Home' },
+          { id: 'discover', icon: 'compass', label: 'Discover' },
+          { id: 'create', icon: 'add-circle', label: 'Create', special: true },
+          { id: 'chat', icon: 'chatbubble', label: 'Chat', badge: msgCount },
+          { id: 'profile', icon: 'person', label: 'Profile' },
+        ].map(item => {
+          if (item.special) {
+            return (
+              <TouchableOpacity key={item.id} style={styles.navItemCreate} onPress={onCreatePress}>
+                <LinearGradient colors={['#FF6B00', '#FF9F4A']} style={styles.navCreateGradient}>
+                  <Ionicons name="add" size={26} color="#fff" />
+                </LinearGradient>
+              </TouchableOpacity>
+            );
+          }
+          const isActive = activeNav === item.id;
+          const navActions = {
+            home: () => setActiveNav('home'),
+            discover: () => { setActiveNav('discover'); onNavigate && onNavigate('Discover'); },
+            chat: () => { setActiveNav('chat'); onNavigate && onNavigate('Messages'); },
+            profile: () => { setActiveNav('profile'); onNavigate && onNavigate('Profile'); },
+          };
           return (
-            <TouchableOpacity key={tab.id} style={styles.tabItem} onPress={() => setActiveTab(tab.id)}>
-              <Text style={[styles.tabText, isTabActive && styles.tabTextActive]}>{tab.label}</Text>
-              {isTabActive && <View style={styles.tabIndicator} />}
+            <TouchableOpacity
+              key={item.id}
+              style={styles.navItem}
+              onPress={() => navActions[item.id] && navActions[item.id]()}
+            >
+              <View style={styles.navIconWrap}>
+                <Ionicons
+                  name={isActive ? item.icon : `${item.icon}-outline`}
+                  size={24}
+                  color={isActive ? '#FF6B00' : '#6B7280'}
+                />
+                {item.badge > 0 && (
+                  <View style={styles.navBadge}>
+                    <Text style={styles.navBadgeText}>{item.badge}</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>{item.label}</Text>
             </TouchableOpacity>
           );
         })}
       </View>
 
-      {/* 3. Feeds Container */}
-      <ScrollView style={styles.mainFeed} showsVerticalScrollIndicator={false}>
-        
-        {/* Render Feed HOM_001 (Home Feed) */}
-        {activeTab === 'Home Feed' && (
-          <View>
-            {/* Top Trending Card */}
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>🔥 Top Trending Today</Text>
-              <TouchableOpacity><Text style={styles.seeAllLink}>See All</Text></TouchableOpacity>
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.trendingCardsScroll}>
-              {[
-                { tag: '# Chennai Rains', count: '12.5K posts', trend: '22%' },
-                { tag: '# Metro Phase 2', count: '8.7K posts', trend: '18%' },
-                { tag: '# Traffic Updates', count: '6.2K posts', trend: '14%' },
-                { tag: '# IPL 2025', count: '5.4K posts', trend: '12%' },
-              ].map((item, idx) => (
-                <View key={idx} style={styles.trendCard}>
-                  <Text style={styles.trendCardTag}>{item.tag}</Text>
-                  <Text style={styles.trendCardCount}>{item.count}</Text>
-                  <Text style={styles.trendCardTrend}>▲ {item.trend}</Text>
-                </View>
-              ))}
-            </ScrollView>
-
-            {/* Categories List */}
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Categories</Text>
-              <TouchableOpacity><Text style={styles.seeAllLink}>View All</Text></TouchableOpacity>
-            </View>
-            <View style={styles.categoriesGrid}>
-              {[
-                { icon: 'alert-circle', label: 'Issues', color: '#EF4444' },
-                { icon: 'chatbubbles', label: 'Talks', color: '#F59E0B' },
-                { icon: 'newspaper', label: 'News', color: '#3B82F6' },
-                { icon: 'stats-chart', label: 'Polls', color: '#10B981' },
-                { icon: 'calendar', label: 'Events', color: '#8B5CF6' }
-              ].map((cat, idx) => (
-                <TouchableOpacity key={idx} style={styles.categoryItem}>
-                  <View style={[styles.catIconBg, { backgroundColor: cat.color + '15' }]}>
-                    <Ionicons name={cat.icon} size={20} color={cat.color} />
-                  </View>
-                  <Text style={styles.catLabel}>{cat.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Stories Horizontal List */}
-            <View style={styles.storiesContainer}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storiesScroll}>
-                {stories.map((story) => (
-                  <View key={story.id} style={styles.storyItem}>
-                    {story.active ? (
-                      <LinearGradient colors={['#7C3AED', '#F97316']} style={styles.storyRingGradient}>
-                        <View style={styles.storyRingInner}>
-                          <Image source={{ uri: story.image }} style={styles.storyImage} />
-                        </View>
-                      </LinearGradient>
-                    ) : (
-                      <View style={styles.storyRing}>
-                        <Image source={{ uri: story.image }} style={styles.storyImage} />
-                      </View>
-                    )}
-                    <Text style={styles.storyName} numberOfLines={1}>{story.name}</Text>
-                  </View>
-                ))}
-              </ScrollView>
-            </View>
-
-            {/* Infinite Feed - Post 1 */}
-            {posts.filter(p => p.id === 'post_1').map(post => renderPostCard(post))}
-          </View>
-        )}
-
-        {/* Render Feed HOM_002 (Local Feed) */}
-        {activeTab === 'Local Feed' && (
-          <View>
-            {/* Location selector */}
-            <View style={styles.localLocationBar}>
-              <Ionicons name="location" size={18} color="#7C3AED" />
-              <Text style={styles.localLocationText}>Chennai, Tamil Nadu</Text>
-              <Ionicons name="chevron-down" size={16} color="#6B7280" style={{ marginLeft: 6 }} />
-            </View>
-
-            {/* Live banner */}
-            <LinearGradient colors={['#7C3AED', '#EC4899']} style={styles.liveBanner}>
-              <View style={styles.liveBannerContent}>
-                <Text style={styles.liveBannerTitle}>Live Updates from your city</Text>
-                <Text style={styles.liveBannerSubtitle}>Stay informed about what's happening</Text>
-                <TouchableOpacity style={styles.viewLiveBtn}>
-                  <Text style={styles.viewLiveBtnText}>View Live</Text>
-                </TouchableOpacity>
-              </View>
-              <Image 
-                source={{ uri: 'https://images.unsplash.com/photo-1596422846543-75c6fc18a523?w=200&auto=format&fit=crop&q=80' }} 
-                style={styles.liveBannerImg} 
-              />
-            </LinearGradient>
-
-            {/* Local Posts */}
-            <View style={styles.localPostsHeader}>
-              <Text style={styles.localPostsTitle}>What's happening near you</Text>
-              <TouchableOpacity><Text style={styles.seeAllLink}>See All</Text></TouchableOpacity>
-            </View>
-
-            {[
-              {
-                id: 'loc_1',
-                title: 'Road work on Anna Salai',
-                desc: 'Road renovation work is in progress. Plan your travel accordingly.',
-                time: '2h ago',
-                likes: 123,
-                comments: 32,
-                tag: 'Traffic',
-                color: '#F59E0B'
-              },
-              {
-                id: 'loc_2',
-                title: 'Water Supply Update',
-                desc: 'Water supply will be affected in Adyar, Besant Nagar area.',
-                time: '3h ago',
-                likes: 87,
-                comments: 0,
-                tag: 'Utility',
-                color: '#3B82F6'
-              },
-              {
-                id: 'loc_3',
-                title: 'Garbage Collection Drive',
-                desc: 'Special drive starting this Sunday in Ward 112.',
-                time: '4h ago',
-                likes: 64,
-                comments: 15,
-                tag: 'Cleanliness',
-                color: '#10B981'
-              }
-            ].map((item) => (
-              <View key={item.id} style={styles.localCard}>
-                <View style={styles.localCardHeader}>
-                  <View style={[styles.localTag, { backgroundColor: item.color + '15' }]}>
-                    <Text style={[styles.localTagText, { color: item.color }]}>{item.tag}</Text>
-                  </View>
-                  <Text style={styles.localCardTime}>{item.time}</Text>
-                </View>
-                <Text style={styles.localCardTitleText}>{item.title}</Text>
-                <Text style={styles.localCardDesc}>{item.desc}</Text>
-                <View style={styles.localCardFooter}>
-                  <TouchableOpacity style={styles.localAction}>
-                    <Ionicons name="heart-outline" size={16} color="#4B5563" />
-                    <Text style={styles.localActionText}>{item.likes}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.localAction}>
-                    <Ionicons name="chatbubble-outline" size={15} color="#4B5563" />
-                    <Text style={styles.localActionText}>{item.comments}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.localActionRight}>
-                    <Ionicons name="share-social-outline" size={16} color="#4B5563" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Render Feed HOM_003 (Trending Feed) */}
-        {activeTab === 'Trending Feed' && (
-          <View>
-            {/* Trending rankings list */}
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>🔥 Trending Topics</Text>
-              <TouchableOpacity><Text style={styles.seeAllLink}>See All</Text></TouchableOpacity>
-            </View>
-
-            <View style={styles.rankingContainer}>
-              {[
-                { rank: '01', tag: '# Chennai Rains', count: '12.5K posts', trend: '+ 22%', color: '#EF4444' },
-                { rank: '02', tag: '# AI Jobs', count: '8.1K posts', trend: '+ 18%', color: '#F59E0B' },
-                { rank: '03', tag: '# Metro Phase 2', count: '6.7K posts', trend: '+ 16%', color: '#3B82F6' },
-                { rank: '04', tag: '# TN Budget 2025', count: '5.3K posts', trend: '+ 12%', color: '#10B981' },
-                { rank: '05', tag: '# IPL 2025', count: '4.0K posts', trend: '+ 10%', color: '#8B5CF6' }
-              ].map((item) => (
-                <View key={item.rank} style={styles.rankingRow}>
-                  <Text style={styles.rankingNum}>{item.rank}</Text>
-                  <View style={styles.rankingDetails}>
-                    <Text style={styles.rankingTag}>{item.tag}</Text>
-                    <Text style={styles.rankingCount}>{item.count}</Text>
-                  </View>
-                  <View style={styles.rankingTrend}>
-                    <Text style={styles.rankingTrendText}>{item.trend}</Text>
-                    <Ionicons name="trending-up" size={16} color="#10B981" />
-                  </View>
-                </View>
-              ))}
-            </View>
-
-            {/* Featured Trending Post */}
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Trending Post</Text>
-            </View>
-            {posts.filter(p => p.id === 'post_2').map(post => renderPostCard(post))}
-          </View>
-        )}
-
-        {/* Render Feed HOM_004 (Following Feed) */}
-        {activeTab === 'Following Feed' && (
-          <View>
-            {/* Followed Creators bubbles list */}
-            <View style={styles.storiesContainer}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storiesScroll}>
-                {stories.slice(1).map((story) => (
-                  <View key={story.id} style={styles.storyItem}>
-                    <View style={styles.storyRing}>
-                      <Image source={{ uri: story.image }} style={styles.storyImage} />
-                    </View>
-                    <Text style={styles.storyName} numberOfLines={1}>{story.name}</Text>
-                  </View>
-                ))}
-              </ScrollView>
-            </View>
-
-            {/* Posts from followed creators */}
-            {posts.filter(p => p.id === 'post_3').map(post => renderPostCard(post))}
-          </View>
-        )}
-
-        <View style={{ height: 100 }} />
-      </ScrollView>
-
-      {/* 4. Bottom Custom Navigation bar */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="home" size={24} color="#7C3AED" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="compass-outline" size={24} color="#9CA3AF" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.addButtonContainer} onPress={onCreatePress}>
-          <LinearGradient colors={['#7C3AED', '#F97316']} style={styles.addButtonGradient}>
-            <Ionicons name="add" size={28} color="#FFFFFF" />
-          </LinearGradient>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="chatbubbles-outline" size={24} color="#9CA3AF" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="person-outline" size={24} color="#9CA3AF" />
-        </TouchableOpacity>
-      </View>
-
-      {/* 5. POST DETAIL VIEW (PST_001) MODAL */}
-      {selectedPost && (
-        <Modal visible={true} animationType="slide" onRequestClose={() => setSelectedPost(null)}>
-          <View style={styles.detailContainer}>
-            {/* Header */}
-            <View style={styles.detailHeader}>
-              <TouchableOpacity onPress={() => setSelectedPost(null)} style={styles.backBtnWrapper}>
-                <Ionicons name="arrow-back" size={24} color="#1F2937" />
-              </TouchableOpacity>
-              <Text style={styles.detailHeaderTitle}>Post</Text>
-              <TouchableOpacity>
-                <Ionicons name="ellipsis-horizontal" size={20} color="#1F2937" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.detailContent} showsVerticalScrollIndicator={false}>
-              {/* Author Row */}
-              <View style={styles.detailAuthorRow}>
-                <Image source={{ uri: selectedPost.authorAvatar }} style={styles.detailAvatar} />
-                <View style={styles.detailAuthorText}>
-                  <Text style={styles.detailAuthorName}>{selectedPost.authorName}</Text>
-                  <Text style={styles.detailAuthorHandle}>@{selectedPost.authorHandle}</Text>
-                </View>
-                <TouchableOpacity 
-                  style={[styles.followBtn, selectedPost.isFollowing && styles.followingBtn]} 
-                  onPress={() => handleToggleFollow(selectedPost.id)}
-                >
-                  <Text style={[styles.followBtnText, selectedPost.isFollowing && styles.followingBtnText]}>
-                    {selectedPost.isFollowing ? 'Following' : 'Follow'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Text */}
-              <Text style={styles.detailBodyText}>{selectedPost.text}</Text>
-
-              {/* Media */}
-              {selectedPost.image && (
-                <Image source={{ uri: selectedPost.image }} style={styles.detailPostImage} resizeMode="cover" />
-              )}
-              {selectedPost.images && (
-                <View style={styles.imageGrid}>
-                  {selectedPost.images.map((img, idx) => (
-                    <Image key={idx} source={{ uri: img }} style={styles.gridImageItem} />
-                  ))}
-                </View>
-              )}
-
-              <Text style={styles.detailTimestamp}>9:41 AM - 20 May 2026</Text>
-              
-              {/* Stats */}
-              <View style={styles.statsDivider} />
-              <View style={styles.statsRow}>
-                <Text style={styles.statItem}><Text style={styles.statBold}>{selectedPost.likes}</Text> Likes</Text>
-                <Text style={styles.statItem}><Text style={styles.statBold}>{selectedPost.commentsCount}</Text> Comments</Text>
-                <Text style={styles.statItem}><Text style={styles.statBold}>{selectedPost.shares}</Text> Shares</Text>
-                <Text style={styles.statItem}><Text style={styles.statBold}>{selectedPost.awards}</Text> Awards</Text>
-              </View>
-              <View style={styles.statsDivider} />
-
-              {/* Action Buttons */}
-              <View style={styles.interactionRow}>
-                <TouchableOpacity style={styles.interactBtn} onPress={() => handleToggleLike(selectedPost.id)}>
-                  <Ionicons name={selectedPost.isLiked ? "heart" : "heart-outline"} size={22} color={selectedPost.isLiked ? "#EF4444" : "#4B5563"} />
-                  <Text style={styles.interactBtnText}>Like</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.interactBtn} onPress={() => setShowComments(true)}>
-                  <Ionicons name="chatbubble-outline" size={20} color="#4B5563" />
-                  <Text style={styles.interactBtnText}>Comment</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.interactBtn} onPress={() => setShowShare(true)}>
-                  <Ionicons name="share-social-outline" size={20} color="#4B5563" />
-                  <Text style={styles.interactBtnText}>Share</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.interactBtn} onPress={() => setShowAwards(true)}>
-                  <Ionicons name="gift-outline" size={20} color="#4B5563" />
-                  <Text style={styles.interactBtnText}>Award</Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={{ height: 40 }} />
-            </ScrollView>
-          </View>
-
-          {/* 6. COMMENT THREAD MODAL (CMT_001) */}
-          <Modal visible={showComments} animationType="slide" transparent>
-            <View style={styles.bottomSheetOverlay}>
-              <View style={styles.commentSheetContent}>
-                <View style={styles.sheetHeader}>
-                  <TouchableOpacity onPress={() => setShowComments(false)}>
-                    <Ionicons name="chevron-down" size={24} color="#4B5563" />
-                  </TouchableOpacity>
-                  <Text style={styles.sheetTitle}>Comments</Text>
-                  <View style={{ width: 24 }} />
-                </View>
-
-                {/* Sort tabs */}
-                <View style={styles.commentSortTabs}>
-                  {['Top', 'Latest'].map(sort => (
-                    <TouchableOpacity 
-                      key={sort} 
-                      style={[styles.sortTab, commentSort === sort && styles.sortTabActive]}
-                      onPress={() => setCommentSort(sort)}
-                    >
-                      <Text style={[styles.sortTabText, commentSort === sort && styles.sortTabTextActive]}>{sort}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                <ScrollView style={styles.commentsScroll} showsVerticalScrollIndicator={false}>
-                  {commentsList.map(comment => (
-                    <View key={comment.id} style={styles.commentContainer}>
-                      <View style={styles.commentHeader}>
-                        <Image source={{ uri: comment.avatar }} style={styles.commentAvatar} />
-                        <View style={styles.commentAuthorInfo}>
-                          <Text style={styles.commentAuthor}>{comment.author} <Text style={styles.commentHandle}>@{comment.handle}</Text></Text>
-                          <Text style={styles.commentText}>{comment.text}</Text>
-                        </View>
-                      </View>
-                      
-                      {/* Nested Replies */}
-                      {comment.replies.map(reply => (
-                        <View key={reply.id} style={styles.replyContainer}>
-                          <View style={styles.commentHeader}>
-                            <Image source={{ uri: reply.avatar }} style={styles.commentAvatar} />
-                            <View style={styles.commentAuthorInfo}>
-                              <Text style={styles.commentAuthor}>
-                                {reply.author} <Text style={styles.commentHandle}>@{reply.handle}</Text>
-                                {reply.isAuthor && <Text style={styles.authorBadge}>Author</Text>}
-                              </Text>
-                              <Text style={styles.commentText}>{reply.text}</Text>
-                            </View>
-                          </View>
-                        </View>
-                      ))}
-                    </View>
-                  ))}
-                </ScrollView>
-
-                {/* Add comment bar */}
-                <View style={styles.commentInputRow}>
-                  <TextInput 
-                    style={styles.commentTextInput} 
-                    placeholder="Add a comment..." 
-                    placeholderTextColor="#9CA3AF"
-                    value={newCommentText}
-                    onChangeText={setNewCommentText}
-                  />
-                  <TouchableOpacity onPress={handleAddComment}>
-                    <Ionicons name="send" size={22} color="#7C3AED" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          </Modal>
-
-          {/* 7. SHARE SHEET MODAL (SHR_001) */}
-          <Modal visible={showShare} animationType="slide" transparent>
-            <View style={styles.bottomSheetOverlay}>
-              <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowShare(false)} />
-              <View style={styles.shareSheetContent}>
-                <Text style={styles.shareSheetTitle}>Share Post</Text>
-                
-                <View style={styles.shareGrid}>
-                  {[
-                    { icon: 'logo-whatsapp', label: 'WhatsApp', color: '#25D366' },
-                    { icon: 'paper-plane', label: 'Telegram', color: '#0088cc' },
-                    { icon: 'logo-instagram', label: 'Instagram', color: '#E1306C' },
-                    { icon: 'chatbubble', label: 'Messages', color: '#34C759' },
-                    { icon: 'link', label: 'Copy Link', color: '#4B5563' },
-                    { icon: 'logo-facebook', label: 'Facebook', color: '#1877F2' },
-                    { icon: 'logo-twitter', label: 'X (Twitter)', color: '#000000' }
-                  ].map((app, idx) => (
-                    <TouchableOpacity key={idx} style={styles.shareAppItem} onPress={() => { setShowShare(false); alert("Shared successfully!"); }}>
-                      <View style={[styles.shareIconBg, { backgroundColor: app.color + '10' }]}>
-                        <Ionicons name={app.icon} size={24} color={app.color} />
-                      </View>
-                      <Text style={styles.shareAppLabel}>{app.label}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                <TouchableOpacity style={styles.cancelShareBtn} onPress={() => setShowShare(false)}>
-                  <Text style={styles.cancelShareText}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
-
-          {/* 8. AWARD SHEET MODAL (AWD_001) */}
-          <Modal visible={showAwards} animationType="slide" transparent>
-            <View style={styles.bottomSheetOverlay}>
-              <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowAwards(false)} />
-              <View style={styles.awardSheetContent}>
-                <Text style={styles.awardSheetTitle}>Give an award</Text>
-                <Text style={styles.awardSheetSubtitle}>Support the creator</Text>
-                
-                <View style={styles.coinsBalanceRow}>
-                  <Ionicons name="wallet-outline" size={16} color="#4B5563" />
-                  <Text style={styles.coinsBalanceText}>Your balance: <Text style={styles.coinsBold}>{coinsBalance} Coins</Text></Text>
-                </View>
-
-                <ScrollView style={{ maxHeight: 220 }} showsVerticalScrollIndicator={false}>
-                  <View style={styles.awardsGrid}>
-                    {awardsList.map((award) => {
-                      const isSelected = selectedAward?.id === award.id;
-                      return (
-                        <TouchableOpacity 
-                          key={award.id} 
-                          style={[styles.awardCard, isSelected && styles.awardCardSelected]}
-                          onPress={() => setSelectedAward(award)}
-                        >
-                          <Ionicons name={award.icon} size={28} color={award.color} />
-                          <Text style={styles.awardLabel}>{award.label}</Text>
-                          <Text style={styles.awardCoins}>{award.coins} Coins</Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </ScrollView>
-
-                {/* Quantity selector */}
-                <View style={styles.quantitySelectorRow}>
-                  <TouchableOpacity 
-                    style={styles.quantityBtn} 
-                    onPress={() => setAwardQuantity(prev => Math.max(1, prev - 1))}
-                  >
-                    <Text style={styles.quantityBtnText}>-</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.quantityValue}>{awardQuantity}</Text>
-                  <TouchableOpacity 
-                    style={styles.quantityBtn} 
-                    onPress={() => setAwardQuantity(prev => prev + 1)}
-                  >
-                    <Text style={styles.quantityBtnText}>+</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <TouchableOpacity style={styles.sendAwardBtn} onPress={handleSendAward}>
-                  <Text style={styles.sendAwardText}>
-                    Send Award {selectedAward ? `(${selectedAward.coins * awardQuantity} Coins)` : ''}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
-        </Modal>
-      )}
+      {/* Overlays */}
+      {renderPostDetail()}
+      {renderShareSheet()}
+      {renderAwardSheet()}
+      {renderProfileMenu()}
     </View>
   );
-
-  // Helper render for feed post card
-  function renderPostCard(post) {
-    return (
-      <View key={post.id} style={styles.feedCard}>
-        <View style={styles.cardHeader}>
-          <View style={styles.authorRow}>
-            <Image source={{ uri: post.authorAvatar }} style={styles.authorAvatar} />
-            <View style={styles.authorText}>
-              <Text style={styles.authorName}>{post.authorName}</Text>
-              <Text style={styles.authorHandle}>@{post.authorHandle} • {post.time}</Text>
-            </View>
-          </View>
-          <TouchableOpacity>
-            <Ionicons name="ellipsis-horizontal" size={20} color="#6B7280" />
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity onPress={() => setSelectedPost(post)}>
-          <Text style={styles.postText}>{post.text}</Text>
-        </TouchableOpacity>
-
-        {/* Post Image */}
-        {post.image && (
-          <TouchableOpacity style={styles.postImageContainer} onPress={() => setSelectedPost(post)}>
-            <Image source={{ uri: post.image }} style={styles.postImage} />
-          </TouchableOpacity>
-        )}
-
-        {/* Post Image Grid for Following */}
-        {post.images && (
-          <TouchableOpacity style={styles.imageGrid} onPress={() => setSelectedPost(post)}>
-            {post.images.map((img, idx) => (
-              <Image key={idx} source={{ uri: img }} style={styles.gridImageItem} />
-            ))}
-          </TouchableOpacity>
-        )}
-
-        {/* Action buttons bar */}
-        <View style={styles.cardActions}>
-          <TouchableOpacity style={styles.actionBtn} onPress={() => handleToggleLike(post.id)}>
-            <Ionicons 
-              name={post.isLiked ? "heart" : "heart-outline"} 
-              size={22} 
-              color={post.isLiked ? "#EF4444" : "#4B5563"} 
-            />
-            <Text style={[styles.actionCount, post.isLiked && styles.likedColor]}>{post.likes}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionBtn} onPress={() => { setSelectedPost(post); setShowComments(true); }}>
-            <Ionicons name="chatbubble-outline" size={20} color="#4B5563" />
-            <Text style={styles.actionCount}>{post.commentsCount}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionBtn} onPress={() => { setSelectedPost(post); setShowShare(true); }}>
-            <Ionicons name="share-social-outline" size={20} color="#4B5563" />
-            <Text style={styles.actionCount}>{post.shares}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionBtn} onPress={() => { setSelectedPost(post); setShowAwards(true); }}>
-            <Ionicons name="gift-outline" size={20} color="#4B5563" />
-            <Text style={styles.actionCount}>{post.awards}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionBtnRight}>
-            <Ionicons name="bookmark-outline" size={20} color="#4B5563" />
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FAFBFC',
-  },
-  topHeader: {
-    paddingTop: 54,
-    paddingBottom: 12,
-    paddingHorizontal: 20,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  headerRow: {
+  container: { flex: 1, backgroundColor: '#F8F9FA' },
+  feedList: { paddingBottom: 90 },
+  loadingCenter: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  loadingText: { fontSize: 15, color: '#9CA3AF' },
+  emptyState: { alignItems: 'center', padding: 48 },
+  emptyIcon: { fontSize: 48, marginBottom: 12 },
+  emptyTitle: { fontSize: 18, fontWeight: 'bold', color: '#1F2937', marginBottom: 6 },
+  emptySubtitle: { fontSize: 14, color: '#9CA3AF', textAlign: 'center' },
+
+  // ── App Header ──
+  feedHeader: { backgroundColor: '#FFFFFF' },
+  appHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  userProfile: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatarImg: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-  },
-  userText: {
-    marginLeft: 10,
-  },
-  userName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  greetingText: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    marginTop: 1,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  actionIconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-    position: 'relative',
-  },
-  badge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#EF4444',
-  },
-  tabsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-    justifyContent: 'space-between',
-  },
-  tabItem: {
+    paddingHorizontal: 16,
     paddingVertical: 12,
-    position: 'relative',
-    flex: 1,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  appHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  appLogo: { width: 38, height: 38, borderRadius: 12, overflow: 'hidden' },
+  logoGradient: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  logoText: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
+  greetingText: { fontSize: 12, color: '#9CA3AF' },
+  userNameText: { fontSize: 16, fontWeight: 'bold', color: '#1F2937' },
+  appHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  headerIconBtn: { padding: 8, position: 'relative' },
+  badge2: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#EF4444',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
   },
-  tabText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#9CA3AF',
+  badge2Text: { fontSize: 9, color: '#fff', fontWeight: 'bold' },
+  headerAvatar: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, borderColor: '#FF6B00' },
+  headerAvatarFallback: {
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: '#FF6B00',
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: '#FF9F4A',
   },
-  tabTextActive: {
-    color: '#7C3AED',
-    fontWeight: '700',
-  },
+  headerAvatarFallbackText: { color: '#fff', fontSize: 14, fontWeight: 'bold' },
+
+  // ── Feed Tabs ──
+  tabsContainer: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  tabsContent: { paddingHorizontal: 12, paddingBottom: 0 },
+  tab: { paddingHorizontal: 14, paddingVertical: 12, position: 'relative' },
+  tabActive: {},
+  tabText: { fontSize: 14, color: '#9CA3AF', fontWeight: '500' },
+  tabTextActive: { color: '#FF6B00', fontWeight: 'bold' },
   tabIndicator: {
     position: 'absolute',
-    bottom: 0,
-    width: 24,
+    bottom: 0, left: 14, right: 14,
     height: 3,
-    backgroundColor: '#7C3AED',
-    borderRadius: 1.5,
+    backgroundColor: '#FF6B00',
+    borderRadius: 2,
   },
-  mainFeed: {
-    flex: 1,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginTop: 18,
-    marginBottom: 8,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  seeAllLink: {
-    fontSize: 12,
-    color: '#7C3AED',
-    fontWeight: '600',
-  },
-  trendingCardsScroll: {
-    paddingLeft: 20,
-    paddingRight: 8,
-  },
-  trendCard: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    padding: 12,
-    width: 120,
-    marginRight: 12,
-  },
-  trendCardTag: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  trendCardCount: {
-    fontSize: 10,
-    color: '#6B7280',
-    marginTop: 4,
-  },
-  trendCardTrend: {
-    fontSize: 10,
-    color: '#10B981',
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  categoriesGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginVertical: 8,
-  },
-  categoryItem: {
-    alignItems: 'center',
-    width: 60,
-  },
-  catIconBg: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  catLabel: {
-    fontSize: 10,
-    color: '#4B5563',
-    fontWeight: '500',
-  },
-  storiesContainer: {
-    paddingVertical: 12,
+
+  // ── Categories ──
+  categoriesSection: {
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
+    paddingVertical: 10,
   },
-  storiesScroll: {
-    paddingHorizontal: 20,
-  },
-  storyItem: {
-    alignItems: 'center',
-    marginRight: 14,
-    width: 62,
-  },
-  storyRing: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    padding: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  storyRingGradient: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    padding: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  storyRingInner: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 25,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  storyImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 24,
-  },
-  storyName: {
-    fontSize: 10,
-    color: '#4B5563',
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  feedCard: {
-    marginHorizontal: 20,
-    marginTop: 16,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 14,
-    padding: 14,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  authorRow: {
+  categoriesList: { paddingHorizontal: 12, gap: 8 },
+  categoryChip: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  authorAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-  },
-  authorText: {
-    marginLeft: 10,
-  },
-  authorName: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  authorHandle: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    marginTop: 1,
-  },
-  postText: {
-    fontSize: 13,
-    color: '#374151',
-    lineHeight: 18,
-    marginVertical: 10,
-  },
-  postImageContainer: {
-    width: '100%',
-    height: 170,
-    borderRadius: 10,
-    overflow: 'hidden',
-    marginBottom: 12,
-  },
-  postImage: {
-    width: '100%',
-    height: '100%',
-  },
-  imageGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    height: 130,
-    borderRadius: 10,
-    overflow: 'hidden',
-    marginBottom: 12,
-  },
-  gridImageItem: {
-    flex: 1,
-    height: '100%',
-    marginRight: 4,
-    borderRadius: 4,
-  },
-  cardActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  actionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 20,
-  },
-  actionBtnRight: {
-    marginLeft: 'auto',
-  },
-  actionCount: {
-    fontSize: 12,
-    color: '#4B5563',
-    fontWeight: '600',
-    marginLeft: 4,
-  },
-  likedColor: {
-    color: '#EF4444',
-  },
-  localLocationBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  localLocationText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginLeft: 6,
-  },
-  liveBanner: {
-    marginHorizontal: 20,
-    marginTop: 16,
-    borderRadius: 12,
-    padding: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  liveBannerContent: {
-    flex: 1,
-    paddingRight: 8,
-  },
-  liveBannerTitle: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  liveBannerSubtitle: {
-    color: '#E0D4FF',
-    fontSize: 11,
-    marginTop: 4,
-  },
-  viewLiveBtn: {
-    backgroundColor: '#FFFFFF',
+    gap: 4,
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-    marginTop: 12,
-    alignSelf: 'flex-start',
-  },
-  viewLiveBtnText: {
-    color: '#7C3AED',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  liveBannerImg: {
-    width: 80,
-    height: 80,
-    borderRadius: 10,
-  },
-  localPostsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginTop: 18,
-  },
-  localPostsTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  localCard: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginTop: 12,
-    borderRadius: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    padding: 12,
   },
-  localCardHeader: {
+  categoryChipActive: { backgroundColor: '#FFF3EC', borderColor: '#FF6B00' },
+  categoryIcon: { fontSize: 15 },
+  categoryLabel: { fontSize: 12, fontWeight: '500', color: '#6B7280' },
+  categoryLabelActive: { color: '#FF6B00' },
+
+  // ── Stories ──
+  storiesSection: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 8,
+    borderBottomColor: '#F3F4F6',
+    paddingTop: 12,
+    paddingBottom: 14,
+  },
+  storiesList: { paddingHorizontal: 12, gap: 12 },
+  storyItem: { alignItems: 'center', width: 68 },
+  storyRing: {
+    width: 62, height: 62,
+    borderRadius: 31,
+    borderWidth: 2.5,
+    borderColor: '#E5E7EB',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  storyRingActive: { borderColor: '#FF6B00' },
+  storyAvatar: { width: 54, height: 54, borderRadius: 27 },
+  storyName: { fontSize: 11, color: '#374151', marginTop: 5, textAlign: 'center' },
+  myStoryBox: { width: 62, height: 62, borderRadius: 31, position: 'relative' },
+  myStoryPlaceholder: {
+    width: 62, height: 62, borderRadius: 31,
+    backgroundColor: '#FF6B00',
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2.5, borderColor: '#F3F4F6',
+  },
+  myStoryInitial: { fontSize: 22, fontWeight: 'bold', color: '#fff' },
+  addStoryBtn: {
+    position: 'absolute',
+    bottom: 0, right: 0,
+    width: 20, height: 20,
+    borderRadius: 10,
+    backgroundColor: '#FF6B00',
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: '#fff',
+  },
+
+  // ── Post Card ──
+  postCard: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 0,
+    marginBottom: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 0,
+  },
+  postHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
   },
-  localTag: {
+  postHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  communityIconBox: {
+    width: 42, height: 42,
+    borderRadius: 10,
+    backgroundColor: '#FFF3EC',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  communityIconText: { fontSize: 22 },
+  postHeaderInfo: { flex: 1 },
+  postCommunity: { fontSize: 15, fontWeight: 'bold', color: '#1F2937' },
+  postMeta: { fontSize: 12, color: '#9CA3AF', marginTop: 1 },
+  postAuthor: { color: '#6B7280' },
+  postMoreBtn: { padding: 6 },
+  badgeRow: { marginBottom: 8 },
+  badge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#FFF3EC',
+    borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 6,
   },
-  localTagText: {
-    fontSize: 10,
-    fontWeight: '700',
+  badgeText: { fontSize: 11, color: '#FF6B00', fontWeight: '600' },
+  postText: { fontSize: 15, color: '#374151', lineHeight: 22, marginBottom: 10 },
+  postImage: { width: '100%', height: 220, borderRadius: 12, marginBottom: 10 },
+  galleryRow: { flexDirection: 'row', height: 200, marginBottom: 10, gap: 4 },
+  galleryMain: { flex: 1.5, borderRadius: 10 },
+  galleryCol: { flex: 1, gap: 4 },
+  galleryThumb: { flex: 1, borderRadius: 10 },
+  galleryThumbExtra: { flex: 1, position: 'relative' },
+  galleryMore: {
+    position: 'absolute',
+    inset: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 10,
+    alignItems: 'center', justifyContent: 'center',
   },
-  localCardTime: {
-    fontSize: 10,
-    color: '#9CA3AF',
-  },
-  localCardTitleText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginTop: 8,
-  },
-  localCardDesc: {
-    fontSize: 12,
-    color: '#4B5563',
-    lineHeight: 16,
-    marginTop: 4,
-  },
-  localCardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  localAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  localActionText: {
-    fontSize: 11,
-    color: '#4B5563',
-    fontWeight: '600',
-    marginLeft: 4,
-  },
-  localActionRight: {
-    marginLeft: 'auto',
-  },
-  rankingContainer: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginTop: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    padding: 12,
-  },
-  rankingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  rankingNum: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#7C3AED',
-    width: 28,
-  },
-  rankingDetails: {
-    flex: 1,
-  },
-  rankingTag: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  rankingCount: {
-    fontSize: 10,
-    color: '#9CA3AF',
-    marginTop: 2,
-  },
-  rankingTrend: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  rankingTrendText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#10B981',
-    marginRight: 4,
-  },
-  bottomNav: {
-    flexDirection: 'row',
-    height: 64,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-  },
-  navItem: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addButtonContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginTop: -20,
-    elevation: 4,
-    shadowColor: '#7C3AED',
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 5,
-    overflow: 'hidden',
-  },
-  addButtonGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  detailContainer: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  detailHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 54,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  backBtnWrapper: {
-    padding: 4,
-  },
-  detailHeaderTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  detailContent: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-  },
-  detailAuthorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  detailAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-  },
-  detailAuthorText: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  detailAuthorName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  detailAuthorHandle: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginTop: 1,
-  },
-  followBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#7C3AED',
-  },
-  followingBtn: {
-    backgroundColor: '#7C3AED',
-  },
-  followBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#7C3AED',
-  },
-  followingBtnText: {
-    color: '#FFFFFF',
-  },
-  detailBodyText: {
-    fontSize: 14,
-    color: '#374151',
-    lineHeight: 20,
-    marginBottom: 14,
-  },
-  detailPostImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-  detailTimestamp: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    marginBottom: 12,
-  },
-  statsDivider: {
-    height: 1,
+  galleryMoreText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+
+  // Poll
+  pollContainer: { backgroundColor: '#F9FAFB', borderRadius: 12, padding: 14, marginBottom: 12, gap: 8 },
+  pollOption: {
+    height: 40,
     backgroundColor: '#F3F4F6',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-  },
-  statItem: {
-    fontSize: 12,
-    color: '#4B5563',
-  },
-  statBold: {
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  interactionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-  },
-  interactBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  interactBtnText: {
-    fontSize: 12,
-    color: '#4B5563',
-    fontWeight: '600',
-    marginLeft: 6,
-  },
-  bottomSheetOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  commentSheetContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    height: '75%',
-    paddingBottom: 24,
-  },
-  sheetHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  sheetTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  commentSortTabs: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  sortTab: {
-    marginRight: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  sortTabActive: {
-    backgroundColor: '#7C3AED15',
-  },
-  sortTabText: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '600',
-  },
-  sortTabTextActive: {
-    color: '#7C3AED',
-  },
-  commentsScroll: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  commentContainer: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  commentHeader: {
-    flexDirection: 'row',
-  },
-  commentAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  commentAuthorInfo: {
-    marginLeft: 10,
-    flex: 1,
-  },
-  commentAuthor: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  commentHandle: {
-    fontWeight: 'normal',
-    color: '#9CA3AF',
-  },
-  commentText: {
-    fontSize: 12,
-    color: '#374151',
-    marginTop: 4,
-    lineHeight: 16,
-  },
-  replyContainer: {
-    marginLeft: 40,
-    marginTop: 10,
-    paddingLeft: 10,
-    borderLeftWidth: 1.5,
-    borderLeftColor: '#E5E7EB',
-  },
-  authorBadge: {
-    backgroundColor: '#7C3AED15',
-    color: '#7C3AED',
-    fontSize: 9,
-    fontWeight: '700',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 4,
-    marginLeft: 6,
+    borderRadius: 8,
     overflow: 'hidden',
+    position: 'relative',
+    justifyContent: 'center',
   },
-  commentInputRow: {
+  pollBar: { position: 'absolute', height: '100%', backgroundColor: '#FFF3EC', borderRadius: 8 },
+  pollOptionContent: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 12, zIndex: 1 },
+  pollOptionText: { fontSize: 14, color: '#374151', fontWeight: '500' },
+  pollOptionVoted: { color: '#FF6B00', fontWeight: 'bold' },
+  pollPct: { fontSize: 13, color: '#6B7280', fontWeight: '600' },
+  pollMeta: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', marginTop: 4 },
+
+  // Post Actions
+  postActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
     paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
+    gap: 4,
   },
-  commentTextInput: {
-    flex: 1,
-    height: 40,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    fontSize: 12,
-    color: '#1F2937',
-    marginRight: 10,
-  },
-  shareSheetContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-  },
-  shareSheetTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1F2937',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  shareGrid: {
+  voteGroup: { flexDirection: 'row', alignItems: 'center', marginRight: 4 },
+  voteBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 },
+  voteBtnActive: {},
+  voteCount: { fontSize: 13, fontWeight: '600', color: '#6B7280' },
+  voteCountActive: { color: '#FF6B00' },
+  actionBtn: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    flex: 1,
+  },
+  actionBtnText: { fontSize: 12, color: '#6B7280', fontWeight: '500' },
+
+  // ── Post Detail Modal ──
+  modalContainer: { flex: 1, backgroundColor: '#FFFFFF' },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
-  shareAppItem: {
+  modalBack: { padding: 6 },
+  modalTitle: { fontSize: 16, fontWeight: 'bold', color: '#1F2937' },
+  detailAuthorRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, marginBottom: 10, gap: 10 },
+  detailAvatar: { width: 44, height: 44, borderRadius: 22 },
+  detailAuthorName: { fontSize: 15, fontWeight: 'bold', color: '#1F2937' },
+  detailAuthorMeta: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
+  detailText: { fontSize: 16, color: '#374151', lineHeight: 24, paddingHorizontal: 16, marginBottom: 12 },
+  detailImage: { width: '100%', height: 260, marginBottom: 12 },
+  detailGalleryImg: { width: 220, height: 180, borderRadius: 10, marginRight: 8 },
+  detailActions: {
+    flexDirection: 'row',
     alignItems: 'center',
-    width: '24%',
-    marginBottom: 16,
-  },
-  shareIconBg: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  shareAppLabel: {
-    fontSize: 10,
-    color: '#4B5563',
-    fontWeight: '500',
-  },
-  cancelShareBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
-  cancelShareText: {
-    fontSize: 13,
-    color: '#EF4444',
-    fontWeight: '700',
-  },
-  awardSheetContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-  },
-  awardSheetTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1F2937',
-    textAlign: 'center',
-  },
-  awardSheetSubtitle: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    textAlign: 'center',
-    marginTop: 2,
-    marginBottom: 12,
-  },
-  coinsBalanceRow: {
+  detailActionBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, flex: 1, justifyContent: 'center' },
+  detailActionActive: {},
+  detailActionText: { fontSize: 13, color: '#6B7280', fontWeight: '600' },
+
+  // Comments
+  commentsSection: { paddingHorizontal: 16, paddingTop: 16 },
+  commentsSectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  commentsSectionTitle: { fontSize: 15, fontWeight: 'bold', color: '#1F2937' },
+  sortRow: { flexDirection: 'row', gap: 8 },
+  sortBtn: { fontSize: 13, color: '#9CA3AF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB' },
+  sortBtnActive: { color: '#FF6B00', borderColor: '#FF6B00', fontWeight: 'bold' },
+  commentItem: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  commentAvatar: { width: 36, height: 36, borderRadius: 18 },
+  commentBody: { flex: 1 },
+  commentHeaderRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginBottom: 4 },
+  commentAuthor: { fontSize: 13, fontWeight: 'bold', color: '#1F2937' },
+  commentBadge: { fontSize: 11, color: '#FF6B00' },
+  commentTime: { fontSize: 11, color: '#9CA3AF' },
+  commentText: { fontSize: 14, color: '#374151', lineHeight: 20 },
+  commentActions: { flexDirection: 'row', gap: 16, marginTop: 8 },
+  commentActionBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  commentActionText: { fontSize: 12, color: '#9CA3AF' },
+  commentReplyBtn: { fontSize: 12, color: '#6B7280', fontWeight: '600' },
+  replyItem: { flexDirection: 'row', gap: 8, marginTop: 10, paddingLeft: 8, borderLeftWidth: 2, borderLeftColor: '#F3F4F6' },
+  replyAvatar: { width: 28, height: 28, borderRadius: 14 },
+  replyBody: { flex: 1 },
+  replyAuthor: { fontSize: 12, fontWeight: 'bold', color: '#1F2937' },
+  replyTime: { fontWeight: 'normal', color: '#9CA3AF' },
+  replyText: { fontSize: 13, color: '#374151', lineHeight: 18, marginTop: 2 },
+
+  // Comment Input
+  commentInput: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F3F4F6',
-    paddingVertical: 6,
-    borderRadius: 15,
-    marginBottom: 16,
-    alignSelf: 'center',
-    paddingHorizontal: 12,
-  },
-  coinsBalanceText: {
-    fontSize: 11,
-    color: '#4B5563',
-    marginLeft: 6,
-  },
-  coinsBold: {
-    fontWeight: '700',
-    color: '#F59E0B',
-  },
-  awardsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  awardCard: {
-    width: '23%',
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    borderRadius: 10,
+    paddingHorizontal: 16,
     paddingVertical: 10,
-    alignItems: 'center',
-    marginBottom: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    backgroundColor: '#fff',
+    gap: 10,
   },
-  awardCardSelected: {
-    borderColor: '#7C3AED',
-    backgroundColor: '#7C3AED05',
+  commentInputAvatar: { width: 34, height: 34, borderRadius: 17 },
+  commentInputAvatarFallback: {
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: '#FF6B00',
+    alignItems: 'center', justifyContent: 'center',
   },
-  awardLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginTop: 6,
-  },
-  awardCoins: {
-    fontSize: 9,
-    color: '#9CA3AF',
-    marginTop: 2,
-  },
-  quantitySelectorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 16,
-  },
-  quantityBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  commentInputAvatarText: { color: '#fff', fontWeight: 'bold' },
+  commentInputField: {
+    flex: 1,
+    minHeight: 40,
+    maxHeight: 100,
     backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    fontSize: 14,
+    color: '#374151',
+  },
+  commentSendBtn: { padding: 8 },
+  commentSendBtnDisabled: {},
+
+  // ── Bottom Sheets ──
+  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)' },
+  bottomSheet: {
+    position: 'absolute',
+    bottom: 0, left: 0, right: 0,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 36,
+  },
+  sheetHandle: { width: 40, height: 4, backgroundColor: '#E5E7EB', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
+  sheetTitle: { fontSize: 18, fontWeight: 'bold', color: '#1F2937', marginBottom: 16 },
+
+  // Share
+  shareGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginBottom: 20 },
+  shareItem: { width: (width - 96) / 3, alignItems: 'center' },
+  shareIconBox: { width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+  shareIconText: { fontSize: 26 },
+  shareLabel: { fontSize: 12, color: '#374151', textAlign: 'center' },
+  sheetCancelBtn: { paddingVertical: 14, borderRadius: 12, backgroundColor: '#F3F4F6', alignItems: 'center' },
+  sheetCancelText: { fontSize: 15, fontWeight: '600', color: '#6B7280' },
+
+  // Awards
+  awardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  coinBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF3EC', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  coinText: { fontSize: 14, fontWeight: 'bold', color: '#FF6B00' },
+  awardGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 },
+  awardItem: {
+    width: (width - 68) / 4,
     alignItems: 'center',
+    padding: 8,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#F3F4F6',
   },
-  quantityBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1F2937',
+  awardItemSelected: { borderColor: '#FF6B00', backgroundColor: '#FFF3EC' },
+  awardIconBox: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+  awardLabel: { fontSize: 10, fontWeight: '600', color: '#374151', textAlign: 'center' },
+  awardCost: { fontSize: 9, color: '#9CA3AF', marginTop: 2 },
+  awardControls: { gap: 12, marginBottom: 16 },
+  qtyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 24 },
+  qtyBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center' },
+  qtyBtnText: { fontSize: 20, color: '#374151', fontWeight: 'bold' },
+  qtyValue: { fontSize: 24, fontWeight: 'bold', color: '#1F2937', minWidth: 40, textAlign: 'center' },
+  awardSendBtn: { borderRadius: 14, overflow: 'hidden' },
+  awardSendGradient: { paddingVertical: 14, alignItems: 'center' },
+  awardSendText: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
+
+  // ── Profile Menu ──
+  profileMenuUser: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  profileMenuAvatar: { width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: '#FF6B00' },
+  profileMenuAvatarFallback: {
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: '#FF6B00',
+    alignItems: 'center', justifyContent: 'center',
   },
-  quantityValue: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginHorizontal: 16,
+  profileMenuAvatarText: { color: '#fff', fontSize: 22, fontWeight: 'bold' },
+  profileMenuName: { fontSize: 17, fontWeight: 'bold', color: '#1F2937' },
+  profileMenuEmail: { fontSize: 13, color: '#9CA3AF', marginTop: 2 },
+  profileMenuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, gap: 12, borderBottomWidth: 1, borderBottomColor: '#F9FAFB' },
+  profileMenuItemText: { flex: 1, fontSize: 15, color: '#374151' },
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14, marginTop: 8 },
+  logoutBtnText: { fontSize: 15, fontWeight: '600', color: '#EF4444' },
+
+  // ── FAB ──
+  fab: {
+    position: 'absolute',
+    right: 16,
+    bottom: 80,
+    shadowColor: '#FF6B00',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 10,
   },
-  sendAwardBtn: {
-    backgroundColor: '#7C3AED',
-    paddingVertical: 12,
-    borderRadius: 25,
+  fabGradient: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+
+  // ── Bottom Navigation ──
+  bottomNav: {
+    flexDirection: 'row',
+    height: 64,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
     alignItems: 'center',
+    paddingHorizontal: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 12,
   },
-  sendAwardText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
+  navItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 6 },
+  navItemCreate: { flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: -8 },
+  navCreateGradient: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', shadowColor: '#FF6B00', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 },
+  navIconWrap: { position: 'relative' },
+  navBadge: { position: 'absolute', top: -4, right: -8, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: '#EF4444', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
+  navBadgeText: { fontSize: 9, color: '#fff', fontWeight: 'bold' },
+  navLabel: { fontSize: 10, color: '#9CA3AF', marginTop: 3 },
+  navLabelActive: { color: '#FF6B00', fontWeight: '600' },
 });

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityInd
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { safeStorage } from '../utils/storage';
-import { authService } from '../services/authService';
+import { authService, getCognitoUserInfo } from '../services/apiService';
 
 export default function LoginScreen({ onBack, onLoginSuccess, onForgotPassword, onGoToRegister }) {
   const [emailOrPhone, setEmailOrPhone] = useState('');
@@ -18,10 +18,18 @@ export default function LoginScreen({ onBack, onLoginSuccess, onForgotPassword, 
     }
     setLoading(true);
     try {
-      await authService.signIn(emailOrPhone, password);
-      await safeStorage.setItem('user_session', JSON.stringify({ isLoggedIn: true, email: emailOrPhone }));
+      const result = await authService.signIn(emailOrPhone, password);
+      // Fetch user info from Cognito to get name
+      let userInfo = { email: emailOrPhone, name: emailOrPhone };
+      if (result.AuthenticationResult?.AccessToken) {
+        const cognitoUser = await getCognitoUserInfo(result.AuthenticationResult.AccessToken);
+        if (cognitoUser) {
+          userInfo = cognitoUser;
+        }
+      }
+      await safeStorage.setItem('user_session', JSON.stringify({ isLoggedIn: true, user: userInfo }));
       setLoading(false);
-      onLoginSuccess();
+      onLoginSuccess(userInfo);
     } catch (error) {
       setLoading(false);
       Alert.alert('Login Failed', error.message || 'An error occurred during login.');

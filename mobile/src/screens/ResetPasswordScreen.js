@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image, ImageBackground, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { authService } from '../services/authService';
+import { authService } from '../services/apiService';
 
 export default function ResetPasswordScreen({ email, onBack, onResetSuccess, onGoToLogin }) {
   const [code, setCode] = useState('');
