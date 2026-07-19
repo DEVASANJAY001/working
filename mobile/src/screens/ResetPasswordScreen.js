@@ -15,7 +15,8 @@ export default function ResetPasswordScreen({ email, onBack, onResetSuccess, onG
   // Requirement validations
   const hasMinLength = password.length >= 8;
   const hasUppercase = /[A-Z]/.test(password);
-  const hasNumberOrSymbol = /[\d!@#$%^&*(),.?":{}|<>]/.test(password);
+  const hasNumber = /\d/.test(password);
+  const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
   const handleSave = async () => {
     if (!code || !password || !confirmPassword) {
@@ -26,7 +27,7 @@ export default function ResetPasswordScreen({ email, onBack, onResetSuccess, onG
       Alert.alert('Error', 'Passwords do not match.');
       return;
     }
-    if (!hasMinLength || !hasUppercase || !hasNumberOrSymbol) {
+    if (!hasMinLength || !hasUppercase || !hasNumber || !hasSymbol) {
       Alert.alert('Error', 'Password does not meet the complexity requirements.');
       return;
     }
@@ -150,11 +151,20 @@ export default function ResetPasswordScreen({ email, onBack, onResetSuccess, onG
 
             <View style={styles.reqRow}>
               <Ionicons 
-                name={hasNumberOrSymbol ? "checkmark-circle" : "ellipse-outline"} 
+                name={hasNumber ? "checkmark-circle" : "ellipse-outline"} 
                 size={16} 
-                color={hasNumberOrSymbol ? "#10B981" : "#9CA3AF"} 
+                color={hasNumber ? "#10B981" : "#9CA3AF"} 
               />
-              <Text style={[styles.reqText, hasNumberOrSymbol && styles.reqTextSuccess]}>One number or symbol</Text>
+              <Text style={[styles.reqText, hasNumber && styles.reqTextSuccess]}>One numeric character</Text>
+            </View>
+
+            <View style={styles.reqRow}>
+              <Ionicons 
+                name={hasSymbol ? "checkmark-circle" : "ellipse-outline"} 
+                size={16} 
+                color={hasSymbol ? "#10B981" : "#9CA3AF"} 
+              />
+              <Text style={[styles.reqText, hasSymbol && styles.reqTextSuccess]}>One special symbol</Text>
             </View>
           </View>
         </ScrollView>
@@ -323,5 +333,8 @@ const styles = StyleSheet.create({
   loginLinkBold: {
     color: '#7C3AED',
     fontWeight: 'bold',
+  },
+  formContainer: {
+    width: '100%',
   },
 });

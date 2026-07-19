@@ -15,7 +15,8 @@ export default function ResetPasswordScreen({ email, onBack, onResetSuccess, onG
   // Requirement validations
   const hasMinLength = password.length >= 8;
   const hasUppercase = /[A-Z]/.test(password);
-  const hasNumberOrSymbol = /[\d!@#$%^&*(),.?":{}|<>]/.test(password);
+  const hasNumber = /\d/.test(password);
+  const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -29,7 +30,7 @@ export default function ResetPasswordScreen({ email, onBack, onResetSuccess, onG
       setError('Passwords do not match.');
       return;
     }
-    if (!hasMinLength || !hasUppercase || !hasNumberOrSymbol) {
+    if (!hasMinLength || !hasUppercase || !hasNumber || !hasSymbol) {
       setError('Password does not meet the complexity requirements.');
       return;
     }
@@ -155,8 +156,12 @@ export default function ResetPasswordScreen({ email, onBack, onResetSuccess, onG
                   <span className={`text-xs transition-colors ${hasUppercase ? 'text-green-700 font-semibold' : 'text-gray-400'}`}>One uppercase letter</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <CheckCircle className={`w-4 h-4 transition-colors ${hasNumberOrSymbol ? 'text-green-500' : 'text-gray-300'}`} />
-                  <span className={`text-xs transition-colors ${hasNumberOrSymbol ? 'text-green-700 font-semibold' : 'text-gray-400'}`}>One number or symbol</span>
+                  <CheckCircle className={`w-4 h-4 transition-colors ${hasNumber ? 'text-green-500' : 'text-gray-300'}`} />
+                  <span className={`text-xs transition-colors ${hasNumber ? 'text-green-700 font-semibold' : 'text-gray-400'}`}>One numeric character</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className={`w-4 h-4 transition-colors ${hasSymbol ? 'text-green-500' : 'text-gray-300'}`} />
+                  <span className={`text-xs transition-colors ${hasSymbol ? 'text-green-700 font-semibold' : 'text-gray-400'}`}>One special symbol</span>
                 </div>
               </div>
             </div>
