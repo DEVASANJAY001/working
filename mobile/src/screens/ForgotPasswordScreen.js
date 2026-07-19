@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image, ImageBackground } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { authService } from '../services/apiService';
+import { authService } from '../services/authService';
 
 export default function ForgotPasswordScreen({ onBack, onContinue, onGoToLogin }) {
   const [email, setEmail] = useState('');

@@ -15,10 +15,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 
-import { postsService } from '../services/apiService';
-
-export default function CreateContentScreen({ onBack, onPublish, currentUser }) {
-
 const { width, height } = Dimensions.get('window');
 
 // Gallery photos mock data
@@ -33,6 +29,8 @@ const galleryPhotos = [
   { id: 'p8', uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80' },
   { id: 'p9', uri: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=300&auto=format&fit=crop&q=80' },
 ];
+
+export default function CreateContentScreen({ onBack, onPublish }) {
   const [currentView, setCurrentView] = useState('CreatePost'); // CreatePost, VoiceRecorder, VideoRecorder, ImagePicker, PollCreator, DraftsList
   
   // CreatePost States

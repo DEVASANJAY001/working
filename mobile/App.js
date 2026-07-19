@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Animated, Text, TextInput, View, SafeAreaView } from 'react-native';
+import { SafeAreaView, StyleSheet, Animated, Text, TextInput } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 
 import { safeStorage } from './src/utils/storage';
-import { getCognitoUserInfo, getStoredTokens } from './src/services/apiService';
 
 // Import Screens
 import SplashScreen from './src/screens/SplashScreen';
@@ -20,11 +19,6 @@ import HomeDashboardScreen from './src/screens/HomeDashboardScreen';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 import CreateContentScreen from './src/screens/CreateContentScreen';
-import CommunitiesScreen from './src/screens/CommunitiesScreen';
-import ProfileScreen from './src/screens/ProfileScreen';
-import MessagesScreen from './src/screens/MessagesScreen';
-import NotificationsScreen from './src/screens/NotificationsScreen';
-import DiscoverScreen from './src/screens/DiscoverScreen';
 
 // Globally monkey-patch Text & TextInput to set Inter Font Family based on fontWeight
 const patchComponentFont = (Component) => {
@@ -61,7 +55,6 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState('Splash');
   const [userEmail, setUserEmail] = useState('');
   const [hasSession, setHasSession] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null); // logged-in user info
 
   useEffect(() => {
     async function checkSession() {
@@ -71,24 +64,6 @@ export default function App() {
           const parsed = JSON.parse(val);
           if (parsed && parsed.isLoggedIn) {
             setHasSession(true);
-            if (parsed.user) {
-              setCurrentUser(parsed.user);
-            }
-          }
-        }
-        // Also try to refresh user info from Cognito tokens
-        const tokens = await getStoredTokens();
-        if (tokens?.AccessToken) {
-          const freshUser = await getCognitoUserInfo(tokens.AccessToken);
-          if (freshUser) {
-            setCurrentUser(freshUser);
-            // Update stored session
-            const sessionStr = await safeStorage.getItem('user_session');
-            if (sessionStr) {
-              const session = JSON.parse(sessionStr);
-              session.user = freshUser;
-              await safeStorage.setItem('user_session', JSON.stringify(session));
-            }
           }
         }
       } catch (e) {
@@ -109,6 +84,7 @@ export default function App() {
   const slideAnim = useRef(new Animated.Value(15)).current;
 
   useEffect(() => {
+    // Trigger smooth fade-in and slide-up transition when screen changes
     fadeAnim.setValue(0);
     slideAnim.setValue(15);
 
@@ -153,10 +129,7 @@ export default function App() {
         return (
           <LoginScreen
             onBack={() => setCurrentScreen('GetStarted')}
-            onLoginSuccess={(userInfo) => {
-              if (userInfo) setCurrentUser(userInfo);
-              setCurrentScreen('Home');
-            }}
+            onLoginSuccess={() => setCurrentScreen('Home')}
             onForgotPassword={() => setCurrentScreen('ForgotPassword')}
             onGoToRegister={() => setCurrentScreen('Register')}
           />
@@ -195,12 +168,7 @@ export default function App() {
         return (
           <ProfileSetupScreen
             onBack={() => setCurrentScreen('PhoneNumber')}
-            onContinue={(profileData) => {
-              if (profileData?.name) {
-                setCurrentUser(prev => ({ ...prev, ...profileData }));
-              }
-              setCurrentScreen('LanguageSelection');
-            }}
+            onContinue={() => setCurrentScreen('LanguageSelection')}
           />
         );
       
@@ -223,25 +191,20 @@ export default function App() {
       case 'Home':
         return (
           <HomeDashboardScreen 
-            currentUser={currentUser}
             onLogout={async () => {
               try {
                 await safeStorage.removeItem('user_session');
-                await safeStorage.removeItem('auth_tokens');
               } catch (e) {}
               setHasSession(false);
-              setCurrentUser(null);
               setCurrentScreen('GetStarted');
             }} 
             onCreatePress={() => setCurrentScreen('CreateContent')}
-            onNavigate={(screen) => setCurrentScreen(screen)}
           />
         );
       
       case 'CreateContent':
         return (
           <CreateContentScreen
-            currentUser={currentUser}
             onBack={() => setCurrentScreen('Home')}
             onPublish={(newPost) => {
               setCurrentScreen('Home');
@@ -268,55 +231,6 @@ export default function App() {
             onBack={() => setCurrentScreen('ForgotPassword')}
             onResetSuccess={() => setCurrentScreen('Login')}
             onGoToLogin={() => setCurrentScreen('Login')}
-          />
-        );
-      
-      case 'Communities':
-        return (
-          <CommunitiesScreen
-            currentUser={currentUser}
-            onBack={() => setCurrentScreen('Home')}
-          />
-        );
-
-      case 'Profile':
-        return (
-          <ProfileScreen
-            currentUser={currentUser}
-            onBack={() => setCurrentScreen('Home')}
-            onLogout={async () => {
-              try {
-                await safeStorage.removeItem('user_session');
-                await safeStorage.removeItem('auth_tokens');
-              } catch (e) {}
-              setHasSession(false);
-              setCurrentUser(null);
-              setCurrentScreen('GetStarted');
-            }}
-          />
-        );
-
-      case 'Messages':
-        return (
-          <MessagesScreen
-            currentUser={currentUser}
-            onBack={() => setCurrentScreen('Home')}
-          />
-        );
-
-      case 'Notifications':
-        return (
-          <NotificationsScreen
-            currentUser={currentUser}
-            onBack={() => setCurrentScreen('Home')}
-          />
-        );
-
-      case 'Discover':
-        return (
-          <DiscoverScreen
-            currentUser={currentUser}
-            onBack={() => setCurrentScreen('Home')}
           />
         );
       
