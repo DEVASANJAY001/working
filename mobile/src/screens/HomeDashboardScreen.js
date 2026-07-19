@@ -1669,7 +1669,7 @@ const styles = StyleSheet.create({
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    justify.content: 'space-between',
+    justifyContent: 'space-between',
     marginBottom: 16,
   },
   liveBannerContent: {
