@@ -59,7 +59,7 @@ Create a `.env` file in the root directory (copy from `.env.example`) and edit d
 # Disable Mock Mode
 VITE_USE_MOCK_AUTH=false
 
-# Real Cognito Settings
+# Real Cognito Settings:
 VITE_AWS_REGION=us-east-1
 VITE_AWS_USER_POOL_ID=us-east-1_xxxxxxxxx
 VITE_AWS_USER_POOL_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxx
