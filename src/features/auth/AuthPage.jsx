@@ -4,7 +4,7 @@ import {
   ShieldCheck, User, AlertCircle, CheckCircle2,
   RefreshCw, Smartphone, MessageSquare
 } from 'lucide-react';
-import { authService } from '../services/authService';
+import { authService } from '../../services/authService';
 
 /* ═══════════════════════════════════════════
    SHARED UI PRIMITIVES
@@ -12,10 +12,10 @@ import { authService } from '../services/authService';
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" className="w-5 h-5" aria-hidden="true">
-    <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.48 14.98 1 12 1 7.35 1 3.37 3.65 1.43 7.54l3.85 2.99C6.2 7.42 8.87 5.04 12 5.04z"/>
-    <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.51h6.46c-.29 1.48-1.14 2.73-2.4 3.58l3.76 2.91c2.2-2.03 3.67-5.01 3.67-8.66z"/>
-    <path fill="#FBBC05" d="M5.28 14.71c-.24-.71-.38-1.47-.38-2.26s.14-1.55.38-2.26L1.43 7.2C.52 9.02 0 11.01 0 13.1s.52 4.08 1.43 5.9l3.85-2.99z"/>
-    <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.76-2.91c-1.1.74-2.52 1.18-4.2 1.18-3.13 0-5.8-2.38-6.72-5.49L1.43 16C3.37 19.89 7.35 22.5 12 22.5z"/>
+    <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.48 14.98 1 12 1 7.35 1 3.37 3.65 1.43 7.54l3.85 2.99C6.2 7.42 8.87 5.04 12 5.04z" />
+    <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.51h6.46c-.29 1.48-1.14 2.73-2.4 3.58l3.76 2.91c2.2-2.03 3.67-5.01 3.67-8.66z" />
+    <path fill="#FBBC05" d="M5.28 14.71c-.24-.71-.38-1.47-.38-2.26s.14-1.55.38-2.26L1.43 7.2C.52 9.02 0 11.01 0 13.1s.52 4.08 1.43 5.9l3.85-2.99z" />
+    <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.76-2.91c-1.1.74-2.52 1.18-4.2 1.18-3.13 0-5.8-2.38-6.72-5.49L1.43 16C3.37 19.89 7.35 22.5 12 22.5z" />
   </svg>
 );
 
@@ -110,7 +110,7 @@ const OtpBoxes = ({ value, onChange, id = 'otp' }) => (
       ))}
     </div>
     <p className="text-xs text-gray-400">
-      Demo code: <span className="font-semibold text-gray-600 tracking-widest">123456</span>
+      Check your email or phone for the 6-digit code sent by AWS.
     </p>
   </div>
 );
@@ -226,7 +226,34 @@ const Card = ({ children }) => (
 
 /* Validation helpers */
 const validEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v?.trim());
-const validPhone = v => /^\+?[1-9]\d{6,14}$/.test(v?.replace(/[\s\-()]/g, ''));
+const validPhone = (phone) => {
+  const clean = phone.replace(/\D/g, "");
+
+  if (clean.length !== 10)
+    return "Phone number must contain exactly 10 digits.";
+
+  if (!/^[6-9]/.test(clean))
+    return "Enter a valid Indian mobile number.";
+
+  return "";
+};
+
+const formatPhoneForCognito = (phone) => {
+  return `+91${phone.replace(/\D/g, "")}`;
+};
+
+const normalizeUsername = (value) => {
+  const input = value.trim();
+  if (input.includes("@")) {
+    return input.toLowerCase();
+  }
+  const digits = input.replace(/\D/g, "");
+  if (digits.startsWith("91")) {
+    return `+${digits}`;
+  }
+  return `+91${digits}`;
+};
+
 const validIdentifier = v => {
   if (!v?.trim()) return 'Please enter your email or phone number.';
   if (v.includes('@') && !validEmail(v)) return 'Enter a valid email address.';
@@ -250,14 +277,19 @@ export default function AuthPage({ onLoginSuccess }) {
   const [screen, setScreen] = useState('welcome');
 
   // form fields
-  const [name, setName]             = useState('');
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword]     = useState('');
-  const [confirmPw, setConfirmPw]   = useState('');
-  const [otp, setOtp]               = useState('');
+  const [name, setName] = useState("");
 
-  const [error, setError]   = useState('');
-  const [info, setInfo]     = useState('');
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+
+  const [identifier, setIdentifier] = useState("");
+
+  const [password, setPassword] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [otp, setOtp] = useState("");
+
+  const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
 
   const clearFeedback = () => { setError(''); setInfo(''); };
@@ -278,15 +310,18 @@ export default function AuthPage({ onLoginSuccess }) {
   /* ── SIGN IN ── */
   const handleSignIn = async (e) => {
     e.preventDefault(); clearFeedback();
-    const ve = validIdentifier(identifier);
-    if (ve) { setError(ve); return; }
+    if (!identifier.trim()) {
+      setError('Please enter your email or phone number.');
+      return;
+    }
     if (!password) { setError('Please enter your password.'); return; }
     setLoading(true);
     try {
-      const result = await authService.signIn({ username: identifier.trim(), password });
+      const username = normalizeUsername(identifier);
+      await authService.signIn({ username, password });
       const user = await authService.getCurrentUser();
       onLoginSuccess(user);
-    } catch (err) { setError(err.message || 'Sign in failed. Check your credentials.'); }
+    } catch (err) { setError(err.message); }
     finally { setLoading(false); }
   };
 
@@ -294,34 +329,85 @@ export default function AuthPage({ onLoginSuccess }) {
   const handleSignUp = async (e) => {
     e.preventDefault(); clearFeedback();
     if (!name.trim()) { setError('Please enter your full name.'); return; }
-    const ve = validIdentifier(identifier);
-    if (ve) { setError(ve); return; }
-    if (!password || password.length < 8) { setError('Password must be at least 8 characters.'); return; }
+    if (!validEmail(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    const phoneError = validPhone(phone);
+
+    if (phoneError) {
+      setError(phoneError);
+      return;
+    }
+
+    if (!password || password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+
+    if (password !== confirmPw) {
+      setError("Passwords do not match.");
+      return;
+    }
+    if (!password) {
+      setError("Please enter your password.");
+      return;
+    }
     if (password !== confirmPw) { setError('Passwords do not match.'); return; }
     setLoading(true);
     try {
       await authService.signUp({
-        username: identifier.trim(),
+        username: email.trim(),
         password,
-        options: { userAttributes: { name: name.trim() } }
+        options: {
+          userAttributes: {
+            email: email.trim(),
+            name: name.trim(),
+            phone_number: formatPhoneForCognito(phone),
+          },
+        },
       });
-      setInfo(`A 6-digit verification code has been sent to ${identifier.trim()}.`);
-      goTo('signup-otp');
+      setIdentifier(email);
+
+      setInfo(
+        `A verification code has been sent to ${email}.`
+      ); goTo('signup-otp');
     } catch (err) { setError(err.message || 'Failed to create account.'); }
     finally { setLoading(false); }
   };
 
   /* ── SIGN UP: verify OTP ── */
   const handleConfirmSignUp = async (e) => {
-    e.preventDefault(); clearFeedback();
-    if (otp.replace(/\s/g, '').length < 6) { setError('Enter the complete 6-digit code.'); return; }
+    e.preventDefault();
+    clearFeedback();
+
+    if (otp.replace(/\s/g, "").length < 6) {
+      setError("Enter the complete 6-digit code.");
+      return;
+    }
+
     setLoading(true);
+
     try {
-      await authService.confirmSignUp({ username: identifier.trim(), confirmationCode: otp });
+      await authService.confirmSignUp({
+        username: identifier.trim(),
+        confirmationCode: otp,
+      });
+
+      await authService.signIn({
+        username: identifier.trim(),
+        password,
+      });
+
       const user = await authService.getCurrentUser();
+
       onLoginSuccess(user);
-    } catch (err) { setError(err.message || 'Invalid code. Please try again.'); }
-    finally { setLoading(false); }
+    } catch (err) {
+      setError(err.message || "Verification failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   /* ── FORGOT: request OTP ── */
@@ -400,10 +486,13 @@ export default function AuthPage({ onLoginSuccess }) {
 
         <form onSubmit={handleSignIn} className="space-y-4">
           <Field
-            id="si-id" label="Email or Phone number"
+            id="si-id"
+            label="Email or Phone Number"
             icon={identifier && !identifier.includes('@') ? Phone : Mail}
-            value={identifier} onChange={e => setIdentifier(e.target.value)}
-            placeholder="name@email.com or +91 98765 43210" autoFocus
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            placeholder="name@email.com or +91 98765 43210"
+            autoFocus
           />
           <div className="space-y-1">
             <PasswordField id="si-pw" label="Password" value={password} onChange={e => setPassword(e.target.value)} />
@@ -452,12 +541,39 @@ export default function AuthPage({ onLoginSuccess }) {
 
           {/* Email or Phone */}
           <Field
-            id="su-id" label="Email or Phone number"
-            icon={identifier && !identifier.includes('@') ? Phone : Mail}
-            value={identifier} onChange={e => setIdentifier(e.target.value)}
-            placeholder="name@email.com or +91 98765 43210"
-            hint="A verification code will be sent here after you submit."
+            id="su-email"
+            label="Email Address"
+            icon={Mail}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
           />
+
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700">
+              Phone Number
+            </label>
+
+            <div className="flex">
+              <div className="px-4 flex items-center rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 text-sm font-medium text-gray-600">
+                🇮🇳 +91
+              </div>
+
+              <input
+                type="tel"
+                maxLength={10}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                placeholder="9876543210"
+                className="flex-1 py-3 px-4 border border-gray-200 rounded-r-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+            </div>
+          </div>
+
+
+
+
+
 
           {/* Password */}
           <PasswordField
@@ -510,7 +626,7 @@ export default function AuthPage({ onLoginSuccess }) {
         </form>
 
         <button type="button"
-          onClick={() => handleSignUp({ preventDefault: () => {} })}
+          onClick={() => handleSignUp({ preventDefault: () => { } })}
           className="w-full flex items-center justify-center gap-1.5 text-sm text-gray-400 hover:text-emerald-600 transition-colors">
           <RefreshCw className="w-3.5 h-3.5" /> Resend code
         </button>
@@ -586,7 +702,7 @@ export default function AuthPage({ onLoginSuccess }) {
         </form>
 
         <button type="button"
-          onClick={() => handleForgotRequest({ preventDefault: () => {} })}
+          onClick={() => handleForgotRequest({ preventDefault: () => { } })}
           className="w-full flex items-center justify-center gap-1.5 text-sm text-gray-400 hover:text-emerald-600 transition-colors">
           <RefreshCw className="w-3.5 h-3.5" /> Resend code
         </button>

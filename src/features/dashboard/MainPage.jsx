@@ -1,6 +1,6 @@
 import React from 'react';
 import { LogOut, ShieldCheck, Mail, Phone, CheckCircle2 } from 'lucide-react';
-import { authService } from '../services/authService';
+import { authService } from '../../services/authService';
 
 export default function MainPage({ user, onLogout }) {
   const handleLogout = async () => {

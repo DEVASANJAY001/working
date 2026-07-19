@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import AuthPage from './components/AuthPage';
-import MainPage from './components/MainPage';
+import AuthPage from './features/auth/AuthPage';
+import Dashboard from './features/dashboard/Dashboard';
 import { authService } from './services/authService';
 
 export default function App() {
@@ -43,7 +43,7 @@ export default function App() {
   }
 
   return user ? (
-    <MainPage user={user} onLogout={handleLogout} />
+    <Dashboard user={user} onLogout={handleLogout} />
   ) : (
     <AuthPage onLoginSuccess={handleLoginSuccess} />
   );

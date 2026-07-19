@@ -1,151 +1,160 @@
-import { amplifyConfig, isMock } from '../aws-exports';
-import { Amplify } from 'aws-amplify';
-import * as AmplifyAuth from 'aws-amplify/auth';
+import {
+    signUp as amplifySignUp,
+    confirmSignUp as amplifyConfirmSignUp,
+    signIn as amplifySignIn,
+    signOut as amplifySignOut,
+    getCurrentUser as amplifyGetCurrentUser,
+    resetPassword as amplifyResetPassword,
+    confirmResetPassword as amplifyConfirmResetPassword,
+    signInWithRedirect,
+} from "aws-amplify/auth";
 
-if (!isMock && amplifyConfig.Auth.Cognito.userPoolId) {
-  try { Amplify.configure(amplifyConfig); }
-  catch (e) { console.error('Amplify config error:', e); }
+/* ---------------- Friendly Error Messages ---------------- */
+
+function friendlyError(err) {
+    const errors = {
+        UsernameExistsException:
+            "An account with this email or phone already exists.",
+
+        UserNotFoundException:
+            "No account found with this email or phone number.",
+
+        NotAuthorizedException:
+            "Incorrect password.",
+
+        UserNotConfirmedException:
+            "Please verify your account using the OTP sent to your email.",
+
+        CodeMismatchException:
+            "Incorrect verification code.",
+
+        ExpiredCodeException:
+            "Verification code expired.",
+
+        InvalidPasswordException:
+            "Password doesn't meet the required policy.",
+
+        LimitExceededException:
+            "Too many attempts. Please try again later.",
+
+        TooManyRequestsException:
+            "Too many requests. Please wait a moment.",
+
+        NetworkError:
+            "Please check your internet connection.",
+    };
+
+    return errors[err.name] || err.message || "Something went wrong.";
 }
 
-/* ── Mock storage keys ── */
-const MOCK_SESSION_KEY = 'simpleauth_session';
-const MOCK_USERS_KEY   = 'simpleauth_users';      // { [username]: { name, password } }
-const MOCK_PENDING_KEY = 'simpleauth_pending_otp'; // { username, otp }
+/* =======================================================
+                    AUTH SERVICE
+======================================================= */
 
-const getUsers = () => JSON.parse(localStorage.getItem(MOCK_USERS_KEY) || '{}');
-const saveUsers = (u) => localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(u));
+export const authService = {
+    /* ---------------- SIGN UP ---------------- */
 
-/* ═══════════════════════════════
-   MOCK SERVICE
-════════════════════════════════ */
-const mockService = {
-  getCurrentUser: async () => {
-    const s = localStorage.getItem(MOCK_SESSION_KEY);
-    if (!s) throw new Error('No session');
-    return JSON.parse(s);
-  },
+    async signUp({ username, password, options }) {
+        try {
+            return await amplifySignUp({
+                username,
+                password,
+                options,
+            });
+        } catch (err) {
+            throw new Error(friendlyError(err));
+        }
+    },
 
-  /** Standard password sign-up — stores pending + simulates OTP */
-  signUp: async ({ username, password, options }) => {
-    const name = options?.userAttributes?.name || username.split('@')[0];
-    // Check if already registered
-    const users = getUsers();
-    if (users[username]) throw new Error('An account with this email/phone already exists.');
-    // Store as pending (not confirmed yet)
-    localStorage.setItem(MOCK_PENDING_KEY, JSON.stringify({ username, password, name, otp: '123456' }));
-    console.log(`[Mock] OTP sent to ${username}. Use 123456.`);
-    return { isSignUpComplete: false };
-  },
+    /* ---------------- OTP VERIFY ---------------- */
 
-  /** Confirm OTP after sign-up */
-  confirmSignUp: async ({ username, confirmationCode }) => {
-    const pending = JSON.parse(localStorage.getItem(MOCK_PENDING_KEY) || 'null');
-    if (!pending || pending.username !== username)
-      throw new Error('Session expired. Please sign up again.');
-    if (confirmationCode !== pending.otp)
-      throw new Error('Incorrect verification code. (Demo code: 123456)');
-    // Move from pending → registered
-    const users = getUsers();
-    users[username] = { name: pending.name, password: pending.password };
-    saveUsers(users);
-    localStorage.removeItem(MOCK_PENDING_KEY);
-    // Auto sign in
-    const session = { username, userId: 'uid-' + Date.now(), signInDetails: { loginId: username }, name: pending.name };
-    localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(session));
-    return { isSignUpComplete: true };
-  },
+    async confirmSignUp({ username, confirmationCode }) {
+        try {
+            return await amplifyConfirmSignUp({
+                username,
+                confirmationCode,
+            });
+        } catch (err) {
+            throw new Error(friendlyError(err));
+        }
+    },
 
-  /** Password-based sign in */
-  signIn: async ({ username, password }) => {
-    const users = getUsers();
-    const user = users[username];
-    if (!user) throw new Error('No account found with this email or phone number.');
-    if (user.password !== password) throw new Error('Incorrect password. Please try again.');
-    const session = { username, userId: 'uid-' + Date.now(), signInDetails: { loginId: username }, name: user.name };
-    localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(session));
-    return { isSignedIn: true };
-  },
+    /* ---------------- LOGIN ---------------- */
 
-  /** Forgot password — sends mock OTP */
-  resetPassword: async ({ username }) => {
-    const users = getUsers();
-    if (!users[username]) throw new Error('No account found with this email or phone number.');
-    localStorage.setItem(MOCK_PENDING_KEY, JSON.stringify({ username, otp: '123456', type: 'reset' }));
-    console.log(`[Mock] Reset OTP sent to ${username}. Use 123456.`);
-    return { isPasswordReset: false };
-  },
+    async signIn({ username, password }) {
+        try {
+            return await amplifySignIn({
+                username,
+                password,
+            });
+        } catch (err) {
+            throw new Error(friendlyError(err));
+        }
+    },
 
-  /** Confirm reset OTP + new password → auto sign in */
-  confirmResetPassword: async ({ username, confirmationCode, newPassword }) => {
-    const pending = JSON.parse(localStorage.getItem(MOCK_PENDING_KEY) || 'null');
-    if (!pending || pending.username !== username || pending.type !== 'reset')
-      throw new Error('Session expired. Please request a new reset code.');
-    if (confirmationCode !== pending.otp)
-      throw new Error('Incorrect verification code. (Demo code: 123456)');
-    if (!newPassword || newPassword.length < 8)
-      throw new Error('Password must be at least 8 characters.');
-    // Update password
-    const users = getUsers();
-    users[username] = { ...users[username], password: newPassword };
-    saveUsers(users);
-    localStorage.removeItem(MOCK_PENDING_KEY);
-    // Auto sign in
-    const session = { username, userId: 'uid-' + Date.now(), signInDetails: { loginId: username }, name: users[username]?.name };
-    localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(session));
-    return { isPasswordReset: true };
-  },
+    /* ---------------- FORGOT PASSWORD ---------------- */
 
-  signOut: async () => {
-    localStorage.removeItem(MOCK_SESSION_KEY);
-  },
+    async resetPassword({ username }) {
+        try {
+            return await amplifyResetPassword({
+                username,
+            });
+        } catch (err) {
+            throw new Error(friendlyError(err));
+        }
+    },
 
-  federatedSignIn: async ({ provider }) => {
-    await new Promise(r => setTimeout(r, 900));
-    const session = {
-      username: 'googleuser@gmail.com', userId: 'google-uid-123',
-      signInDetails: { loginId: 'googleuser@gmail.com' }, name: 'Google User'
-    };
-    localStorage.setItem(MOCK_SESSION_KEY, JSON.stringify(session));
-    window.location.reload();
-  }
+    /* ---------------- RESET PASSWORD OTP ---------------- */
+
+    async confirmResetPassword({
+        username,
+        confirmationCode,
+        newPassword,
+    }) {
+        try {
+            return await amplifyConfirmResetPassword({
+                username,
+                confirmationCode,
+                newPassword,
+            });
+        } catch (err) {
+            throw new Error(friendlyError(err));
+        }
+    },
+
+    /* ---------------- GOOGLE ---------------- */
+
+    async federatedSignIn() {
+        try {
+            return await signInWithRedirect({
+                provider: "Google",
+            });
+        } catch (err) {
+            console.log("FULL ERROR:", err);
+            console.log("ERROR NAME:", err.name);
+            console.log("ERROR MESSAGE:", err.message);
+            console.log("ERROR OBJECT:", JSON.stringify(err, null, 2));
+            throw err;
+        }
+    },
+
+    /* ---------------- CURRENT USER ---------------- */
+
+    async getCurrentUser() {
+        try {
+            return await amplifyGetCurrentUser();
+        } catch {
+            return null;
+        }
+    },
+
+    /* ---------------- LOGOUT ---------------- */
+
+    async signOut() {
+        try {
+            await amplifySignOut();
+        } catch (err) {
+            throw new Error(friendlyError(err));
+        }
+    },
 };
-
-/* ═══════════════════════════════
-   COGNITO (REAL) SERVICE
-════════════════════════════════ */
-const cognitoService = {
-  getCurrentUser: async () => await AmplifyAuth.getCurrentUser(),
-
-  signUp: async ({ username, password, options }) => {
-    return await AmplifyAuth.signUp({ username, password, options });
-  },
-
-  confirmSignUp: async ({ username, confirmationCode }) => {
-    const res = await AmplifyAuth.confirmSignUp({ username, confirmationCode });
-    // Auto sign-in after confirm (Cognito supports this)
-    try { await AmplifyAuth.autoSignIn(); } catch (_) {}
-    return res;
-  },
-
-  signIn: async ({ username, password }) => {
-    return await AmplifyAuth.signIn({ username, password });
-  },
-
-  resetPassword: async ({ username }) => {
-    return await AmplifyAuth.resetPassword({ username });
-  },
-
-  confirmResetPassword: async ({ username, confirmationCode, newPassword }) => {
-    await AmplifyAuth.confirmResetPassword({ username, confirmationCode, newPassword });
-    await AmplifyAuth.signIn({ username, password: newPassword });
-    return { isPasswordReset: true };
-  },
-
-  signOut: async () => await AmplifyAuth.signOut(),
-
-  federatedSignIn: async ({ provider }) => {
-    return await AmplifyAuth.signInWithRedirect({ provider });
-  }
-};
-
-export const authService = isMock ? mockService : cognitoService;
