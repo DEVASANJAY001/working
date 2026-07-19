@@ -3,7 +3,7 @@ import { SafeAreaView, StyleSheet, Animated, Text, TextInput } from 'react-nativ
 import { StatusBar } from 'expo-status-bar';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeStorage } from './src/utils/storage';
 
 // Import Screens
 import SplashScreen from './src/screens/SplashScreen';
@@ -59,7 +59,7 @@ export default function App() {
   useEffect(() => {
     async function checkSession() {
       try {
-        const val = await AsyncStorage.getItem('user_session');
+        const val = await safeStorage.getItem('user_session');
         if (val) {
           const parsed = JSON.parse(val);
           if (parsed && parsed.isLoggedIn) {
@@ -193,7 +193,7 @@ export default function App() {
           <HomeDashboardScreen 
             onLogout={async () => {
               try {
-                await AsyncStorage.removeItem('user_session');
+                await safeStorage.removeItem('user_session');
               } catch (e) {}
               setHasSession(false);
               setCurrentScreen('GetStarted');

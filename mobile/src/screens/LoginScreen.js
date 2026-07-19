@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, ImageBackground } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeStorage } from '../utils/storage';
 import { authService } from '../services/authService';
 
 export default function LoginScreen({ onBack, onLoginSuccess, onForgotPassword, onGoToRegister }) {
@@ -19,7 +19,7 @@ export default function LoginScreen({ onBack, onLoginSuccess, onForgotPassword, 
     setLoading(true);
     try {
       await authService.signIn(emailOrPhone, password);
-      await AsyncStorage.setItem('user_session', JSON.stringify({ isLoggedIn: true, email: emailOrPhone }));
+      await safeStorage.setItem('user_session', JSON.stringify({ isLoggedIn: true, email: emailOrPhone }));
       setLoading(false);
       onLoginSuccess();
     } catch (error) {
