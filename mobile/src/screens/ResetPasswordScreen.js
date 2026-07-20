@@ -3,14 +3,36 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityInd
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { authService } from '../services/authService';
+import { safeStorage } from '../utils/storage';
+import { useEffect } from 'react';
 
 export default function ResetPasswordScreen({ email, onBack, onResetSuccess, onGoToLogin }) {
+  const [activeEmail, setActiveEmail] = useState(email || '');
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [secureText, setSecureText] = useState(true);
   const [secureTextConfirm, setSecureTextConfirm] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!activeEmail) {
+      async function fetchEmail() {
+        try {
+          const sessionStr = await safeStorage.getItem('user_session');
+          if (sessionStr) {
+            const session = JSON.parse(sessionStr);
+            if (session && session.email) {
+              setActiveEmail(session.email);
+            }
+          }
+        } catch (e) {
+          console.log(e);
+        }
+      }
+      fetchEmail();
+    }
+  }, []);
 
   // Requirement validations
   const hasMinLength = password.length >= 8;
@@ -34,7 +56,7 @@ export default function ResetPasswordScreen({ email, onBack, onResetSuccess, onG
     
     setLoading(true);
     try {
-      await authService.confirmForgotPassword(email || 'design@example.com', code, password);
+      await authService.confirmForgotPassword(activeEmail || 'your email', code, password);
       setLoading(false);
       Alert.alert('Success', 'Password Reset Successful!', [
         { text: 'OK', onPress: onResetSuccess }

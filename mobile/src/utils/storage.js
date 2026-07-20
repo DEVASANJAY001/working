@@ -2,15 +2,30 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 let memoryStore = {};
 
+const getLocalStorage = () => {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage;
+    }
+  } catch (e) {}
+  return null;
+};
+
 export const safeStorage = {
   async setItem(key, value) {
     try {
       if (AsyncStorage && typeof AsyncStorage.setItem === 'function') {
         await AsyncStorage.setItem(key, value);
       }
-    } catch (e) {
-      // Quiet memory fallback for Expo Go reload compatibility
+    } catch (e) {}
+    
+    const local = getLocalStorage();
+    if (local) {
+      try {
+        local.setItem(key, value);
+      } catch (e) {}
     }
+    
     memoryStore[key] = value;
   },
 
@@ -22,9 +37,18 @@ export const safeStorage = {
           return val;
         }
       }
-    } catch (e) {
-      // Quiet memory fallback for Expo Go reload compatibility
+    } catch (e) {}
+    
+    const local = getLocalStorage();
+    if (local) {
+      try {
+        const val = local.getItem(key);
+        if (val !== null && val !== undefined) {
+          return val;
+        }
+      } catch (e) {}
     }
+    
     return memoryStore[key] || null;
   },
 
@@ -33,9 +57,15 @@ export const safeStorage = {
       if (AsyncStorage && typeof AsyncStorage.removeItem === 'function') {
         await AsyncStorage.removeItem(key);
       }
-    } catch (e) {
-      // Quiet memory fallback for Expo Go reload compatibility
+    } catch (e) {}
+    
+    const local = getLocalStorage();
+    if (local) {
+      try {
+        local.removeItem(key);
+      } catch (e) {}
     }
+    
     delete memoryStore[key];
   }
 };

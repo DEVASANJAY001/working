@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 
 import { safeStorage } from './src/utils/storage';
+import { authService } from './src/services/authService';
 
 // Import Screens
 import SplashScreen from './src/screens/SplashScreen';
@@ -20,6 +21,8 @@ import HomeDashboardScreen from './src/screens/HomeDashboardScreen';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 import CreateContentScreen from './src/screens/CreateContentScreen';
+import LoginLoadingScreen from './src/screens/LoginLoadingScreen';
+import CommunityManagerScreen from './src/screens/CommunityManagerScreen';
 
 // Globally monkey-patch Text & TextInput to set Inter Font Family based on fontWeight
 const patchComponentFont = (Component) => {
@@ -63,15 +66,35 @@ export default function App() {
       try {
         const val = await safeStorage.getItem('user_session');
         const prof = await safeStorage.getItem('user_profile');
+        
+        let email = '';
         if (val) {
           const parsed = JSON.parse(val);
           if (parsed && parsed.isLoggedIn) {
             setHasSession(true);
+            if (parsed.email) {
+              email = parsed.email;
+              setUserEmail(parsed.email);
+            }
+            
+            // Check local cache first
             if (prof) {
               const parsedProf = JSON.parse(prof);
               if (parsedProf && parsedProf.isProfileCompleted) {
                 setIsProfileCompleted(true);
               }
+            }
+          }
+        }
+
+        // Fetch fresh profile state from AWS DynamoDB on startup/restart
+        if (email) {
+          console.log('[App] Loading fresh profile from AWS DynamoDB on restart for:', email);
+          const freshProfile = await authService.getUserProfile(email);
+          if (freshProfile) {
+            await safeStorage.setItem('user_profile', JSON.stringify(freshProfile));
+            if (freshProfile.isProfileCompleted) {
+              setIsProfileCompleted(true);
             }
           }
         }
@@ -154,23 +177,30 @@ export default function App() {
         return (
           <LoginScreen
             onBack={() => setCurrentScreen('GetStarted')}
-            onLoginSuccess={async () => {
-              const prof = await safeStorage.getItem('user_profile');
-              if (prof) {
-                const parsed = JSON.parse(prof);
-                if (parsed && parsed.isProfileCompleted) {
-                  setHasSession(true);
-                  setIsProfileCompleted(true);
-                  setCurrentScreen('Home');
-                  return;
-                }
-              }
-              setHasSession(true);
-              setIsProfileCompleted(false);
-              setCurrentScreen('ProfileSetup');
+            onLoginSuccess={(email) => {
+              setUserEmail(email);
+              setCurrentScreen('LoginLoading');
             }}
             onForgotPassword={() => setCurrentScreen('ForgotPassword')}
             onGoToRegister={() => setCurrentScreen('Register')}
+          />
+        );
+
+      case 'LoginLoading':
+        return (
+          <LoginLoadingScreen
+            emailOrPhone={userEmail}
+            onFinish={(hasProfile, profile) => {
+              if (hasProfile) {
+                setHasSession(true);
+                setIsProfileCompleted(true);
+                setCurrentScreen('Home');
+              } else {
+                setHasSession(true);
+                setIsProfileCompleted(false);
+                setCurrentScreen('ProfileSetup');
+              }
+            }}
           />
         );
       
@@ -178,7 +208,12 @@ export default function App() {
         return (
           <RegisterScreen
             onBack={() => setCurrentScreen('GetStarted')}
-            onRegisterSuccess={(email) => {
+            onRegisterSuccess={async (email) => {
+              try {
+                await safeStorage.removeItem('user_session');
+                await safeStorage.removeItem('user_profile');
+              } catch (e) {}
+              setIsProfileCompleted(false);
               setUserEmail(email);
               setCurrentScreen('EmailVerification');
             }}
@@ -207,7 +242,28 @@ export default function App() {
         return (
           <ProfileSetupScreen
             onBack={() => setCurrentScreen('PhoneNumber')}
+            initialUserData={{ email: userEmail }}
             onContinue={(profileData) => {
+              setCurrentScreen('LanguageSelection');
+            }}
+          />
+        );
+
+      case 'LanguageSelection':
+        return (
+          <LanguageSelectionScreen
+            onBack={() => setCurrentScreen('ProfileSetup')}
+            onContinue={(selectedLang) => {
+              setCurrentScreen('InterestSelection');
+            }}
+          />
+        );
+      
+      case 'InterestSelection':
+        return (
+          <InterestSelectionScreen
+            onBack={() => setCurrentScreen('LanguageSelection')}
+            onFinish={() => {
               setIsProfileCompleted(true);
               setHasSession(true);
               setCurrentScreen('AllSet');
@@ -219,22 +275,6 @@ export default function App() {
         return (
           <AllSetScreen
             onEnter={() => setCurrentScreen('Home')}
-          />
-        );
-      
-      case 'LanguageSelection':
-        return (
-          <LanguageSelectionScreen
-            onBack={() => setCurrentScreen('ProfileSetup')}
-            onContinue={() => setCurrentScreen('InterestSelection')}
-          />
-        );
-      
-      case 'InterestSelection':
-        return (
-          <InterestSelectionScreen
-            onBack={() => setCurrentScreen('LanguageSelection')}
-            onFinish={() => setCurrentScreen('Home')}
           />
         );
       
@@ -251,6 +291,14 @@ export default function App() {
               setCurrentScreen('GetStarted');
             }} 
             onCreatePress={() => setCurrentScreen('CreateContent')}
+            onGoToCommunityManager={() => setCurrentScreen('CommunityManager')}
+          />
+        );
+
+      case 'CommunityManager':
+        return (
+          <CommunityManagerScreen
+            onBack={() => setCurrentScreen('Home')}
           />
         );
       
@@ -258,7 +306,10 @@ export default function App() {
         return (
           <CreateContentScreen
             onBack={() => setCurrentScreen('Home')}
-            onPublish={(newPost) => {
+            onPublish={async (newPost) => {
+              try {
+                await safeStorage.setItem('new_published_post', JSON.stringify(newPost));
+              } catch (e) {}
               setCurrentScreen('Home');
             }}
           />

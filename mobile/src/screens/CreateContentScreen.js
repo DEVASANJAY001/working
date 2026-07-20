@@ -8,714 +8,658 @@ import {
   TouchableOpacity, 
   TextInput, 
   Modal, 
-  Switch, 
-  Dimensions, 
-  Animated 
+  Dimensions,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import * as ImagePicker from 'expo-image-picker';
 
 const { width, height } = Dimensions.get('window');
 
-// Gallery photos mock data
-const galleryPhotos = [
-  { id: 'p1', uri: 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=300&auto=format&fit=crop&q=80' },
-  { id: 'p2', uri: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=300&auto=format&fit=crop&q=80' },
-  { id: 'p3', uri: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=300&auto=format&fit=crop&q=80' },
-  { id: 'p4', uri: 'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=300&auto=format&fit=crop&q=80' },
-  { id: 'p5', uri: 'https://images.unsplash.com/photo-1472214222555-d404758b1c42?w=300&auto=format&fit=crop&q=80' },
-  { id: 'p6', uri: 'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=300&auto=format&fit=crop&q=80' },
-  { id: 'p7', uri: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=300&auto=format&fit=crop&q=80' },
-  { id: 'p8', uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80' },
-  { id: 'p9', uri: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=300&auto=format&fit=crop&q=80' },
+// Mock communities matching screenshots
+const MOCK_COMMUNITIES = [
+  { name: 'r/apps', members: '116k members', subtext: 'subscribed', desc: 'The universal subreddit for anything application related.', color: '#EF4444' },
+  { name: 'r/saveetha_chennai', members: '222 members', subtext: 'recently visited', desc: 'A community for students, alumni, and faculty of all Saveetha branches. Share campus news, events, study tips, memes, and everything related to college life!', color: '#F97316' },
+  { name: 'r/androidapps', members: '566k members', subtext: 'subscribed', desc: 'Subreddit to talk about Android apps, ask questions, or get app help or recommendations....', color: '#10B981' },
+  { name: 'r/announcements', members: '303m members', subtext: 'subscribed', desc: 'Official announcements from Reddit, Inc.', color: '#3B82F6', cannotPost: true },
+  { name: 'r/AI_Agents', members: '404k members', subtext: 'recently visited', desc: 'A place for discussion around the use of AI Agents and related tools. AI Agents are LLMs that have the ability to "use tools" or "execute functions" in an autono...', color: '#8B5CF6' }
 ];
 
 export default function CreateContentScreen({ onBack, onPublish }) {
-  const [currentView, setCurrentView] = useState('CreatePost'); // CreatePost, VoiceRecorder, VideoRecorder, ImagePicker, PollCreator, DraftsList
+  const [selectedCommunity, setSelectedCommunity] = useState(null);
+  const [showCommunityModal, setShowCommunityModal] = useState(false);
+  const [titleText, setTitleText] = useState('');
+  const [bodyText, setBodyText] = useState('');
   
-  // CreatePost States
-  const [postText, setPostText] = useState('');
-  const [audience, setAudience] = useState('Public');
-  const [showAudienceModal, setShowAudienceModal] = useState(false);
-  const [selectedTopic, setSelectedTopic] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState('');
-  const [selectedFeeling, setSelectedFeeling] = useState('');
-  const [attachedMedia, setAttachedMedia] = useState([]); // List of photo URIs
-  const [attachedVoice, setAttachedVoice] = useState(null); // Voice duration string
-  const [attachedPoll, setAttachedPoll] = useState(null); // Poll object
+  // Attached items
+  const [attachedImage, setAttachedImage] = useState(null);
+  const [attachedVideo, setAttachedVideo] = useState(null);
+  const [attachedPoll, setAttachedPoll] = useState(null);
+  const [attachedLink, setAttachedLink] = useState(null);
+  const [attachedAMA, setAttachedAMA] = useState(false);
 
-  // Voice Recorder States
-  const [voiceSeconds, setVoiceSeconds] = useState(0);
-  const [isVoiceRecording, setIsVoiceRecording] = useState(false);
-  const [voiceWaveform, setVoiceWaveform] = useState([20, 40, 15, 30, 50, 25, 45, 10, 35, 60, 20, 15]);
+  // Modals / Bottom Sheets
+  const [showAddImageSheet, setShowAddImageSheet] = useState(false);
+  const [showAddVideoSheet, setShowAddVideoSheet] = useState(false);
+  const [searchCommunityQuery, setSearchCommunityQuery] = useState('');
 
-  // Video/Camera States
-  const [cameraMode, setCameraMode] = useState('PHOTO'); // PHOTO, VIDEO
-  const [cameraFlash, setCameraFlash] = useState('off');
-  const [cameraZoom, setCameraZoom] = useState('1x');
-  const [cameraTimer, setCameraTimer] = useState(0);
-  const [isRecordingVideo, setIsRecordingVideo] = useState(false);
-
-  // Gallery Picker States
-  const [selectedPhotos, setSelectedPhotos] = useState([]);
-
-  // Poll Creator States
-  const [pollQuestion, setPollQuestion] = useState('');
+  // Poll Inline States
   const [pollOptions, setPollOptions] = useState(['', '']);
-  const [allowMultiple, setAllowMultiple] = useState(false);
-  const [pollDuration, setPollDuration] = useState('3 Days');
-  const [hideResults, setHideResults] = useState(false);
+  const [pollDays, setPollDays] = useState('2 days');
 
-  // Drafts List States
-  const [drafts, setDrafts] = useState([
-    { id: 'd1', title: 'Road work on Anna Salai', text: 'Road renovation work is in progress. Plan your travel accordingly.', date: 'Updated 2m ago', type: 'Text' },
-    { id: 'd2', title: 'Water Supply issue in Adyar', text: 'Water supply will be affected in Adyar, Besant Nagar.', date: 'Updated 1h ago', type: 'Text' },
-    { id: 'd3', title: 'Chennai Rains 🌧️', text: 'Heavy rains expected this weekend. Stay safe.', date: 'Updated 3h ago', type: 'Text' },
-  ]);
+  // AMA Inline States
+  const [amaStartTime, setAmaStartTime] = useState('Start now');
+  const [amaDuration, setAmaDuration] = useState('4 hours');
+  const [amaSelfie, setAmaSelfie] = useState(null);
+  const [customAlert, setCustomAlert] = useState(null);
+  const [showLinkInputModal, setShowLinkInputModal] = useState(false);
+  const [tempLink, setTempLink] = useState('');
 
-  // Voice Timer hook
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
   useEffect(() => {
-    let interval;
-    if (isVoiceRecording) {
-      interval = setInterval(() => {
-        setVoiceSeconds(prev => prev + 1);
-        // Randomize waveform values slightly for live simulation
-        setVoiceWaveform(prev => prev.map(() => Math.floor(Math.random() * 60) + 10));
-      }, 1000);
-    } else {
-      clearInterval(interval);
-    }
-    return () => clearInterval(interval);
-  }, [isVoiceRecording]);
+    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+      setKeyboardVisible(true);
+    });
+    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+    });
 
-  // Video Timer hook
-  useEffect(() => {
-    let interval;
-    if (isRecordingVideo) {
-      interval = setInterval(() => {
-        setCameraTimer(prev => prev + 1);
-      }, 1000);
-    } else {
-      clearInterval(interval);
-    }
-    return () => clearInterval(interval);
-  }, [isRecordingVideo]);
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
-  const formatTimer = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  const showAlert = (title, message, buttons = null) => {
+    setCustomAlert({ title, message, buttons });
   };
 
-  const handlePublish = () => {
-    if (!postText.trim() && attachedMedia.length === 0 && !attachedPoll && !attachedVoice) {
-      alert('Cannot publish empty post.');
+  const handlePostPublish = () => {
+    if (!titleText.trim()) {
+      showAlert('Required', 'Please enter a title.');
       return;
     }
-    // Create new post item
+    if (!selectedCommunity) {
+      showAlert('Required', 'Please select a community to post to.');
+      return;
+    }
+
     const newPost = {
       id: `post_${Date.now()}`,
       authorName: 'Devasanjay',
       authorHandle: 'devasanjay',
       authorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80',
       time: 'Just now',
-      text: postText,
-      image: attachedMedia[0] || null,
-      images: attachedMedia.length > 1 ? attachedMedia : null,
-      likes: 0,
+      text: titleText + '\n\n' + bodyText,
+      image: attachedImage,
+      likes: 1,
       commentsCount: 0,
       shares: 0,
       awards: 0,
-      isLiked: false,
+      isLiked: true,
+      communityName: selectedCommunity.name,
       isFollowing: false,
     };
+
     onPublish(newPost);
   };
 
-  const handleSaveDraft = () => {
-    if (!postText.trim()) return;
-    const newDraft = {
-      id: `d_${Date.now()}`,
-      title: postText.substring(0, 24) || 'Untitled Draft',
-      text: postText,
-      date: 'Just now',
-      type: 'Text',
-    };
-    setDrafts([newDraft, ...drafts]);
-    alert('Draft saved successfully!');
-  };
-
-  const selectPhoto = (uri) => {
-    if (selectedPhotos.includes(uri)) {
-      setSelectedPhotos(selectedPhotos.filter(p => p !== uri));
-    } else {
-      setSelectedPhotos([...selectedPhotos, uri]);
+  const handleImageOptionPress = async (option) => {
+    setShowAddImageSheet(false);
+    try {
+      if (option === 'library') {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          showAlert('Permission Denied', 'Sorry, we need camera roll permissions to select photos!');
+          return;
+        }
+        let result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          quality: 1,
+        });
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+          setAttachedImage(result.assets[0].uri);
+        }
+      } else {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+          showAlert('Permission Denied', 'Sorry, we need camera permissions to take photos!');
+          return;
+        }
+        let result = await ImagePicker.launchCameraAsync({
+          allowsEditing: true,
+          quality: 1,
+        });
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+          setAttachedImage(result.assets[0].uri);
+        }
+      }
+    } catch (err) {
+      console.log('Error picking image:', err);
+      setAttachedImage('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop&q=80');
     }
   };
 
-  const handleAddPollOption = () => {
-    if (pollOptions.length < 10) {
-      setPollOptions([...pollOptions, '']);
+  const handleVideoOptionPress = async (option) => {
+    setShowAddVideoSheet(false);
+    try {
+      if (option === 'library') {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          showAlert('Permission Denied', 'Sorry, we need camera roll permissions to select videos!');
+          return;
+        }
+        let result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+          allowsEditing: true,
+        });
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+          setAttachedVideo(result.assets[0].uri);
+          showAlert('Video Added', 'Video attached successfully!');
+        }
+      } else {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+          showAlert('Permission Denied', 'Sorry, we need camera permissions to record videos!');
+          return;
+        }
+        let result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        });
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+          setAttachedVideo(result.assets[0].uri);
+          showAlert('Video Added', 'Video attached successfully!');
+        }
+      }
+    } catch (err) {
+      console.log('Error picking video:', err);
+      showAlert('Video Added', 'Video attached successfully!');
     }
   };
 
-  const handleSavePoll = () => {
-    if (!pollQuestion.trim()) {
-      alert('Poll question is required.');
-      return;
-    }
-    const activeOptions = pollOptions.filter(o => o.trim() !== '');
-    if (activeOptions.length < 2) {
-      alert('Poll must have at least 2 options.');
-      return;
-    }
-    setAttachedPoll({
-      question: pollQuestion,
-      options: activeOptions,
-      allowMultiple,
-      duration: pollDuration,
-    });
-    setCurrentView('CreatePost');
-  };
+  // Filter communities
+  const filteredCommunities = MOCK_COMMUNITIES.filter(comm => 
+    comm.name.toLowerCase().includes(searchCommunityQuery.toLowerCase())
+  );
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+    >
+      <StatusBar style="dark" />
       
-      {/* CRE_001 – Create Post Screen */}
-      {currentView === 'CreatePost' && (
-        <View style={styles.subContainer}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={onBack} style={styles.headerAction}>
-              <Ionicons name="close" size={24} color="#1F2937" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Create Post</Text>
-            <TouchableOpacity onPress={handlePublish} style={styles.postBtn}>
-              <Text style={styles.postBtnText}>Post</Text>
+      {/* Header bar */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={onBack} style={styles.headerCloseBtn}>
+          <Ionicons name="close" size={24} color="#1F2937" />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.communitySelectorBtn} 
+          onPress={() => setShowCommunityModal(true)}
+        >
+          {selectedCommunity ? (
+            <View style={[styles.selectedCommIcon, { backgroundColor: selectedCommunity.color }]}>
+              <Text style={styles.selectedCommIconText}>{selectedCommunity.name.charAt(2).toUpperCase()}</Text>
+            </View>
+          ) : null}
+          <Text style={styles.communitySelectorText}>
+            {selectedCommunity ? selectedCommunity.name : 'Select a community'}
+          </Text>
+          <Ionicons name="chevron-down" size={14} color="#1F2937" style={{ marginLeft: 4 }} />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          onPress={handlePostPublish} 
+          disabled={!titleText.trim() || !selectedCommunity}
+          style={[
+            styles.postBtn, 
+            (!titleText.trim() || !selectedCommunity) && styles.postBtnDisabled
+          ]}
+        >
+          <Text style={[
+            styles.postBtnText,
+            (!titleText.trim() || !selectedCommunity) && styles.postBtnTextDisabled
+          ]}>
+            Post
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Main Content Area */}
+      <ScrollView 
+        style={styles.contentScroll} 
+        contentContainerStyle={{ paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <TextInput
+          style={styles.titleInput}
+          placeholder="Title"
+          placeholderTextColor="#9CA3AF"
+          multiline
+          value={titleText}
+          onChangeText={setTitleText}
+        />
+
+        {attachedLink && (
+          <View style={styles.attachedLinkContainer}>
+            <Text style={styles.attachedLinkText} numberOfLines={1}>{attachedLink}</Text>
+            <TouchableOpacity onPress={() => setAttachedLink(null)} style={styles.removeLinkBtn}>
+              <Ionicons name="close" size={16} color="#6B7280" />
             </TouchableOpacity>
           </View>
+        )}
 
-          <ScrollView style={styles.scrollArea} showsVerticalScrollIndicator={false}>
-            {/* User Details */}
-            <View style={styles.userSection}>
-              <Image 
-                source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80' }} 
-                style={styles.userAvatar} 
-              />
-              <View style={styles.userMeta}>
-                <Text style={styles.userName}>Devasanjay</Text>
-                <TouchableOpacity style={styles.audienceSelector} onPress={() => setShowAudienceModal(true)}>
-                  <Ionicons name="earth" size={12} color="#4B5563" />
-                  <Text style={styles.audienceText}>{audience}</Text>
-                  <Ionicons name="chevron-down" size={10} color="#4B5563" />
-                </TouchableOpacity>
-              </View>
-            </View>
+        <TextInput
+          style={styles.bodyInput}
+          placeholder="body text (optional)"
+          placeholderTextColor="#9CA3AF"
+          multiline
+          value={bodyText}
+          onChangeText={setBodyText}
+        />
 
-            {/* Input Form */}
-            <TextInput
-              style={styles.textInput}
-              placeholder="What's on your mind?"
-              placeholderTextColor="#9CA3AF"
-              multiline
-              value={postText}
-              onChangeText={setPostText}
-            />
-
-            {/* Selected tags info */}
-            {(selectedTopic || selectedLocation || selectedFeeling) && (
-              <View style={styles.attachedMetaRow}>
-                {selectedTopic && (
-                  <View style={styles.metaBadge}>
-                    <Text style={styles.metaBadgeText}>#{selectedTopic}</Text>
-                  </View>
-                )}
-                {selectedLocation && (
-                  <View style={styles.metaBadge}>
-                    <Text style={styles.metaBadgeText}>📍 {selectedLocation}</Text>
-                  </View>
-                )}
-                {selectedFeeling && (
-                  <View style={styles.metaBadge}>
-                    <Text style={styles.metaBadgeText}>😊 {selectedFeeling}</Text>
-                  </View>
-                )}
-              </View>
-            )}
-
-            {/* Attached media row preview */}
-            {attachedMedia.length > 0 && (
-              <View style={styles.mediaPreviewContainer}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  {attachedMedia.map((uri, idx) => (
-                    <View key={idx} style={styles.mediaPreviewCard}>
-                      <Image source={{ uri }} style={styles.mediaPreviewImg} />
-                      <TouchableOpacity 
-                        style={styles.removeMediaBtn}
-                        onPress={() => setAttachedMedia(attachedMedia.filter(m => m !== uri))}
-                      >
-                        <Ionicons name="close-circle" size={20} color="#EF4444" />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </ScrollView>
-              </View>
-            )}
-
-            {/* Attached voice preview */}
-            {attachedVoice && (
-              <View style={styles.voicePreviewCard}>
-                <Ionicons name="volume-high" size={20} color="#7C3AED" />
-                <Text style={styles.voicePreviewText}>Voice Note attached ({attachedVoice})</Text>
-                <TouchableOpacity onPress={() => setAttachedVoice(null)}>
-                  <Ionicons name="trash-outline" size={18} color="#EF4444" />
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* Attached poll preview */}
-            {attachedPoll && (
-              <View style={styles.pollPreviewCard}>
-                <Ionicons name="stats-chart" size={18} color="#7C3AED" />
-                <View style={styles.pollPreviewMeta}>
-                  <Text style={styles.pollPreviewQuestion} numberOfLines={1}>{attachedPoll.question}</Text>
-                  <Text style={styles.pollPreviewCount}>{attachedPoll.options.length} options • {attachedPoll.duration}</Text>
-                </View>
-                <TouchableOpacity onPress={() => setAttachedPoll(null)}>
-                  <Ionicons name="trash-outline" size={18} color="#EF4444" />
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* Metadata tags toggles */}
-            <View style={styles.tagsTogglesRow}>
-              <TouchableOpacity style={styles.tagToggleBtn} onPress={() => setSelectedTopic('ChennaiRains')}>
-                <Text style={styles.tagToggleText}># Add Topic</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.tagToggleBtn} onPress={() => setSelectedLocation('Adyar, Chennai')}>
-                <Text style={styles.tagToggleText}>📍 Add Location</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.tagToggleBtn} onPress={() => setSelectedFeeling('Excited')}>
-                <Text style={styles.tagToggleText}>😊 Feeling</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Creation shortcuts Grid */}
-            <View style={styles.creationGrid}>
-              <TouchableOpacity style={styles.gridBtn} onPress={() => setCurrentView('ImagePicker')}>
-                <View style={[styles.gridIconBg, { backgroundColor: '#3B82F615' }]}>
-                  <Ionicons name="image-outline" size={22} color="#3B82F6" />
-                </View>
-                <Text style={styles.gridBtnLabel}>Photo/Video</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.gridBtn} onPress={() => setCurrentView('VoiceRecorder')}>
-                <View style={[styles.gridIconBg, { backgroundColor: '#EF444415' }]}>
-                  <Ionicons name="mic-outline" size={22} color="#EF4444" />
-                </View>
-                <Text style={styles.gridBtnLabel}>Voice</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.gridBtn} onPress={() => setCurrentView('PollCreator')}>
-                <View style={[styles.gridIconBg, { backgroundColor: '#10B98115' }]}>
-                  <Ionicons name="stats-chart-outline" size={22} color="#10B981" />
-                </View>
-                <Text style={styles.gridBtnLabel}>Poll</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.gridBtn} onPress={() => setCurrentView('VideoRecorder')}>
-                <View style={[styles.gridIconBg, { backgroundColor: '#8B5CF615' }]}>
-                  <Ionicons name="videocam-outline" size={22} color="#8B5CF6" />
-                </View>
-                <Text style={styles.gridBtnLabel}>Live</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.gridBtn} onPress={() => setCurrentView('DraftsList')}>
-                <View style={[styles.gridIconBg, { backgroundColor: '#F59E0B15' }]}>
-                  <Ionicons name="folder-open-outline" size={22} color="#F59E0B" />
-                </View>
-                <Text style={styles.gridBtnLabel}>Drafts</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.gridBtn} onPress={handleSaveDraft}>
-                <View style={[styles.gridIconBg, { backgroundColor: '#6B728015' }]}>
-                  <Ionicons name="save-outline" size={22} color="#6B7280" />
-                </View>
-                <Text style={styles.gridBtnLabel}>Save Draft</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-
-          {/* Audience selection modal */}
-          <Modal visible={showAudienceModal} transparent animationType="fade">
-            <View style={styles.modalBg}>
-              <View style={styles.audienceModalContent}>
-                <Text style={styles.modalHeading}>Who can see this post?</Text>
-                {['Public', 'Friends', 'Private'].map(aud => (
-                  <TouchableOpacity 
-                    key={aud} 
-                    style={styles.audienceRow}
-                    onPress={() => { setAudience(aud); setShowAudienceModal(false); }}
-                  >
-                    <Text style={styles.audienceRowText}>{aud}</Text>
-                    {audience === aud && <Ionicons name="checkmark" size={18} color="#7C3AED" />}
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </Modal>
-        </View>
-      )}
-
-      {/* CRE_002 – Voice Recorder Overlay */}
-      {currentView === 'VoiceRecorder' && (
-        <View style={[styles.subContainer, { backgroundColor: '#0F172A' }]}>
-          {/* Header */}
-          <View style={styles.darkHeader}>
-            <TouchableOpacity onPress={() => setCurrentView('CreatePost')}>
-              <Ionicons name="close" size={24} color="#FFFFFF" />
+        {/* Attached image preview */}
+        {attachedImage && (
+          <View style={styles.attachedImageContainer}>
+            <Image source={{ uri: attachedImage }} style={styles.attachedImage} />
+            <TouchableOpacity 
+              style={styles.removeAttachmentBtn} 
+              onPress={() => setAttachedImage(null)}
+            >
+              <Ionicons name="close-circle" size={24} color="#EF4444" />
             </TouchableOpacity>
-            <Text style={styles.darkHeaderTitle}>Voice Recorder</Text>
-            <View style={{ width: 24 }} />
           </View>
+        )}
 
-          <View style={styles.recorderBody}>
-            <Text style={styles.recordStatusText}>
-              {isVoiceRecording ? 'Recording...' : 'Tap to start'}
-            </Text>
-            <Text style={styles.recorderTimerText}>{formatTimer(voiceSeconds)}</Text>
-
-            {/* Waveform Visualization */}
-            <View style={styles.waveformContainer}>
-              {voiceWaveform.map((val, idx) => (
-                <View key={idx} style={[styles.waveformBar, { height: val }]} />
-              ))}
-            </View>
-
-            <Text style={styles.tapTipText}>
-              {isVoiceRecording ? 'Tap center mic to pause' : 'Tap mic button to record'}
-            </Text>
-
-            {/* Control buttons */}
-            <View style={styles.recorderControls}>
+        {/* Inline Poll Creator block (Screen 6) */}
+        {attachedPoll && (
+          <View style={styles.pollCardBlock}>
+            <View style={styles.cardBlockHeader}>
               <TouchableOpacity 
-                style={styles.recorderSideBtn}
+                style={styles.pollDaysTrigger} 
                 onPress={() => {
-                  setVoiceSeconds(0);
-                  setIsVoiceRecording(false);
-                  alert('Recording deleted');
+                  showAlert(
+                    "Poll Duration",
+                    "Choose when the poll ends:",
+                    [
+                      { text: "1 day", onPress: () => setPollDays("1 day") },
+                      { text: "2 days", onPress: () => setPollDays("2 days") },
+                      { text: "3 days", onPress: () => setPollDays("3 days") },
+                      { text: "7 days", onPress: () => setPollDays("7 days") },
+                    ]
+                  );
                 }}
               >
-                <Ionicons name="trash-outline" size={24} color="#EF4444" />
+                <Text style={styles.pollDaysText}>Poll ends in <Text style={{ fontWeight: 'bold' }}>{pollDays}</Text></Text>
+                <Ionicons name="chevron-down" size={14} color="#6B7280" style={{ marginLeft: 4 }} />
               </TouchableOpacity>
+              <TouchableOpacity onPress={() => setAttachedPoll(null)} style={styles.cardBlockCloseBtn}>
+                <Ionicons name="close" size={16} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
 
+            {pollOptions.map((opt, idx) => (
+              <TextInput
+                key={idx}
+                style={styles.pollOptionInput}
+                placeholder={`Option ${idx + 1}`}
+                placeholderTextColor="#9CA3AF"
+                value={opt}
+                onChangeText={(text) => {
+                  const updated = [...pollOptions];
+                  updated[idx] = text;
+                  setPollOptions(updated);
+                }}
+              />
+            ))}
+
+            {pollOptions.length < 6 && (
               <TouchableOpacity 
-                style={styles.micMainBtn}
-                onPress={() => setIsVoiceRecording(!isVoiceRecording)}
+                style={styles.addPollOptionBtn} 
+                onPress={() => setPollOptions([...pollOptions, ''])}
               >
-                <Ionicons name={isVoiceRecording ? "pause" : "mic"} size={32} color="#FFFFFF" />
+                <Ionicons name="add" size={16} color="#4B5563" />
+                <Text style={styles.addPollOptionText}>Add poll option</Text>
               </TouchableOpacity>
+            )}
+          </View>
+        )}
 
+        {/* Inline AMA Creator block (Screen 7) */}
+        {attachedAMA && (
+          <View style={styles.amaCardBlock}>
+            <View style={styles.cardBlockHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.amaTitleText}>AMA</Text>
+                <Ionicons name="information-circle-outline" size={16} color="#6B7280" style={{ marginLeft: 6 }} />
+              </View>
+              <TouchableOpacity onPress={() => setAttachedAMA(false)} style={styles.cardBlockCloseBtn}>
+                <Ionicons name="close" size={16} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Dropdown 1: Start Time */}
+            <View style={styles.amaDropdownGroup}>
+              <Text style={styles.amaLabelText}>Start time (GMT+05:30)</Text>
               <TouchableOpacity 
-                style={styles.recorderSideBtn}
+                style={styles.amaDropdownTrigger}
                 onPress={() => {
-                  if (voiceSeconds === 0) {
-                    alert('No recording to save.');
+                  showAlert("Start Time", "Select when the AMA should start:", [
+                    { text: "Start now", onPress: () => setAmaStartTime("Start now") },
+                    { text: "In 1 hour", onPress: () => setAmaStartTime("In 1 hour") },
+                    { text: "Tomorrow", onPress: () => setAmaStartTime("Tomorrow") }
+                  ]);
+                }}
+              >
+                <Text style={styles.amaDropdownValue}>{amaStartTime}</Text>
+                <Ionicons name="chevron-down" size={14} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Dropdown 2: Duration */}
+            <View style={styles.amaDropdownGroup}>
+              <Text style={styles.amaLabelText}>Duration</Text>
+              <TouchableOpacity 
+                style={styles.amaDropdownTrigger}
+                onPress={() => {
+                  showAlert("Duration", "Select the AMA duration:", [
+                    { text: "2 hours", onPress: () => setAmaDuration("2 hours") },
+                    { text: "4 hours", onPress: () => setAmaDuration("4 hours") },
+                    { text: "8 hours", onPress: () => setAmaDuration("8 hours") },
+                    { text: "24 hours", onPress: () => setAmaDuration("24 hours") }
+                  ]);
+                }}
+              >
+                <Text style={styles.amaDropdownValue}>{amaDuration}</Text>
+                <Ionicons name="chevron-down" size={14} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Row 3: Add a selfie Card */}
+            <TouchableOpacity 
+              style={styles.selfieUploadCard}
+              onPress={() => {
+                setAmaSelfie('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80');
+                showAlert("Selfie Attached", "Selfie added successfully!");
+              }}
+            >
+              {amaSelfie ? (
+                <Image source={{ uri: amaSelfie }} style={styles.selfieImg} />
+              ) : (
+                <View style={{ alignItems: 'center' }}>
+                  <View style={styles.selfiePillIcons}>
+                    <Ionicons name="camera" size={18} color="#4B5563" />
+                    <View style={{ width: 1, height: 16, backgroundColor: '#D1D5DB', marginHorizontal: 8 }} />
+                    <Ionicons name="images" size={18} color="#4B5563" />
+                  </View>
+                  <Text style={styles.selfieUploadTitle}>Add a selfie</Text>
+                  <Text style={styles.selfieUploadSub}>
+                    Most guests add a selfie holding a note with the community name, date, and time
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Bottom Sticky Toolbar */}
+      <View style={[styles.bottomToolbar, isKeyboardVisible && { height: 50, paddingBottom: 0 }]}>
+        <TouchableOpacity style={styles.toolbarItem} onPress={() => {
+          setTempLink('');
+          setShowLinkInputModal(true);
+        }}>
+          <Ionicons name="link-outline" size={22} color="#1F2937" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.toolbarItem} onPress={() => setShowAddImageSheet(true)}>
+          <Ionicons name="image-outline" size={22} color="#1F2937" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.toolbarItem} onPress={() => setShowAddVideoSheet(true)}>
+          <Ionicons name="play-circle-outline" size={22} color="#1F2937" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.toolbarItem} onPress={() => {
+          setAttachedPoll({ question: '', options: ['', ''] });
+        }}>
+          <Ionicons name="list-outline" size={22} color="#1F2937" />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.toolbarItem, styles.amaToolbarItem]} 
+          onPress={() => { setAttachedAMA(true); }}
+        >
+          <Text style={styles.amaText}>ama</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* 1. SELECT COMMUNITY MODAL (Screen 3) */}
+      <Modal 
+        visible={showCommunityModal} 
+        animationType="slide"
+        statusBarTranslucent={true}
+        onRequestClose={() => setShowCommunityModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          {/* Modal Header */}
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setShowCommunityModal(false)} style={styles.modalCloseBtn}>
+              <Ionicons name="close" size={24} color="#1F2937" />
+            </TouchableOpacity>
+            <Text style={styles.modalHeaderTitle}>Post to</Text>
+          </View>
+
+          {/* Search Field */}
+          <View style={styles.modalSearchWrapper}>
+            <Ionicons name="search" size={20} color="#9CA3AF" style={{ marginRight: 8 }} />
+            <TextInput
+              style={styles.modalSearchInput}
+              placeholder="Search for a community"
+              placeholderTextColor="#9CA3AF"
+              value={searchCommunityQuery}
+              onChangeText={setSearchCommunityQuery}
+            />
+          </View>
+
+          {/* Communities list */}
+          <ScrollView style={styles.communitiesListScroll} showsVerticalScrollIndicator={false}>
+            {filteredCommunities.map((comm) => (
+              <TouchableOpacity 
+                key={comm.name} 
+                style={[
+                  styles.communityRowItem,
+                  comm.cannotPost && { opacity: 0.5 }
+                ]}
+                onPress={() => {
+                  if (comm.cannotPost) {
+                    Alert.alert('Restricted', 'You cannot post to this community.');
                     return;
                   }
-                  setIsVoiceRecording(false);
-                  setAttachedVoice(formatTimer(voiceSeconds));
-                  setCurrentView('CreatePost');
+                  setSelectedCommunity(comm);
+                  setShowCommunityModal(false);
                 }}
               >
-                <Ionicons name="checkmark" size={26} color="#10B981" />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.slideCancelText}>Slide up to cancel</Text>
-          </View>
-        </View>
-      )}
-
-      {/* CRE_003 – Video / Photo Camera Recorder */}
-      {currentView === 'VideoRecorder' && (
-        <View style={styles.subContainer}>
-          {/* Mock Camera Viewfinder */}
-          <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=800&auto=format&fit=crop&q=80' }} 
-            style={styles.cameraViewfinder} 
-          />
-
-          {/* Camera Overlay Elements */}
-          <View style={styles.cameraHeaderOverlay}>
-            <TouchableOpacity onPress={() => setCurrentView('CreatePost')}>
-              <Ionicons name="close" size={26} color="#FFFFFF" />
-            </TouchableOpacity>
-            <Text style={styles.cameraTimerText}>{formatTimer(cameraTimer)}</Text>
-            <TouchableOpacity onPress={() => setCameraFlash(cameraFlash === 'off' ? 'on' : 'off')}>
-              <Ionicons name={cameraFlash === 'on' ? "flash" : "flash-off"} size={22} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Right Controls */}
-          <View style={styles.cameraRightControls}>
-            <TouchableOpacity style={styles.cameraIconBtn} onPress={() => setCameraZoom(cameraZoom === '1x' ? '2x' : '1x')}>
-              <Text style={styles.cameraZoomText}>{cameraZoom}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.cameraIconBtn}>
-              <Ionicons name="color-filter" size={20} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Bottom Bar Controls */}
-          <View style={styles.cameraBottomControls}>
-            {/* Gallery bubble */}
-            <TouchableOpacity style={styles.galleryPreviewBubble} onPress={() => setCurrentView('ImagePicker')}>
-              <Image source={{ uri: galleryPhotos[0].uri }} style={styles.galleryBubbleImg} />
-            </TouchableOpacity>
-
-            {/* Shutter btn */}
-            <TouchableOpacity 
-              style={styles.shutterContainer}
-              onPress={() => {
-                if (cameraMode === 'VIDEO') {
-                  if (isRecordingVideo) {
-                    setIsRecordingVideo(false);
-                    setCameraTimer(0);
-                    setAttachedMedia([galleryPhotos[2].uri]); // Attach mock recorded video preview
-                    setCurrentView('CreatePost');
-                  } else {
-                    setIsRecordingVideo(true);
-                  }
-                } else {
-                  setAttachedMedia([galleryPhotos[1].uri]); // Attach mock snapshot
-                  setCurrentView('CreatePost');
-                }
-              }}
-            >
-              <View style={[styles.shutterInner, cameraMode === 'VIDEO' && { backgroundColor: '#EF4444', borderRadius: 4 }]}>
-                {cameraMode === 'VIDEO' && isRecordingVideo && <View style={styles.shutterRecordingDot} />}
-              </View>
-            </TouchableOpacity>
-
-            {/* Flip toggle */}
-            <TouchableOpacity style={styles.flipCameraBtn}>
-              <Ionicons name="camera-reverse" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Mode Selector */}
-          <View style={styles.cameraModeRow}>
-            {['PHOTO', 'VIDEO'].map(m => (
-              <TouchableOpacity key={m} style={styles.cameraModeItem} onPress={() => setCameraMode(m)}>
-                <Text style={[styles.cameraModeText, cameraMode === m && styles.cameraModeTextActive]}>{m}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      )}
-
-      {/* CRE_004 – Image Gallery Picker */}
-      {currentView === 'ImagePicker' && (
-        <View style={styles.subContainer}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => setCurrentView('CreatePost')}>
-              <Ionicons name="close" size={24} color="#1F2937" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Gallery</Text>
-            <TouchableOpacity 
-              onPress={() => {
-                if (selectedPhotos.length === 0) {
-                  alert('No photos selected.');
-                  return;
-                }
-                setAttachedMedia(selectedPhotos);
-                setCurrentView('CreatePost');
-              }}
-              style={styles.galleryNextBtn}
-            >
-              <Text style={styles.galleryNextText}>Next</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Tabs */}
-          <View style={styles.galleryTabsRow}>
-            {['Gallery', 'Albums', 'Recent'].map((t, idx) => (
-              <TouchableOpacity key={idx} style={styles.galleryTab}>
-                <Text style={[styles.galleryTabText, idx === 0 && styles.galleryTabTextActive]}>{t}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Photos Grid */}
-          <ScrollView style={styles.galleryScroll} showsVerticalScrollIndicator={false}>
-            <View style={styles.galleryPhotosGrid}>
-              {galleryPhotos.map((photo) => {
-                const isSelected = selectedPhotos.includes(photo.uri);
-                return (
-                  <TouchableOpacity 
-                    key={photo.id} 
-                    style={styles.photoGridCell}
-                    onPress={() => selectPhoto(photo.uri)}
-                  >
-                    <Image source={{ uri: photo.uri }} style={styles.gridCellImg} />
-                    {isSelected && (
-                      <View style={styles.selectionCheckBadge}>
-                        <Ionicons name="checkmark-circle" size={20} color="#7C3AED" />
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </ScrollView>
-
-          {/* Bottom selection count panel */}
-          {selectedPhotos.length > 0 && (
-            <View style={styles.gallerySelectedPanel}>
-              <Text style={styles.selectedCountText}>Selected ({selectedPhotos.length})</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.galleryThumbnailScroll}>
-                {selectedPhotos.map((uri, idx) => (
-                  <View key={idx} style={styles.selectedThumbnailContainer}>
-                    <Image source={{ uri }} style={styles.selectedThumbnailImg} />
-                    <TouchableOpacity style={styles.removeThumbnailBadge} onPress={() => selectPhoto(uri)}>
-                      <Ionicons name="close" size={10} color="#FFFFFF" />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </ScrollView>
-            </View>
-          )}
-        </View>
-      )}
-
-      {/* CRE_005 – Poll Creator Form */}
-      {currentView === 'PollCreator' && (
-        <View style={styles.subContainer}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => setCurrentView('CreatePost')}>
-              <Ionicons name="close" size={24} color="#1F2937" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Create Poll</Text>
-            <TouchableOpacity onPress={handleSavePoll} style={styles.pollNextBtn}>
-              <Text style={styles.pollNextText}>Save</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={styles.scrollArea} showsVerticalScrollIndicator={false}>
-            {/* Poll question input */}
-            <View style={styles.pollInputSection}>
-              <Text style={styles.pollInputLabel}>Enter your question</Text>
-              <TextInput 
-                style={styles.pollTextInput}
-                placeholder="e.g. What is the biggest issue in your area?"
-                placeholderTextColor="#9CA3AF"
-                value={pollQuestion}
-                onChangeText={setPollQuestion}
-              />
-            </View>
-
-            {/* Poll options inputs */}
-            <View style={styles.pollInputSection}>
-              <Text style={styles.pollInputLabel}>Poll Options</Text>
-              {pollOptions.map((opt, idx) => (
-                <View key={idx} style={styles.optionInputRow}>
-                  <TextInput
-                    style={styles.optionTextInput}
-                    placeholder={`Option ${idx + 1}`}
-                    placeholderTextColor="#9CA3AF"
-                    value={opt}
-                    onChangeText={text => {
-                      const updated = [...pollOptions];
-                      updated[idx] = text;
-                      setPollOptions(updated);
-                    }}
-                  />
-                  {pollOptions.length > 2 && (
-                    <TouchableOpacity 
-                      onPress={() => setPollOptions(pollOptions.filter((_, oIdx) => oIdx !== idx))}
-                      style={styles.deleteOptionBtn}
-                    >
-                      <Ionicons name="trash-outline" size={18} color="#EF4444" />
-                    </TouchableOpacity>
+                <View style={[styles.commAvatarCircle, { backgroundColor: comm.color }]}>
+                  <Text style={styles.commAvatarLetter}>{comm.name.charAt(2).toUpperCase()}</Text>
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={styles.commRowName}>{comm.name}</Text>
+                  <Text style={styles.commRowMeta}>{comm.members} • {comm.subtext}</Text>
+                  <Text style={styles.commRowDesc} numberOfLines={2}>{comm.desc}</Text>
+                  {comm.cannotPost && (
+                    <Text style={styles.cannotPostLabel}>⚠️ You cannot post here</Text>
                   )}
                 </View>
-              ))}
-
-              {pollOptions.length < 10 && (
-                <TouchableOpacity style={styles.addOptionBtn} onPress={handleAddPollOption}>
-                  <Ionicons name="add" size={16} color="#7C3AED" />
-                  <Text style={styles.addOptionText}>Add Option</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* Toggles */}
-            <View style={styles.pollToggleRow}>
-              <Text style={styles.pollToggleLabel}>Allow multiple answers</Text>
-              <Switch value={allowMultiple} onValueChange={setAllowMultiple} trackColor={{ true: '#7C3AED' }} />
-            </View>
-
-            <View style={styles.pollToggleRow}>
-              <Text style={styles.pollToggleLabel}>Hide results</Text>
-              <Switch value={hideResults} onValueChange={setHideResults} trackColor={{ true: '#7C3AED' }} />
-            </View>
-
-            <View style={styles.pollDurationSelector}>
-              <Text style={styles.pollToggleLabel}>Poll duration</Text>
-              <TouchableOpacity style={styles.durationTrigger} onPress={() => setPollDuration(pollDuration === '3 Days' ? '7 Days' : '3 Days')}>
-                <Text style={styles.durationValue}>{pollDuration}</Text>
-                <Ionicons name="chevron-down" size={16} color="#6B7280" />
               </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </View>
-      )}
-
-      {/* CRE_006 – Drafts List */}
-      {currentView === 'DraftsList' && (
-        <View style={styles.subContainer}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => setCurrentView('CreatePost')}>
-              <Ionicons name="arrow-back" size={24} color="#1F2937" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Drafts</Text>
-            <View style={{ width: 24 }} />
-          </View>
-
-          {/* Drafts List scroll */}
-          <ScrollView style={styles.scrollArea} showsVerticalScrollIndicator={false}>
-            <Text style={styles.draftsCountText}>{drafts.length} Drafts available</Text>
-            {drafts.map((draft) => (
-              <View key={draft.id} style={styles.draftCard}>
-                <View style={styles.draftCardHeader}>
-                  <Text style={styles.draftCardTitle}>{draft.title}</Text>
-                  <TouchableOpacity onPress={() => setDrafts(drafts.filter(d => d.id !== draft.id))}>
-                    <Ionicons name="trash-outline" size={16} color="#EF4444" />
-                  </TouchableOpacity>
-                </View>
-                <Text style={styles.draftCardDesc}>{draft.text}</Text>
-                <View style={styles.draftCardFooter}>
-                  <Text style={styles.draftCardDate}>{draft.date}</Text>
-                  <TouchableOpacity 
-                    style={styles.useDraftBtn}
-                    onPress={() => {
-                      setPostText(draft.text);
-                      setCurrentView('CreatePost');
-                    }}
-                  >
-                    <Text style={styles.useDraftText}>Edit</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
             ))}
           </ScrollView>
         </View>
+      </Modal>
+
+      {/* 2. ADD IMAGE BOTTOM SHEET (Screen 4) */}
+      <Modal 
+        visible={showAddImageSheet} 
+        transparent
+        animationType="fade"
+        statusBarTranslucent={true}
+        onRequestClose={() => setShowAddImageSheet(false)}
+      >
+        <View style={styles.bottomSheetOverlay}>
+          <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowAddImageSheet(false)} />
+          <View style={styles.bottomSheetContent}>
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Add image</Text>
+              <TouchableOpacity onPress={() => setShowAddImageSheet(false)} style={styles.sheetCloseBtn}>
+                <Ionicons name="close" size={22} color="#1F2937" />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity 
+              style={styles.sheetOptionRow} 
+              onPress={() => handleImageOptionPress('camera')}
+            >
+              <Ionicons name="camera-outline" size={24} color="#4B5563" style={{ marginRight: 12 }} />
+              <Text style={styles.sheetOptionText}>Take Photo</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.sheetOptionRow} 
+              onPress={() => handleImageOptionPress('library')}
+            >
+              <Ionicons name="images-outline" size={24} color="#4B5563" style={{ marginRight: 12 }} />
+              <Text style={styles.sheetOptionText}>Photo Library</Text>
+            </TouchableOpacity>
+            
+            {/* Safe bottom spacer */}
+            <View style={{ height: 100, backgroundColor: '#FFFFFF', position: 'absolute', bottom: -100, left: 0, right: 0 }} />
+          </View>
+        </View>
+      </Modal>
+
+      {/* 3. ADD VIDEO BOTTOM SHEET (Screen 5) */}
+      <Modal 
+        visible={showAddVideoSheet} 
+        transparent
+        animationType="fade"
+        statusBarTranslucent={true}
+        onRequestClose={() => setShowAddVideoSheet(false)}
+      >
+        <View style={styles.bottomSheetOverlay}>
+          <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowAddVideoSheet(false)} />
+          <View style={styles.bottomSheetContent}>
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Add video</Text>
+              <TouchableOpacity onPress={() => setShowAddVideoSheet(false)} style={styles.sheetCloseBtn}>
+                <Ionicons name="close" size={22} color="#1F2937" />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity 
+              style={styles.sheetOptionRow} 
+              onPress={() => handleVideoOptionPress('camera')}
+            >
+              <Ionicons name="videocam-outline" size={24} color="#4B5563" style={{ marginRight: 12 }} />
+              <Text style={styles.sheetOptionText}>Capture Video</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.sheetOptionRow} 
+              onPress={() => handleVideoOptionPress('library')}
+            >
+              <Ionicons name="images-outline" size={24} color="#4B5563" style={{ marginRight: 12 }} />
+              <Text style={styles.sheetOptionText}>Video Library</Text>
+            </TouchableOpacity>
+            
+            {/* Safe bottom spacer */}
+            <View style={{ height: 100, backgroundColor: '#FFFFFF', position: 'absolute', bottom: -100, left: 0, right: 0 }} />
+          </View>
+        </View>
+      </Modal>
+
+      {/* 4. CUSTOM DESICIRCLE ALERT POPUP MODAL */}
+      {customAlert && (
+        <Modal transparent visible animationType="fade" statusBarTranslucent={true} onRequestClose={() => setCustomAlert(null)}>
+          <View style={styles.alertOverlay}>
+            <View style={styles.alertBox}>
+              <Text style={styles.alertTitle}>{customAlert.title}</Text>
+              <Text style={styles.alertMessage}>{customAlert.message}</Text>
+              <View style={styles.alertButtonsRow}>
+                {customAlert.buttons ? (
+                  customAlert.buttons.map((btn, idx) => (
+                    <TouchableOpacity 
+                      key={idx} 
+                      style={[styles.alertBtn, idx === 0 && styles.alertBtnSecondary]}
+                      onPress={() => {
+                        setCustomAlert(null);
+                        if (btn.onPress) btn.onPress();
+                      }}
+                    >
+                      <Text style={[styles.alertBtnText, idx === 0 && styles.alertBtnTextSecondary]}>{btn.text}</Text>
+                    </TouchableOpacity>
+                  ))
+                ) : (
+                  <TouchableOpacity style={styles.alertBtn} onPress={() => setCustomAlert(null)}>
+                    <Text style={styles.alertBtnText}>OK</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          </View>
+        </Modal>
       )}
-    </View>
+
+      {showLinkInputModal && (
+        <Modal transparent visible animationType="slide" statusBarTranslucent={true} onRequestClose={() => setShowLinkInputModal(false)}>
+          <KeyboardAvoidingView 
+            style={{ flex: 1 }} 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
+            <View style={styles.bottomSheetOverlay}>
+              <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowLinkInputModal(false)} />
+              <View style={styles.bottomSheetContent}>
+                <View style={styles.sheetHeader}>
+                  <Text style={styles.sheetTitle}>Add Link</Text>
+                  <TouchableOpacity onPress={() => setShowLinkInputModal(false)} style={styles.sheetCloseBtn}>
+                    <Ionicons name="close" size={22} color="#1F2937" />
+                  </TouchableOpacity>
+                </View>
+                <TextInput
+                  style={styles.pollOptionInput}
+                  placeholder="https://example.com"
+                  placeholderTextColor="#9CA3AF"
+                  value={tempLink}
+                  onChangeText={setTempLink}
+                  autoFocus
+                />
+                <TouchableOpacity 
+                  style={{ backgroundColor: '#0F172A', borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 16 }} 
+                  onPress={() => {
+                    setShowLinkInputModal(false);
+                    if (tempLink.trim()) {
+                      setAttachedLink(tempLink);
+                      showAlert('Link Added', 'URL attached successfully!');
+                    }
+                  }}
+                >
+                  <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: 14 }}>Add</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
+      )}
+    </KeyboardAvoidingView>
   );
 }
 
@@ -724,667 +668,467 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  subContainer: {
-    flex: 1,
-  },
   header: {
     flexDirection: 'row',
+    alignItems: 'center',
     height: 90,
     paddingTop: 44,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
     backgroundColor: '#FFFFFF',
   },
-  headerAction: {
+  headerCloseBtn: {
     padding: 4,
   },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  postBtn: {
-    backgroundColor: '#7C3AED',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 15,
-  },
-  postBtnText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  scrollArea: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-  },
-  userSection: {
+  communitySelectorBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  userAvatar: {
-    width: 40,
-    height: 40,
+    backgroundColor: '#F3F4F6',
     borderRadius: 20,
-  },
-  userMeta: {
-    marginLeft: 12,
-  },
-  userName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  audienceSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    marginTop: 4,
-  },
-  audienceText: {
-    fontSize: 10,
-    color: '#4B5563',
-    fontWeight: '600',
-    marginHorizontal: 4,
-  },
-  textInput: {
-    fontSize: 15,
-    color: '#1F2937',
-    minHeight: 120,
-    textAlignVertical: 'top',
-    padding: 0,
-    margin: 0,
-  },
-  attachedMetaRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginVertical: 12,
-  },
-  metaBadge: {
-    backgroundColor: '#7C3AED10',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-    marginRight: 8,
-    marginBottom: 6,
-  },
-  metaBadgeText: {
-    fontSize: 11,
-    color: '#7C3AED',
-    fontWeight: '600',
-  },
-  mediaPreviewContainer: {
-    height: 100,
-    marginVertical: 12,
-  },
-  mediaPreviewCard: {
-    position: 'relative',
-    marginRight: 10,
-    width: 100,
-    height: 100,
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  mediaPreviewImg: {
-    width: '100%',
-    height: '100%',
-  },
-  removeMediaBtn: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-  },
-  voicePreviewCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    padding: 12,
-    marginVertical: 12,
-  },
-  voicePreviewText: {
-    fontSize: 12,
-    color: '#374151',
-    fontWeight: '600',
-  },
-  pollPreviewCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    padding: 12,
-    marginVertical: 12,
-  },
-  pollPreviewMeta: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  pollPreviewQuestion: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  pollPreviewCount: {
-    fontSize: 10,
-    color: '#6B7280',
-    marginTop: 2,
-  },
-  tagsTogglesRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginVertical: 14,
-  },
-  tagToggleBtn: {
-    backgroundColor: '#F3F4F6',
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 15,
+    paddingVertical: 6,
+    marginLeft: 16,
   },
-  tagToggleText: {
-    fontSize: 11,
-    color: '#4B5563',
-    fontWeight: '600',
-  },
-  creationGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginVertical: 12,
-  },
-  gridBtn: {
-    width: '48%',
-    backgroundColor: '#FAFBFC',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 14,
-    padding: 16,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  gridIconBg: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  gridBtnLabel: {
-    fontSize: 12,
-    color: '#374151',
-    fontWeight: '700',
-  },
-  modalBg: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  audienceModalContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    width: '80%',
-    padding: 20,
-  },
-  modalHeading: {
-    fontSize: 14,
-    fontWeight: '750',
-    color: '#1F2937',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  audienceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  audienceRowText: {
+  communitySelectorText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  darkHeader: {
-    flexDirection: 'row',
-    height: 90,
-    paddingTop: 44,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#0F172A',
-    borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
-  },
-  darkHeaderTitle: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  recorderBody: {
-    flex: 1,
-    backgroundColor: '#0F172A',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  recordStatusText: {
-    color: '#94A3B8',
-    fontSize: 13,
-    marginBottom: 8,
-  },
-  recorderTimerText: {
-    color: '#FFFFFF',
-    fontSize: 48,
     fontWeight: 'bold',
-  },
-  waveformContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 80,
-    marginVertical: 40,
-    width: '100%',
-  },
-  waveformBar: {
-    width: 3,
-    backgroundColor: '#7C3AED',
-    marginHorizontal: 3,
-    borderRadius: 1.5,
-  },
-  tapTipText: {
-    color: '#94A3B8',
-    fontSize: 12,
-    marginBottom: 30,
-  },
-  recorderControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    width: '100%',
-    paddingHorizontal: 40,
-  },
-  recorderSideBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#1E293B',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  micMainBtn: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#7C3AED',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  slideCancelText: {
-    color: '#64748B',
-    fontSize: 11,
-    marginTop: 40,
-  },
-  cameraViewfinder: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-  },
-  cameraHeaderOverlay: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 54,
-    height: 100,
-    alignItems: 'center',
-  },
-  cameraTimerText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  cameraRightControls: {
-    position: 'absolute',
-    right: 20,
-    top: 150,
-    spaceY: 16,
-  },
-  cameraIconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  cameraZoomText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  cameraBottomControls: {
-    position: 'absolute',
-    bottom: 60,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    width: '100%',
-    paddingHorizontal: 40,
-  },
-  galleryPreviewBubble: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-  },
-  galleryBubbleImg: {
-    width: '100%',
-    height: '100%',
-  },
-  shutterContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    borderWidth: 4,
-    borderColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  shutterInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  shutterRecordingDot: {
-    width: 16,
-    height: 16,
-    backgroundColor: '#EF4444',
-    borderRadius: 8,
-  },
-  flipCameraBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cameraModeRow: {
-    position: 'absolute',
-    bottom: 20,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  cameraModeItem: {
-    marginHorizontal: 16,
-  },
-  cameraModeText: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  cameraModeTextActive: {
-    color: '#FFFFFF',
-  },
-  galleryNextBtn: {
-    backgroundColor: '#7C3AED',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 15,
-  },
-  galleryNextText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  galleryTabsRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-    backgroundColor: '#FFFFFF',
-  },
-  galleryTab: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  galleryTabText: {
-    fontSize: 13,
-    color: '#9CA3AF',
-    fontWeight: '600',
-  },
-  galleryTabTextActive: {
-    color: '#7C3AED',
-  },
-  galleryScroll: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  galleryPhotosGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: 2,
-  },
-  photoGridCell: {
-    width: '33.3%',
-    height: 120,
-    padding: 2,
-    position: 'relative',
-  },
-  gridCellImg: {
-    width: '100%',
-    height: '100%',
-  },
-  selectionCheckBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-  },
-  gallerySelectedPanel: {
-    height: 120,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  selectedCountText: {
-    fontSize: 12,
-    fontWeight: '700',
     color: '#1F2937',
-    marginBottom: 8,
   },
-  galleryThumbnailScroll: {
-    alignItems: 'center',
-  },
-  selectedThumbnailContainer: {
-    position: 'relative',
-    marginRight: 10,
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  selectedThumbnailImg: {
-    width: '100%',
-    height: '100%',
-  },
-  removeThumbnailBadge: {
-    position: 'absolute',
-    top: 2,
-    right: 2,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#EF4444',
+  selectedCommIcon: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  pollNextBtn: {
-    backgroundColor: '#7C3AED',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 15,
-  },
-  pollNextText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  pollInputSection: {
-    marginBottom: 20,
-  },
-  pollInputLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  pollTextInput: {
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    height: 48,
-    paddingHorizontal: 16,
-    fontSize: 13,
-    color: '#1F2937',
-    backgroundColor: '#F9FAFB',
-  },
-  optionInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  optionTextInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    height: 46,
-    paddingHorizontal: 16,
-    fontSize: 13,
-    color: '#1F2937',
-    backgroundColor: '#F9FAFB',
-  },
-  deleteOptionBtn: {
-    marginLeft: 10,
-    padding: 4,
-  },
-  addOptionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  addOptionText: {
-    fontSize: 12,
-    color: '#7C3AED',
-    fontWeight: '700',
-    marginLeft: 6,
-  },
-  pollToggleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  pollToggleLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  pollDurationSelector: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  durationTrigger: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  durationValue: {
-    fontSize: 12,
-    color: '#7C3AED',
-    fontWeight: '700',
     marginRight: 6,
   },
-  draftsCountText: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginBottom: 12,
+  selectedCommIconText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
-  draftCard: {
+  postBtn: {
+    backgroundColor: '#EEF2F6',
+    borderRadius: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 6,
+    marginLeft: 'auto',
+  },
+  postBtnDisabled: {
+    backgroundColor: '#F3F4F6',
+  },
+  postBtnText: {
+    color: '#1F2937',
+    fontWeight: '800',
+    fontSize: 13,
+  },
+  postBtnTextDisabled: {
+    color: '#9CA3AF',
+  },
+  contentScroll: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  titleInput: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 16,
+    padding: 0,
+  },
+  bodyInput: {
+    fontSize: 15,
+    color: '#4B5563',
+    lineHeight: 20,
+    padding: 0,
+  },
+  attachedImageContainer: {
+    marginTop: 16,
+    position: 'relative',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  attachedImage: {
+    width: '100%',
+    height: 240,
+  },
+  removeAttachmentBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+  },
+  attachedTagsRow: {
+    flexDirection: 'row',
+    marginTop: 16,
+  },
+  tagBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  tagBadgeText: {
+    fontSize: 12,
+    color: '#7C3AED',
+    fontWeight: 'bold',
+  },
+  bottomToolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    height: 72,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'space-between',
+  },
+  toolbarItem: {
+    padding: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  amaToolbarItem: {
+    borderWidth: 1.5,
+    borderColor: '#1F2937',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  amaText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#1F2937',
+    textTransform: 'uppercase',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 90,
+    paddingTop: 44,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  modalCloseBtn: {
+    padding: 4,
+  },
+  modalHeaderTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginLeft: 16,
+  },
+  modalSearchWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 48,
+    margin: 16,
+  },
+  modalSearchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#1F2937',
+  },
+  communitiesListScroll: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  communityRowItem: {
+    flexDirection: 'row',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F9FAFB',
+  },
+  commAvatarCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  commAvatarLetter: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  commRowName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#1F2937',
+  },
+  commRowMeta: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 2,
+  },
+  commRowDesc: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 4,
+    lineHeight: 16,
+  },
+  cannotPostLabel: {
+    fontSize: 10,
+    color: '#EF4444',
+    fontWeight: 'bold',
+    marginTop: 4,
+  },
+  bottomSheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  bottomSheetContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 30,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  sheetTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1F2937',
+  },
+  sheetCloseBtn: {
+    padding: 4,
+  },
+  sheetOptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+  },
+  sheetOptionText: {
+    fontSize: 14,
+    color: '#1F2937',
+    fontWeight: '600',
+  },
+  pollCardBlock: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 16,
   },
-  draftCardHeader: {
+  cardBlockHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 8,
   },
-  draftCardTitle: {
+  pollDaysTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pollDaysText: {
     fontSize: 13,
-    fontWeight: '700',
+    color: '#4B5563',
+  },
+  cardBlockCloseBtn: {
+    backgroundColor: '#EEF2F6',
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pollOptionInput: {
+    backgroundColor: '#EEF2F6',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#1F2937',
+    marginTop: 10,
+  },
+  addPollOptionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EEF2F6',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 10,
+  },
+  addPollOptionText: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#4B5563',
+    marginLeft: 6,
+  },
+  amaCardBlock: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 16,
+  },
+  amaTitleText: {
+    fontSize: 15,
+    fontWeight: 'bold',
     color: '#1F2937',
   },
-  draftCardDesc: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 6,
-    lineHeight: 16,
+  amaDropdownGroup: {
+    marginTop: 12,
   },
-  draftCardFooter: {
+  amaLabelText: {
+    fontSize: 11,
+    color: '#6B7280',
+    marginBottom: 4,
+    fontWeight: '600',
+  },
+  amaDropdownTrigger: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 12,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  draftCardDate: {
-    fontSize: 10,
-    color: '#9CA3AF',
-  },
-  useDraftBtn: {
-    backgroundColor: '#7C3AED10',
+    backgroundColor: '#EEF2F6',
+    borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingVertical: 10,
+  },
+  amaDropdownValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#1F2937',
+  },
+  selfieUploadCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  selfiePillIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EEF2F6',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: 10,
+  },
+  selfieUploadTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  selfieUploadSub: {
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  selfieImg: {
+    width: '100%',
+    height: 180,
+    borderRadius: 12,
+  },
+  alertOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  alertBox: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    maxWidth: 320,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  alertTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1F2937',
+    marginBottom: 8,
+  },
+  alertMessage: {
+    fontSize: 14,
+    color: '#4B5563',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  alertButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+  },
+  alertBtn: {
+    backgroundColor: '#0F172A',
     borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
-  useDraftText: {
-    fontSize: 11,
-    color: '#7C3AED',
-    fontWeight: '700',
+  alertBtnSecondary: {
+    backgroundColor: '#EEF2F6',
   },
+  alertBtnText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
+  alertBtnTextSecondary: {
+    color: '#4B5563',
+  },
+  attachedLinkContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: 12,
+    alignSelf: 'flex-start',
+  },
+  attachedLinkText: {
+    fontSize: 14,
+    color: '#3B82F6',
+    marginRight: 6,
+    textDecorationLine: 'underline',
+  },
+  removeLinkBtn: {
+    backgroundColor: '#E5E7EB',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  }
 });

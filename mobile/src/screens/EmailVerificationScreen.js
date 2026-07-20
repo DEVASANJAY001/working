@@ -3,12 +3,33 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityInd
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { authService } from '../services/authService';
+import { safeStorage } from '../utils/storage';
 
 export default function EmailVerificationScreen({ email, onBack, onVerifySuccess }) {
+  const [activeEmail, setActiveEmail] = useState(email || '');
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [timer, setTimer] = useState(45);
   const [loading, setLoading] = useState(false);
   const inputs = useRef([]);
+
+  useEffect(() => {
+    if (!activeEmail) {
+      async function fetchEmail() {
+        try {
+          const sessionStr = await safeStorage.getItem('user_session');
+          if (sessionStr) {
+            const session = JSON.parse(sessionStr);
+            if (session && session.email) {
+              setActiveEmail(session.email);
+            }
+          }
+        } catch (e) {
+          console.log(e);
+        }
+      }
+      fetchEmail();
+    }
+  }, []);
 
   useEffect(() => {
     let interval;
@@ -51,7 +72,7 @@ export default function EmailVerificationScreen({ email, onBack, onVerifySuccess
     }
     setLoading(true);
     try {
-      await authService.confirmSignUp(email || 'design@example.com', fullCode);
+      await authService.confirmSignUp(activeEmail || 'your email', fullCode);
       setLoading(false);
       onVerifySuccess();
     } catch (error) {
@@ -89,7 +110,7 @@ export default function EmailVerificationScreen({ email, onBack, onVerifySuccess
         <Text style={styles.title}>Verify your email</Text>
         <Text style={styles.subtitle}>
           We've sent a verification code to{'\n'}
-          <Text style={styles.emailText}>{email || 'design@example.com'}</Text>
+          <Text style={styles.emailText}>{activeEmail || 'your email'}</Text>
         </Text>
 
         {/* 6 Digit Input Group */}
