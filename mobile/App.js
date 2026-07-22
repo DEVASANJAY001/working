@@ -1,7 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SafeAreaView, StyleSheet, Animated, Text, TextInput, Platform, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import { 
+  useFonts, 
+  Poppins_400Regular, 
+  Poppins_500Medium, 
+  Poppins_600SemiBold, 
+  Poppins_700Bold 
+} from '@expo-google-fonts/poppins';
 
 import { safeStorage } from './src/utils/storage';
 import { authService } from './src/services/authService';
@@ -83,7 +89,7 @@ import LoginLoadingScreen from './src/screens/LoginLoadingScreen';
 import CommunityManagerScreen from './src/screens/CommunityManagerScreen';
 import ScreenNavigator from './src/components/ScreenNavigator';
 
-// Globally monkey-patch Text & TextInput to set Inter Font Family based on fontWeight
+// Globally monkey-patch Text & TextInput to set Poppins Font Family based on fontWeight
 const patchComponentFont = (Component) => {
   let target = Component;
   if (Component.type && Component.type.render) {
@@ -95,12 +101,12 @@ const patchComponentFont = (Component) => {
       const origin = oldRender.apply(this, args);
       const originStyle = StyleSheet.flatten(origin.props.style);
       
-      let fontFamily = 'Inter-Regular';
+      let fontFamily = 'Poppins-Regular';
       if (originStyle) {
-        if (originStyle.fontWeight === 'bold' || originStyle.fontWeight === '700') {
-          fontFamily = 'Inter-Bold';
+        if (originStyle.fontWeight === 'bold' || originStyle.fontWeight === '700' || originStyle.fontWeight === '800' || originStyle.fontWeight === '900') {
+          fontFamily = 'Poppins-Bold';
         } else if (originStyle.fontWeight === '600' || originStyle.fontWeight === '500') {
-          fontFamily = 'Inter-Medium';
+          fontFamily = 'Poppins-Medium';
         }
       }
       return React.cloneElement(origin, {
@@ -179,10 +185,10 @@ export default function App() {
   }, [isSessionLoaded, hasSession, isProfileCompleted]);
 
   const [fontsLoaded] = useFonts({
-    'Inter-Regular': Inter_400Regular,
-    'Inter-Medium': Inter_500Medium,
-    'Inter-SemiBold': Inter_600SemiBold,
-    'Inter-Bold': Inter_700Bold,
+    'Poppins-Regular': Poppins_400Regular,
+    'Poppins-Medium': Poppins_500Medium,
+    'Poppins-SemiBold': Poppins_600SemiBold,
+    'Poppins-Bold': Poppins_700Bold,
   });
 
   // Animation is now delegated to ScreenNavigator component
