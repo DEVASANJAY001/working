@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 24,
-    paddingTop: 50,
+    paddingTop: 10,
     justifyContent: 'space-between',
     paddingBottom: 40,
   },
@@ -121,14 +121,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   content: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   illustrationImage: {
-    width: 180,
-    height: 180,
-    marginBottom: 24,
+    width: 130,
+    height: 130,
+    marginBottom: 20,
   },
   title: {
     fontSize: 24,

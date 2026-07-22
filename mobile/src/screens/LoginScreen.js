@@ -12,7 +12,8 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ScrollView,
-  Platform 
+  Platform,
+  Vibration 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -42,6 +43,7 @@ export default function LoginScreen({ onBack, onLoginSuccess, onForgotPassword, 
   const [password, setPassword] = useState('');
   const [secureText, setSecureText] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState(false);
 
   const handleGoogleLogin = async () => {
     if (!GoogleSignin) {
@@ -111,6 +113,7 @@ export default function LoginScreen({ onBack, onLoginSuccess, onForgotPassword, 
       return;
     }
     setLoading(true);
+    setPasswordError(false);
     try {
       await authService.signIn(emailOrPhone, password);
       // Fetch user profile from AWS DynamoDB simulation
@@ -123,6 +126,8 @@ export default function LoginScreen({ onBack, onLoginSuccess, onForgotPassword, 
       onLoginSuccess(emailOrPhone);
     } catch (error) {
       setLoading(false);
+      setPasswordError(true);
+      Vibration.vibrate(400); // Vibrate device for incorrect password feedback
       Alert.alert('Login Failed', error.message || 'An error occurred during login.');
     }
   };
@@ -171,14 +176,17 @@ export default function LoginScreen({ onBack, onLoginSuccess, onForgotPassword, 
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Password</Text>
-                <View style={styles.passwordContainer}>
+                <View style={[styles.passwordContainer, passwordError && { borderColor: '#EF4444', borderWidth: 1.5 }]}>
                   <TextInput
                     style={styles.passwordInput}
                     placeholder="Enter your password"
                     placeholderTextColor="#9CA3AF"
                     secureTextEntry={secureText}
                     value={password}
-                    onChangeText={setPassword}
+                    onChangeText={(text) => {
+                      setPassword(text);
+                      setPasswordError(false);
+                    }}
                     autoCapitalize="none"
                   />
                   <TouchableOpacity onPress={() => setSecureText(!secureText)}>
@@ -189,6 +197,9 @@ export default function LoginScreen({ onBack, onLoginSuccess, onForgotPassword, 
                     />
                   </TouchableOpacity>
                 </View>
+                {passwordError && (
+                  <Text style={{ color: '#EF4444', fontSize: 12, fontWeight: '600', marginTop: 4, marginLeft: 4 }}>⚠️ Incorrect email/phone or password</Text>
+                )}
               </View>
 
               <TouchableOpacity style={styles.forgotPassword} onPress={onForgotPassword}>

@@ -12,7 +12,8 @@ import {
   KeyboardAvoidingView,
   TouchableWithoutFeedback,
   Keyboard,
-  Platform 
+  Platform,
+  Vibration 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -24,6 +25,7 @@ export default function EmailVerificationScreen({ email, onBack, onVerifySuccess
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [timer, setTimer] = useState(45);
   const [loading, setLoading] = useState(false);
+  const [otpError, setOtpError] = useState(false);
   const inputs = useRef([]);
 
   useEffect(() => {
@@ -56,6 +58,7 @@ export default function EmailVerificationScreen({ email, onBack, onVerifySuccess
   }, [timer]);
 
   const handleChange = (text, index) => {
+    setOtpError(false);
     const newCode = [...code];
     newCode[index] = text;
     setCode(newCode);
@@ -77,6 +80,7 @@ export default function EmailVerificationScreen({ email, onBack, onVerifySuccess
 
   const handleKeyPress = (e, index) => {
     if (e.nativeEvent.key === 'Backspace' && !code[index] && index > 0) {
+      setOtpError(false);
       inputs.current[index - 1].focus();
     }
   };
@@ -89,12 +93,15 @@ export default function EmailVerificationScreen({ email, onBack, onVerifySuccess
 
   const handleVerifyDirect = async (fullCode) => {
     setLoading(true);
+    setOtpError(false);
     try {
       await authService.confirmSignUp(activeEmail || 'your email', fullCode);
       setLoading(false);
       onVerifySuccess();
     } catch (error) {
       setLoading(false);
+      setOtpError(true);
+      Vibration.vibrate(400); // Vibrate device for incorrect OTP input
       Alert.alert('Verification Failed', error.message || 'An error occurred during verification.');
     }
   };
@@ -117,12 +124,12 @@ export default function EmailVerificationScreen({ email, onBack, onVerifySuccess
 
   return (
     <KeyboardAvoidingView 
-      style={{ flex: 1 }} 
+      style={{ flex: 1, backgroundColor: '#FFFFFF' }} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: '#FFFFFF' }]}>
           <StatusBar style="dark" />
           
           {/* Header */}
@@ -152,7 +159,7 @@ export default function EmailVerificationScreen({ email, onBack, onVerifySuccess
                 <TextInput
                   key={index}
                   ref={(ref) => (inputs.current[index] = ref)}
-                  style={styles.otpInput}
+                  style={[styles.otpInput, otpError && { borderColor: '#EF4444', borderWidth: 1.5 }]}
                   keyboardType="number-pad"
                   maxLength={1}
                   value={digit}
@@ -163,6 +170,9 @@ export default function EmailVerificationScreen({ email, onBack, onVerifySuccess
                 />
               ))}
             </View>
+            {otpError && (
+              <Text style={{ color: '#EF4444', fontSize: 12, fontWeight: '600', marginTop: 12 }}>⚠️ Invalid verification code</Text>
+            )}
           </View>
 
           {/* Button & Resend Footer */}
@@ -205,7 +215,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 24,
-    paddingTop: 50,
+    paddingTop: 10,
     justifyContent: 'space-between',
     paddingBottom: 40,
   },
@@ -220,14 +230,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   content: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   illustrationImage: {
-    width: 180,
-    height: 180,
-    marginBottom: 24,
+    width: 130,
+    height: 130,
+    marginBottom: 16,
   },
   title: {
     fontSize: 24,

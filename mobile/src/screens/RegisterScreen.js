@@ -1,5 +1,20 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView, ActivityIndicator, ImageBackground, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TextInput, 
+  TouchableOpacity, 
+  Alert, 
+  ScrollView, 
+  ActivityIndicator, 
+  ImageBackground, 
+  KeyboardAvoidingView, 
+  Platform, 
+  TouchableWithoutFeedback, 
+  Keyboard,
+  Vibration 
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
@@ -32,6 +47,8 @@ export default function RegisterScreen({ onBack, onRegisterSuccess, onGoToLogin 
   const [secureTextConfirm, setSecureTextConfirm] = useState(true);
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [emailError, setEmailError] = useState(false);
+  const [passMismatch, setPassMismatch] = useState(false);
 
   const handleGoogleRegister = async () => {
     if (!GoogleSignin) {
@@ -96,11 +113,16 @@ export default function RegisterScreen({ onBack, onRegisterSuccess, onGoToLogin 
   };
 
   const handleRegister = async () => {
+    setEmailError(false);
+    setPassMismatch(false);
+    
     if (!fullName || !email || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields.');
       return;
     }
     if (password !== confirmPassword) {
+      setPassMismatch(true);
+      Vibration.vibrate(400);
       Alert.alert('Error', 'Passwords do not match.');
       return;
     }
@@ -115,6 +137,10 @@ export default function RegisterScreen({ onBack, onRegisterSuccess, onGoToLogin 
       onRegisterSuccess(email);
     } catch (error) {
       setLoading(false);
+      if (error.message && error.message.toLowerCase().includes('already exists')) {
+        setEmailError(true);
+      }
+      Vibration.vibrate(400);
       Alert.alert('Registration Failed', error.message || 'An error occurred during registration.');
     }
   };
@@ -158,14 +184,20 @@ export default function RegisterScreen({ onBack, onRegisterSuccess, onGoToLogin 
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Email</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, emailError && { borderColor: '#EF4444', borderWidth: 1.5 }]}
             placeholder="Enter your email"
             placeholderTextColor="#9CA3AF"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text) => {
+              setEmail(text);
+              setEmailError(false);
+            }}
             keyboardType="email-address"
             autoCapitalize="none"
           />
+          {emailError && (
+            <Text style={{ color: '#EF4444', fontSize: 12, fontWeight: '600', marginTop: 4, marginLeft: 4 }}>⚠️ This email is already registered</Text>
+          )}
         </View>
 
         <View style={styles.inputGroup}>
@@ -177,7 +209,10 @@ export default function RegisterScreen({ onBack, onRegisterSuccess, onGoToLogin 
               placeholderTextColor="#9CA3AF"
               secureTextEntry={secureText}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => {
+                setPassword(text);
+                setPassMismatch(false);
+              }}
               autoCapitalize="none"
             />
             <TouchableOpacity onPress={() => setSecureText(!secureText)}>
@@ -192,14 +227,17 @@ export default function RegisterScreen({ onBack, onRegisterSuccess, onGoToLogin 
 
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Confirm Password</Text>
-          <View style={styles.passwordContainer}>
+          <View style={[styles.passwordContainer, passMismatch && { borderColor: '#EF4444', borderWidth: 1.5 }]}>
             <TextInput
               style={styles.passwordInput}
               placeholder="Confirm your password"
               placeholderTextColor="#9CA3AF"
               secureTextEntry={secureTextConfirm}
               value={confirmPassword}
-              onChangeText={setConfirmPassword}
+              onChangeText={(text) => {
+                setConfirmPassword(text);
+                setPassMismatch(false);
+              }}
               autoCapitalize="none"
             />
             <TouchableOpacity onPress={() => setSecureTextConfirm(!secureTextConfirm)}>
@@ -210,6 +248,9 @@ export default function RegisterScreen({ onBack, onRegisterSuccess, onGoToLogin 
               />
             </TouchableOpacity>
           </View>
+          {passMismatch && (
+            <Text style={{ color: '#EF4444', fontSize: 12, fontWeight: '600', marginTop: 4, marginLeft: 4 }}>⚠️ Passwords do not match</Text>
+          )}
         </View>
 
         {/* Checkbox agreement */}
@@ -271,7 +312,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     paddingHorizontal: 24,
-    paddingTop: 50,
+    paddingTop: 10,
     paddingBottom: 40,
     justifyContent: 'space-between',
   },

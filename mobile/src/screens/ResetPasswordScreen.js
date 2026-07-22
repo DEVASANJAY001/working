@@ -68,153 +68,169 @@ export default function ResetPasswordScreen({ email, onBack, onResetSuccess, onG
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="dark" />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Ionicons name="arrow-back" size={24} color="#1F2937" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Content */}
-      <View style={styles.content}>
-        <Image
-          source={require('../../assets/reset_password.png')}
-          style={styles.illustrationImage}
-          resizeMode="contain"
-        />
-
-        <Text style={styles.title}>Reset Password</Text>
-        <Text style={styles.subtitle}>
-          Create a new password for your account
-        </Text>
-
-        <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Verification Code</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter 6-digit code"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="number-pad"
-              maxLength={6}
-              value={code}
-              onChangeText={setCode}
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>New Password</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={styles.passwordInput}
-                placeholder="Enter new password"
-                placeholderTextColor="#9CA3AF"
-                secureTextEntry={secureText}
-                value={password}
-                onChangeText={setPassword}
-                autoCapitalize="none"
-              />
-              <TouchableOpacity onPress={() => setSecureText(!secureText)}>
-                <Ionicons
-                  name={secureText ? "eye-off-outline" : "eye-outline"}
-                  size={20}
-                  color="#6B7280"
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Confirm Password</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={styles.passwordInput}
-                placeholder="Confirm new password"
-                placeholderTextColor="#9CA3AF"
-                secureTextEntry={secureTextConfirm}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                autoCapitalize="none"
-              />
-              <TouchableOpacity onPress={() => setSecureTextConfirm(!secureTextConfirm)}>
-                <Ionicons
-                  name={secureTextConfirm ? "eye-off-outline" : "eye-outline"}
-                  size={20}
-                  color="#6B7280"
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Validation Indicators */}
-          <View style={styles.requirementsContainer}>
-            <Text style={styles.reqTitle}>Password must contain:</Text>
+    <KeyboardAvoidingView 
+      style={{ flex: 1, backgroundColor: '#FFFFFF' }} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView 
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'space-between', paddingBottom: 40, backgroundColor: '#FFFFFF' }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={[styles.container, { backgroundColor: '#FFFFFF' }]}>
+            <StatusBar style="dark" />
             
-            <View style={styles.reqRow}>
-              <Ionicons 
-                name={hasMinLength ? "checkmark-circle" : "ellipse-outline"} 
-                size={16} 
-                color={hasMinLength ? "#10B981" : "#9CA3AF"} 
-              />
-              <Text style={[styles.reqText, hasMinLength && styles.reqTextSuccess]}>At least 8 characters</Text>
+            {/* Header */}
+            <View style={styles.header}>
+              <TouchableOpacity style={styles.backButton} onPress={onBack}>
+                <Ionicons name="arrow-back" size={24} color="#1F2937" />
+              </TouchableOpacity>
             </View>
 
-            <View style={styles.reqRow}>
-              <Ionicons 
-                name={hasUppercase ? "checkmark-circle" : "ellipse-outline"} 
-                size={16} 
-                color={hasUppercase ? "#10B981" : "#9CA3AF"} 
+            {/* Content */}
+            <View style={styles.content}>
+              <Image
+                source={require('../../assets/reset_password.png')}
+                style={styles.illustrationImage}
+                resizeMode="contain"
               />
-              <Text style={[styles.reqText, hasUppercase && styles.reqTextSuccess]}>One uppercase letter</Text>
+
+              <Text style={styles.title}>Reset Password</Text>
+              <Text style={styles.subtitle}>
+                Create a new password for your account
+              </Text>
+
+              <View style={styles.formContainer}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Verification Code</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter 6-digit code"
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    value={code}
+                    onChangeText={setCode}
+                  />
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>New Password</Text>
+                  <View style={styles.passwordContainer}>
+                    <TextInput
+                      style={styles.passwordInput}
+                      placeholder="Enter new password"
+                      placeholderTextColor="#9CA3AF"
+                      secureTextEntry={secureText}
+                      value={password}
+                      onChangeText={setPassword}
+                      autoCapitalize="none"
+                    />
+                    <TouchableOpacity onPress={() => setSecureText(!secureText)}>
+                      <Ionicons
+                        name={secureText ? "eye-off-outline" : "eye-outline"}
+                        size={20}
+                        color="#6B7280"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Confirm Password</Text>
+                  <View style={[styles.passwordContainer, confirmPasswordMismatch && styles.inputErrorBorder]}>
+                    <TextInput
+                      style={styles.passwordInput}
+                      placeholder="Confirm new password"
+                      placeholderTextColor="#9CA3AF"
+                      secureTextEntry={secureTextConfirm}
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      autoCapitalize="none"
+                    />
+                    <TouchableOpacity onPress={() => setSecureTextConfirm(!secureTextConfirm)}>
+                      <Ionicons
+                        name={secureTextConfirm ? "eye-off-outline" : "eye-outline"}
+                        size={20}
+                        color="#6B7280"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {confirmPasswordMismatch && (
+                    <Text style={styles.errorInlineText}>⚠️ Passwords do not match</Text>
+                  )}
+                </View>
+
+                {/* Validation Indicators */}
+                <View style={styles.requirementsContainer}>
+                  <Text style={styles.reqTitle}>Password must contain:</Text>
+                  
+                  <View style={styles.reqRow}>
+                    <Ionicons 
+                      name={hasMinLength ? "checkmark-circle" : "ellipse-outline"} 
+                      size={16} 
+                      color={hasMinLength ? "#10B981" : "#9CA3AF"} 
+                    />
+                    <Text style={[styles.reqText, hasMinLength && styles.reqTextSuccess]}>At least 8 characters</Text>
+                  </View>
+
+                  <View style={styles.reqRow}>
+                    <Ionicons 
+                      name={hasUppercase ? "checkmark-circle" : "ellipse-outline"} 
+                      size={16} 
+                      color={hasUppercase ? "#10B981" : "#9CA3AF"} 
+                    />
+                    <Text style={[styles.reqText, hasUppercase && styles.reqTextSuccess]}>One uppercase letter</Text>
+                  </View>
+
+                  <View style={styles.reqRow}>
+                    <Ionicons 
+                      name={hasNumber ? "checkmark-circle" : "ellipse-outline"} 
+                      size={16} 
+                      color={hasNumber ? "#10B981" : "#9CA3AF"} 
+                    />
+                    <Text style={[styles.reqText, hasNumber && styles.reqTextSuccess]}>One numeric character</Text>
+                  </View>
+
+                  <View style={styles.reqRow}>
+                    <Ionicons 
+                      name={hasSymbol ? "checkmark-circle" : "ellipse-outline"} 
+                      size={16} 
+                      color={hasSymbol ? "#10B981" : "#9CA3AF"} 
+                    />
+                    <Text style={[styles.reqText, hasSymbol && styles.reqTextSuccess]}>One special symbol</Text>
+                  </View>
+                </View>
+              </View>
             </View>
 
-            <View style={styles.reqRow}>
-              <Ionicons 
-                name={hasNumber ? "checkmark-circle" : "ellipse-outline"} 
-                size={16} 
-                color={hasNumber ? "#10B981" : "#9CA3AF"} 
-              />
-              <Text style={[styles.reqText, hasNumber && styles.reqTextSuccess]}>One numeric character</Text>
-            </View>
+            {/* Action Footer */}
+            <View style={styles.actionContainer}>
+              <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={loading}>
+                <ImageBackground
+                  source={require('../../assets/image.png')}
+                  style={styles.gradientButton}
+                  resizeMode="cover"
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <Text style={styles.saveText}>Save Password</Text>
+                  )}
+                </ImageBackground>
+              </TouchableOpacity>
 
-            <View style={styles.reqRow}>
-              <Ionicons 
-                name={hasSymbol ? "checkmark-circle" : "ellipse-outline"} 
-                size={16} 
-                color={hasSymbol ? "#10B981" : "#9CA3AF"} 
-              />
-              <Text style={[styles.reqText, hasSymbol && styles.reqTextSuccess]}>One special symbol</Text>
+              <TouchableOpacity onPress={onGoToLogin} style={styles.loginLinkButton}>
+                <Text style={styles.loginLinkText}>
+                  Remember your password? <Text style={styles.loginLinkBold}>Login</Text>
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         </ScrollView>
-      </View>
-
-      {/* Action Footer */}
-      <View style={styles.actionContainer}>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={loading}>
-          <ImageBackground
-            source={require('../../assets/image.png')}
-            style={styles.gradientButton}
-            resizeMode="cover"
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
-            ) : (
-              <Text style={styles.saveText}>Save Password</Text>
-            )}
-          </ImageBackground>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={onGoToLogin} style={styles.loginLinkButton}>
-          <Text style={styles.loginLinkText}>
-            Remember your password? <Text style={styles.loginLinkBold}>Login</Text>
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -223,9 +239,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 24,
-    paddingTop: 50,
+    paddingTop: 10,
     justifyContent: 'space-between',
-    paddingBottom: 40,
   },
   header: {
     height: 48,
@@ -238,40 +253,40 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   content: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 16,
   },
   illustrationImage: {
-    width: 180,
-    height: 180,
-    marginBottom: 20,
+    width: 130,
+    height: 130,
+    marginBottom: 12,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#1F2937',
-    marginBottom: 8,
+    marginBottom: 6,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 14,
     color: '#6B7280',
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 24,
+    lineHeight: 20,
+    marginBottom: 16,
   },
   form: {
     width: '100%',
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
     color: '#374151',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   input: {
     width: '100%',
@@ -294,6 +309,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     backgroundColor: '#F9FAFB',
+  },
+  inputErrorBorder: {
+    borderColor: '#EF4444',
+    borderWidth: 1.5,
+  },
+  errorInlineText: {
+    color: '#EF4444',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 4,
+    marginLeft: 4,
   },
   passwordInput: {
     flex: 1,
