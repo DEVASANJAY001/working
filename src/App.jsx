@@ -215,7 +215,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F6F7F8] flex flex-col font-sans">
       {renderScreen()}
     </div>
   );
