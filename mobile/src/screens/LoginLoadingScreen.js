@@ -47,9 +47,21 @@ export default function LoginLoadingScreen({ emailOrPhone, onFinish }) {
     }, 1000);
 
     // 4th Second: Finish loading and transition to Home/Setup screen
-    const finishTimer = setTimeout(() => {
+    const finishTimer = setTimeout(async () => {
       if (isMounted) {
-        onFinish(!!fetchedProfileRef.current, fetchedProfileRef.current);
+        let profile = fetchedProfileRef.current;
+        if (!profile) {
+          try {
+            const cached = await safeStorage.getItem('user_profile');
+            if (cached) {
+              profile = JSON.parse(cached);
+            }
+          } catch (e) {}
+        }
+        
+        // Pass validation results cleanly
+        const hasProfile = !!(profile && profile.isProfileCompleted);
+        onFinish(hasProfile, profile);
       }
     }, 4000);
 
