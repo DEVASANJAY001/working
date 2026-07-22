@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search, Bell, Home, Compass, Plus, MessageSquare, User, MoreHorizontal,
   LogOut, MapPin, ChevronDown, TrendingUp, Award, ArrowUp, ArrowDown,
   X, MoreVertical, Users, PlusCircle, Code, Utensils, Leaf, Rocket,
   CloudRain, Camera, Cpu, ChevronRight, Train, Trophy, AlertTriangle,
   Share2, Bookmark, MessageCircle, Gift, Send, Smile, Copy, Smartphone,
+  ShieldAlert, Pin, Sparkles, Flag, Megaphone
 } from 'lucide-react';
+import { adminStore } from '../../services/adminStore';
 
 // ── Dynamic greeting ──────────────────────────────────────
 const getDynamicGreeting = () => {
@@ -93,7 +95,7 @@ function VoteBox({ post, onLike, onDislike }) {
 }
 
 // ── Reddit-style Post Card ────────────────────────────────
-function PostCard({ post, onLike, onDislike, onSave, onComment }) {
+function PostCard({ post, onLike, onDislike, onSave, onComment, onReport, activeReportPostId, setActiveReportPostId }) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl hover:border-gray-400 transition-colors group mb-2">
       <div className="flex gap-0">
@@ -144,9 +146,26 @@ function PostCard({ post, onLike, onDislike, onSave, onComment }) {
               <Bookmark className={`w-4 h-4 ${post.isSaved ? 'fill-violet-600' : ''}`} />
               {post.isSaved ? 'Saved' : 'Save'}
             </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-all cursor-pointer ml-auto">
-              <MoreHorizontal className="w-4 h-4" />
-            </button>
+            
+            <div className="relative ml-auto">
+              <button 
+                onClick={() => setActiveReportPostId(activeReportPostId === post.id ? null : post.id)} 
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-all cursor-pointer"
+              >
+                <MoreHorizontal className="w-4 h-4" />
+              </button>
+              
+              {activeReportPostId === post.id && (
+                <div className="absolute right-0 bottom-8 w-36 bg-white border border-gray-200 rounded-xl shadow-xl z-30 p-1 space-y-1">
+                  <button
+                    onClick={() => onReport(post)}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-bold text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <Flag className="w-3.5 h-3.5" /> Report Post
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -155,9 +174,30 @@ function PostCard({ post, onLike, onDislike, onSave, onComment }) {
 }
 
 // ── Main Component ────────────────────────────────────────
-export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
+export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdmin, currentUser }) {
   const [activeTab, setActiveTab] = useState('Home Feed');
   const [posts, setPosts] = useState(initialPosts);
+  
+  // Admin Data State
+  const [pinnedAnnouncement, setPinnedAnnouncement] = useState(adminStore.getAnnouncement());
+  const [ads, setAds] = useState(adminStore.getAds());
+  const [deletedPostIds, setDeletedPostIds] = useState(adminStore.getDeletedPostIds());
+  const [activeReportPostId, setActiveReportPostId] = useState(null);
+  const [toastMsg, setToastMsg] = useState('');
+
+  useEffect(() => {
+    setPinnedAnnouncement(adminStore.getAnnouncement());
+    setAds(adminStore.getAds());
+    setDeletedPostIds(adminStore.getDeletedPostIds());
+  }, []);
+
+  const handleReportPost = (post) => {
+    adminStore.reportPost(post.id, post, "Inappropriate content / Spam");
+    setToastMsg(`Post reported to Super User Admin for moderation.`);
+    setActiveReportPostId(null);
+    setTimeout(() => setToastMsg(''), 3500);
+  };
+
   const [profileImage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchOverlay, setShowSearchOverlay] = useState(false);
@@ -300,6 +340,16 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
 
         {/* ── LEFT SIDEBAR ──────────────────────── */}
         <aside className="w-60 flex-shrink-0 hidden lg:block space-y-1 sticky top-16 self-start max-h-[calc(100vh-4rem)] overflow-y-auto no-scrollbar">
+          {onGoToAdmin && (
+            <button
+              onClick={onGoToAdmin}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer bg-gradient-to-r from-violet-600 via-purple-600 to-orange-500 text-white shadow shadow-violet-500/20 hover:opacity-90 mb-3"
+            >
+              <ShieldAlert className="w-4 h-4 text-white" />
+              <span>Super User Console</span>
+            </button>
+          )}
+
           {tabs.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -430,9 +480,61 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
                 </div>
               </div>
 
+              {/* ── PINNED SUPER USER ANNOUNCEMENT ── */}
+              {pinnedAnnouncement && (
+                <div className="border-2 border-violet-500/80 rounded-3xl p-5 bg-gradient-to-br from-violet-900/10 via-purple-500/5 to-white shadow-md relative overflow-hidden space-y-3 mb-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1 bg-gradient-to-r from-violet-600 to-orange-500 text-white font-black text-[11px] rounded-full flex items-center gap-1.5 shadow-sm">
+                        <Pin className="w-3.5 h-3.5" /> Pinned by Super User
+                      </span>
+                      <span className="text-xs font-bold text-gray-900">{pinnedAnnouncement.authorName}</span>
+                    </div>
+                    <span className="text-[10px] font-black text-violet-600 uppercase tracking-widest bg-violet-100 px-2 py-0.5 rounded-md">
+                      Official Announcement
+                    </span>
+                  </div>
+
+                  <h3 className="text-base font-black text-gray-900">{pinnedAnnouncement.title}</h3>
+                  <p className="text-xs text-gray-700 leading-relaxed font-medium">{pinnedAnnouncement.text}</p>
+
+                  {pinnedAnnouncement.image && (
+                    <div className="w-full h-56 rounded-2xl overflow-hidden shadow-sm">
+                      <img src={pinnedAnnouncement.image} alt="Announcement" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── LIVE ADVERTISEMENT BANNER ── */}
+              {ads && ads.filter(a => a.active).length > 0 && (
+                <div className="border border-emerald-300 rounded-3xl p-4 bg-gradient-to-r from-emerald-50 via-teal-50 to-white shadow-sm flex items-center justify-between gap-4 mb-2">
+                  <div className="space-y-1">
+                    <span className="px-2 py-0.5 bg-emerald-600 text-white text-[9px] font-black uppercase tracking-wider rounded-md animate-pulse">
+                      Sponsored Ad
+                    </span>
+                    <h4 className="text-xs font-bold text-gray-900">{ads.find(a => a.active).title}</h4>
+                    <p className="text-[10px] text-gray-500">{ads.find(a => a.active).sponsor}</p>
+                  </div>
+                  {ads.find(a => a.active).image && (
+                    <img src={ads.find(a => a.active).image} alt="Ad" className="w-16 h-16 object-cover rounded-xl shrink-0 border border-emerald-200" />
+                  )}
+                </div>
+              )}
+
               {/* Posts */}
-              {posts.map(post => (
-                <PostCard key={post.id} post={post} onLike={handleLike} onDislike={handleDislike} onSave={handleSave} onComment={handleComment} />
+              {posts.filter(p => !deletedPostIds.includes(p.id)).map(post => (
+                <PostCard 
+                  key={post.id} 
+                  post={post} 
+                  onLike={handleLike} 
+                  onDislike={handleDislike} 
+                  onSave={handleSave} 
+                  onComment={handleComment} 
+                  onReport={handleReportPost}
+                  activeReportPostId={activeReportPostId}
+                  setActiveReportPostId={setActiveReportPostId}
+                />
               ))}
             </div>
           )}
@@ -765,6 +867,14 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* TOAST NOTIFICATION OVERLAY */}
+      {toastMsg && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs font-bold px-5 py-3 rounded-2xl shadow-2xl z-50 flex items-center gap-2 border border-gray-700 animate-fade-in">
+          <AlertTriangle className="w-4 h-4 text-amber-400" />
+          <span>{toastMsg}</span>
         </div>
       )}
 

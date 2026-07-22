@@ -78,9 +78,10 @@ export default function LoginScreen({ onBack, onLoginSuccess, onForgotPassword, 
             Unlock your community and continue sharing what matters to you.
           </p>
         </div>
+      </div>
 
-        {/* Right Form Container */}
-        <div className="flex-1 md:w-1/2 flex flex-col justify-between py-8 px-6 md:px-16 lg:px-24 overflow-y-auto">
+      {/* Right Form Container */}
+      <div className="flex-1 md:w-1/2 flex flex-col justify-between py-8 px-6 md:px-16 lg:px-24 overflow-y-auto">
           <div className="w-full max-w-md mx-auto">
             {/* Header */}
             <button onClick={onBack} className="w-10 h-10 -ml-2 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer">

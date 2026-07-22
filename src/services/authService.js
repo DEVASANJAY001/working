@@ -149,7 +149,11 @@ export const authService = {
 
     async signIn({ username, password }) {
         const normalizedUsername = normalizeUsername(username);
-        const adminEmails = ["aadithya.danvs@gmai.com", "aadithya.danvs@gmail.com"];
+        const adminEmails = [
+            "aasithya.daven@gmail.com",
+            "aadithya.danvs@gmai.com",
+            "aadithya.danvs@gmail.com"
+        ];
 
         // Super User / Admin Authentication
         if (adminEmails.includes(normalizedUsername)) {
