@@ -4769,11 +4769,11 @@ const styles = StyleSheet.create({
   panelAvatarImg: {
     width: '100%',
     height: '100%',
-    borderRadius: 33,
+    borderRadius: 36,
   },
   panelAvatarPlaceholder: {
     flex: 1,
-    borderRadius: 33,
+    borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
   },

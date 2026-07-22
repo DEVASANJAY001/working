@@ -30,10 +30,10 @@ const monthsList = [
 export default function ProfileSetupScreen({ onBack, onContinue, initialUserData }) {
   const [fullName, setFullName] = useState(initialUserData?.fullName || 'Devasanjay');
   const [username, setUsername] = useState(initialUserData?.username || 'devasanjay');
-  const [profileImage, setProfileImage] = useState(null);
-  const [dob, setDob] = useState('15/08/1998');
-  const [gender, setGender] = useState('Male');
-  const [bio, setBio] = useState('Exploring clean tech & innovative digital experiences! 🚀');
+  const [profileImage, setProfileImage] = useState(initialUserData?.profileImage || null);
+  const [dob, setDob] = useState(initialUserData?.dob || '15/08/1998');
+  const [gender, setGender] = useState(initialUserData?.gender || 'Male');
+  const [bio, setBio] = useState(initialUserData?.bio || 'Exploring clean tech & innovative digital experiences! 🚀');
 
   // Google Account Linking State
   const [googleConnected, setGoogleConnected] = useState(initialUserData?.googleConnected || false);
@@ -42,6 +42,12 @@ export default function ProfileSetupScreen({ onBack, onContinue, initialUserData
 
   useEffect(() => {
     if (initialUserData) {
+      if (initialUserData.fullName) setFullName(initialUserData.fullName);
+      if (initialUserData.username) setUsername(initialUserData.username);
+      if (initialUserData.profileImage) setProfileImage(initialUserData.profileImage);
+      if (initialUserData.dob) setDob(initialUserData.dob);
+      if (initialUserData.gender) setGender(initialUserData.gender);
+      if (initialUserData.bio) setBio(initialUserData.bio);
       if (initialUserData.googleConnected !== undefined) setGoogleConnected(initialUserData.googleConnected);
       if (initialUserData.googleEmail) setGoogleEmail(initialUserData.googleEmail);
     }

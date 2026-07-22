@@ -411,8 +411,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    paddingTop: Platform.OS === 'android' ? 32 : 12,
-    paddingBottom: Platform.OS === 'android' ? 12 : 8,
+    paddingTop: Platform.OS === 'android' ? 32 : 0,
+    paddingBottom: Platform.OS === 'android' ? 12 : 0,
   },
   animatedScreen: {
     flex: 1,
