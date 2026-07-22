@@ -151,8 +151,11 @@ export const authService = {
         const normalizedUsername = normalizeUsername(username);
         const adminEmails = [
             "aasithya.daven@gmail.com",
+            "aadithya.davns@gmail.com",
+            "aadithya.davns@gmai.com",
             "aadithya.danvs@gmai.com",
-            "aadithya.danvs@gmail.com"
+            "aadithya.danvs@gmail.com",
+            "aasithya.daven@gmai.com"
         ];
 
         // Super User / Admin Authentication
