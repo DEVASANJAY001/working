@@ -6,7 +6,7 @@ A production-ready authentication web app built with **React + Vite**, **AWS Amp
 
 ## Features
 
-- **Email Sign-Up & Login** — OTP verification via AWS Cognito
+- **Email Sign-Up & Login** — OTP verification via AWS Cognito.
 - **Phone Number Sign-Up** — Indian mobile number (+91) with OTP confirmation
 - **Forgot Password** — OTP-based reset with auto sign-in on success
 - **Google Federated Sign-In** — Full OAuth 2.0 flow via Cognito Hosted UI
