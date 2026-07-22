@@ -45,70 +45,75 @@ export default function ForgotPasswordScreen({ onBack, onContinue, onGoToLogin }
       keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.container}>
-          <StatusBar style="dark" />
-          
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity style={styles.backButton} onPress={onBack}>
-              <Ionicons name="arrow-back" size={24} color="#1F2937" />
-            </TouchableOpacity>
-          </View>
+        <ScrollView 
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'space-between', paddingBottom: 40, backgroundColor: '#FFFFFF' }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={[styles.container, { backgroundColor: '#FFFFFF' }]}>
+            <StatusBar style="dark" />
+            
+            {/* Header */}
+            <View style={styles.header}>
+              <TouchableOpacity style={styles.backButton} onPress={onBack}>
+                <Ionicons name="arrow-back" size={24} color="#1F2937" />
+              </TouchableOpacity>
+            </View>
 
-          {/* Content */}
-          <View style={styles.content}>
-            <Image
-              source={require('../../assets/forgot_password.png')}
-              style={styles.illustrationImage}
-              resizeMode="contain"
-            />
+            {/* Content */}
+            <View style={styles.content}>
+              <Image
+                source={require('../../assets/forgot_password.png')}
+                style={styles.illustrationImage}
+                resizeMode="contain"
+              />
 
-            <Text style={styles.title}>Forgot Password?</Text>
-            <Text style={styles.subtitle}>
-              No worries! Enter your email and we'll{'\n'}send you instructions to reset it.
-            </Text>
+              <Text style={styles.title}>Forgot Password?</Text>
+              <Text style={styles.subtitle}>
+                No worries! Enter your email and we'll{'\n'}send you instructions to reset it.
+              </Text>
 
-            {/* Input */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
-              <View style={styles.inputWrapper}>
-                <Ionicons name="mail-outline" size={18} color="#6B7280" style={{ marginRight: 8 }} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your email"
-                  placeholderTextColor="#9CA3AF"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
+              {/* Input */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Email</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="mail-outline" size={18} color="#6B7280" style={{ marginRight: 8 }} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your email"
+                    placeholderTextColor="#9CA3AF"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
               </View>
             </View>
-          </View>
 
-          {/* Action Footer */}
-          <View style={styles.actionContainer}>
-            <TouchableOpacity style={styles.continueButton} onPress={handleContinue} disabled={loading}>
-              <ImageBackground
-                source={require('../../assets/image.png')}
-                style={styles.gradientButton}
-                resizeMode="cover"
-              >
-                {loading ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <Text style={styles.continueText}>Continue</Text>
-                )}
-              </ImageBackground>
-            </TouchableOpacity>
+            {/* Action Footer */}
+            <View style={styles.actionContainer}>
+              <TouchableOpacity style={styles.continueButton} onPress={handleContinue} disabled={loading}>
+                <ImageBackground
+                  source={require('../../assets/image.png')}
+                  style={styles.gradientButton}
+                  resizeMode="cover"
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <Text style={styles.continueText}>Continue</Text>
+                  )}
+                </ImageBackground>
+              </TouchableOpacity>
 
-            <TouchableOpacity onPress={onGoToLogin} style={styles.loginLinkButton}>
-              <Text style={styles.loginLinkText}>
-                Remember your password? <Text style={styles.loginLinkBold}>Login</Text>
-              </Text>
-            </TouchableOpacity>
+              <TouchableOpacity onPress={onGoToLogin} style={styles.loginLinkButton}>
+                <Text style={styles.loginLinkText}>
+                  Remember your password? <Text style={styles.loginLinkBold}>Login</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
@@ -119,13 +124,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 24,
-    paddingTop: 50,
+    paddingTop: 10,
     justifyContent: 'space-between',
-    paddingBottom: 40,
   },
   header: {
     height: 48,
     justifyContent: 'center',
+    marginBottom: 10,
   },
   backButton: {
     width: 40,
@@ -134,14 +139,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   content: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 24,
   },
   illustrationImage: {
-    width: 180,
-    height: 180,
-    marginBottom: 24,
+    width: 140,
+    height: 140,
+    marginBottom: 16,
   },
   title: {
     fontSize: 24,
