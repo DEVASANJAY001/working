@@ -340,16 +340,6 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
 
         {/* ── LEFT SIDEBAR ──────────────────────── */}
         <aside className="w-60 flex-shrink-0 hidden lg:block space-y-1 sticky top-16 self-start max-h-[calc(100vh-4rem)] overflow-y-auto no-scrollbar">
-          {onGoToAdmin && (
-            <button
-              onClick={onGoToAdmin}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer bg-gradient-to-r from-violet-600 via-purple-600 to-orange-500 text-white shadow shadow-violet-500/20 hover:opacity-90 mb-3"
-            >
-              <ShieldAlert className="w-4 h-4 text-white" />
-              <span>Super User Console</span>
-            </button>
-          )}
-
           {tabs.map(({ id, label, icon: Icon }) => (
             <button
               key={id}

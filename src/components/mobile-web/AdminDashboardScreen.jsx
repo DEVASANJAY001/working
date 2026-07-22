@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  ShieldAlert, 
-  Users, 
-  FileText, 
-  AlertTriangle, 
-  Megaphone, 
-  TrendingUp, 
-  Trash2, 
-  UserX, 
-  UserCheck, 
-  Plus, 
-  Eye, 
-  CheckCircle, 
-  LogOut, 
-  Sparkles, 
-  Image as ImageIcon, 
-  Link as LinkIcon, 
+import {
+  ShieldAlert,
+  Users,
+  FileText,
+  AlertTriangle,
+  Megaphone,
+  TrendingUp,
+  Trash2,
+  UserX,
+  UserCheck,
+  Plus,
+  Eye,
+  CheckCircle,
+  LogOut,
+  Sparkles,
+  Image as ImageIcon,
+  Link as LinkIcon,
   ExternalLink,
   Search,
   Filter,
@@ -32,7 +32,7 @@ import { adminStore } from '../../services/adminStore';
 export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser }) {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'announcement' | 'users' | 'moderation' | 'trending' | 'ads'
-  
+
   // Data states
   const [announcement, setAnnouncement] = useState(adminStore.getAnnouncement());
   const [ads, setAds] = useState(adminStore.getAds());
@@ -173,7 +173,7 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
     setReportedPosts(updated);
   };
 
-  const filteredUsers = allUsers.filter(u => 
+  const filteredUsers = allUsers.filter(u =>
     u.name.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
     u.email.toLowerCase().includes(userSearchQuery.toLowerCase())
   );
@@ -186,10 +186,10 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
   const themeSubCardBg = isDarkMode ? "bg-[#2C2C2E]/60 border border-[#3C3C3E]" : "bg-gray-50 border border-gray-100";
   const themeInputBg = isDarkMode ? "bg-[#121212] border-gray-700 text-white" : "bg-white border border-gray-200 text-gray-900";
   const themeTableHeader = isDarkMode ? "bg-[#121212] text-gray-400 border-gray-800" : "bg-gray-50 text-gray-600 border-gray-200";
-  
+
   // Secondary buttons: glass glossy for dark mode, normal border/light gray for light mode
-  const themeBtnSecondary = isDarkMode 
-    ? "bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]" 
+  const themeBtnSecondary = isDarkMode
+    ? "bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]"
     : "bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300";
 
   return (
@@ -207,13 +207,13 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                 <Sparkles className="w-3 h-3 text-violet-500" /> Admin
               </span>
             </div>
-            <p className={`text-xs ${themeSubtext}`}>Logged in as <span className="text-violet-600 font-bold">{currentUser?.email || "aasithya.daven@gmail.com"}</span></p>
+            <p className={`text-xs ${themeSubtext}`}>Logged in as <span className="text-violet-600 font-bold">{currentUser?.email || "aadithya.davns@gmail.com"}</span></p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           {/* Light/Dark Toggle Switch */}
-          <button 
+          <button
             onClick={() => setIsDarkMode(!isDarkMode)}
             className={`p-2.5 rounded-xl transition-all cursor-pointer ${themeBtnSecondary}`}
             title="Toggle Light / Dark Mode"
@@ -221,13 +221,13 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
             {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-violet-600" />}
           </button>
 
-          <button 
+          <button
             onClick={onGoToFeed}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${themeBtnSecondary}`}
           >
-            <Eye className="w-4 h-4 text-violet-500" /> View Live User Feed
+            <Eye className="w-4 h-4 text-violet-500" /> See User View
           </button>
-          
+
           <button
             onClick={onLogout}
             className="px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs font-bold transition-all flex items-center gap-2 border border-red-500/20 cursor-pointer"
@@ -248,33 +248,30 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
 
             <button
               onClick={() => setActiveTab('overview')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-                activeTab === 'overview' 
-                  ? 'bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg shadow-violet-600/30' 
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'overview'
+                  ? 'bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg shadow-violet-600/30'
                   : `${isDarkMode ? 'text-gray-400 hover:bg-white/5 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`
-              }`}
+                }`}
             >
               <BarChart3 className="w-4 h-4" /> Overview Dashboard
             </button>
 
             <button
               onClick={() => setActiveTab('announcement')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-                activeTab === 'announcement' 
-                  ? 'bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg shadow-violet-600/30' 
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'announcement'
+                  ? 'bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg shadow-violet-600/30'
                   : `${isDarkMode ? 'text-gray-400 hover:bg-white/5 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`
-              }`}
+                }`}
             >
               <Pin className="w-4 h-4" /> Pinned Super User Post
             </button>
 
             <button
               onClick={() => setActiveTab('users')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer justify-between ${
-                activeTab === 'users' 
-                  ? 'bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg shadow-violet-600/30' 
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer justify-between ${activeTab === 'users'
+                  ? 'bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg shadow-violet-600/30'
                   : `${isDarkMode ? 'text-gray-400 hover:bg-white/5 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`
-              }`}
+                }`}
             >
               <div className="flex items-center gap-3">
                 <Users className="w-4 h-4" /> User Management
@@ -288,11 +285,10 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
 
             <button
               onClick={() => setActiveTab('moderation')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer justify-between ${
-                activeTab === 'moderation' 
-                  ? 'bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg shadow-violet-600/30' 
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer justify-between ${activeTab === 'moderation'
+                  ? 'bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg shadow-violet-600/30'
                   : `${isDarkMode ? 'text-gray-400 hover:bg-white/5 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`
-              }`}
+                }`}
             >
               <div className="flex items-center gap-3">
                 <AlertTriangle className="w-4 h-4" /> Reported Content
@@ -306,22 +302,20 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
 
             <button
               onClick={() => setActiveTab('trending')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-                activeTab === 'trending' 
-                  ? 'bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg shadow-violet-600/30' 
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'trending'
+                  ? 'bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg shadow-violet-600/30'
                   : `${isDarkMode ? 'text-gray-400 hover:bg-white/5 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`
-              }`}
+                }`}
             >
               <Flame className="w-4 h-4 text-orange-500" /> Popular Posts
             </button>
 
             <button
               onClick={() => setActiveTab('ads')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer justify-between ${
-                activeTab === 'ads' 
-                  ? 'bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg shadow-violet-600/30' 
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer justify-between ${activeTab === 'ads'
+                  ? 'bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg shadow-violet-600/30'
                   : `${isDarkMode ? 'text-gray-400 hover:bg-white/5 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`
-              }`}
+                }`}
             >
               <div className="flex items-center gap-3">
                 <Megaphone className="w-4 h-4 text-emerald-500" /> Advertisements
@@ -418,7 +412,7 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                     <h3 className="font-extrabold text-sm flex items-center gap-2">
                       <Pin className="w-4 h-4 text-violet-500" /> Active Pinned Super User Post
                     </h3>
-                    <button 
+                    <button
                       onClick={() => setActiveTab('announcement')}
                       className="text-xs font-bold text-violet-500 hover:underline cursor-pointer"
                     >
@@ -445,7 +439,7 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                     <h3 className="font-extrabold text-sm flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4 text-amber-500" /> Pending Moderation Reports
                     </h3>
-                    <button 
+                    <button
                       onClick={() => setActiveTab('moderation')}
                       className="text-xs font-bold text-amber-500 hover:underline cursor-pointer"
                     >
@@ -614,11 +608,10 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                           <td className="p-4 text-right">
                             <button
                               onClick={() => handleToggleBanUser(user.email)}
-                              className={`px-3 py-1.5 rounded-xl font-bold transition-all border cursor-pointer ${
-                                isBanned 
+                              className={`px-3 py-1.5 rounded-xl font-bold transition-all border cursor-pointer ${isBanned
                                   ? 'bg-emerald-500/20 text-emerald-555 border-emerald-500/30 hover:bg-emerald-500/30'
                                   : 'bg-red-500/20 text-red-500 border-red-500/30 hover:bg-red-500/30'
-                              }`}
+                                }`}
                             >
                               {isBanned ? (
                                 <span className="flex items-center gap-1"><UserCheck className="w-3.5 h-3.5" /> Unban User</span>
@@ -674,7 +667,7 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
 
                       <div className="flex items-center justify-between pt-2 border-t border-gray-850 text-xs">
                         <span className={themeSubtext}>Reason: <strong className="text-amber-505">{report.reportReason}</strong></span>
-                        
+
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleDismissReport(report.id)}
@@ -837,11 +830,10 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleToggleAd(ad.id)}
-                            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                              ad.active 
-                                ? 'bg-emerald-500/20 text-emerald-600 border border-emerald-500/30' 
+                            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${ad.active
+                                ? 'bg-emerald-500/20 text-emerald-600 border border-emerald-500/30'
                                 : `${isDarkMode ? 'bg-gray-800 text-gray-400 border border-gray-700' : 'bg-gray-150 text-gray-500 border border-gray-300'}`
-                            }`}
+                              }`}
                           >
                             {ad.active ? 'Active' : 'Paused'}
                           </button>
