@@ -113,6 +113,7 @@ export default function App() {
               setCurrentScreen('EmailVerification');
             }}
             onGoToLogin={() => setCurrentScreen('Login')}
+            onGoogleSuccess={() => setCurrentScreen('Home')}
           />
         );
       

@@ -9,6 +9,20 @@ export default function LoginScreen({ onBack, onLoginSuccess, onForgotPassword, 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const handleGoogleSignIn = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      await authService.federatedSignIn('Google');
+      const currentUser = await authService.getCurrentUser();
+      setLoading(false);
+      onLoginSuccess(currentUser);
+    } catch (err) {
+      setLoading(false);
+      setError(err.message || 'Google sign-in failed.');
+    }
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
@@ -152,7 +166,12 @@ export default function LoginScreen({ onBack, onLoginSuccess, onForgotPassword, 
 
           {/* Social */}
           <div className="flex justify-between gap-3">
-            <button className="flex-1 flex items-center justify-center gap-2 h-12 border border-gray-200 hover:bg-gray-50 active:scale-[0.98] transition-all rounded-xl text-sm font-bold text-gray-700 bg-white cursor-pointer">
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+              className="flex-1 flex items-center justify-center gap-2 h-12 border border-gray-200 hover:bg-gray-50 active:scale-[0.98] transition-all rounded-xl text-sm font-bold text-gray-700 bg-white cursor-pointer disabled:opacity-60"
+            >
               <span className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center text-[10px] text-red-600 font-bold">G</span>
               Google
             </button>

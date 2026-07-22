@@ -8,6 +8,13 @@ import {
     confirmResetPassword as amplifyConfirmResetPassword,
     signInWithRedirect,
 } from "aws-amplify/auth";
+import {
+    clearStoredSession,
+    findStoredUser,
+    getStoredSession,
+    saveStoredUser,
+    setStoredSession,
+} from "./localAuthStore";
 
 /* ---------------- Friendly Error Messages ---------------- */
 
@@ -51,10 +58,52 @@ function friendlyError(err) {
                     AUTH SERVICE
 ======================================================= */
 
+const isAwsConfigured = Boolean(
+    import.meta.env.VITE_AWS_USER_POOL_ID &&
+    import.meta.env.VITE_AWS_USER_POOL_CLIENT_ID &&
+    import.meta.env.VITE_AWS_COGNITO_DOMAIN
+);
+
+function normalizeUsername(username) {
+    return (username || "").trim().toLowerCase();
+}
+
+function createLocalUser(username, password, name) {
+    return {
+        username: normalizeUsername(username),
+        password,
+        name: name || "User",
+        confirmed: false,
+        createdAt: new Date().toISOString(),
+    };
+}
+
+function createLocalAuthError(name, message) {
+    const error = new Error(message);
+    error.name = name;
+    return error;
+}
+
 export const authService = {
     /* ---------------- SIGN UP ---------------- */
 
     async signUp({ username, password, options }) {
+        if (!isAwsConfigured) {
+            const normalizedUsername = normalizeUsername(username);
+            const existingUser = findStoredUser(normalizedUsername);
+            if (existingUser) {
+                throw createLocalAuthError(
+                    "UsernameExistsException",
+                    "An account with this email or phone already exists."
+                );
+            }
+
+            const userAttributes = options?.userAttributes || [];
+            const name = userAttributes.find((attr) => attr.Name === "name")?.Value || "User";
+            saveStoredUser(createLocalUser(normalizedUsername, password, name));
+            return { userConfirmed: false, userSub: `local-${Date.now()}` };
+        }
+
         try {
             return await amplifySignUp({
                 username,
@@ -69,6 +118,23 @@ export const authService = {
     /* ---------------- OTP VERIFY ---------------- */
 
     async confirmSignUp({ username, confirmationCode }) {
+        if (!isAwsConfigured) {
+            const normalizedUsername = normalizeUsername(username);
+            const existingUser = findStoredUser(normalizedUsername);
+            if (!existingUser) {
+                throw createLocalAuthError(
+                    "UserNotFoundException",
+                    "No account found with this email or phone number."
+                );
+            }
+            if (!String(confirmationCode || "").trim()) {
+                throw createLocalAuthError("CodeMismatchException", "Incorrect verification code.");
+            }
+            existingUser.confirmed = true;
+            saveStoredUser(existingUser);
+            return { success: true };
+        }
+
         try {
             return await amplifyConfirmSignUp({
                 username,
@@ -82,6 +148,33 @@ export const authService = {
     /* ---------------- LOGIN ---------------- */
 
     async signIn({ username, password }) {
+        if (!isAwsConfigured) {
+            const normalizedUsername = normalizeUsername(username);
+            const existingUser = findStoredUser(normalizedUsername);
+            if (!existingUser) {
+                throw createLocalAuthError(
+                    "UserNotFoundException",
+                    "No account found with this email or phone number."
+                );
+            }
+            if (existingUser.password !== password) {
+                throw createLocalAuthError("NotAuthorizedException", "Incorrect password.");
+            }
+            if (!existingUser.confirmed) {
+                throw createLocalAuthError(
+                    "UserNotConfirmedException",
+                    "Please verify your account using the OTP sent to your email."
+                );
+            }
+
+            setStoredSession({
+                username: normalizedUsername,
+                name: existingUser.name,
+                isAuthenticated: true,
+            });
+            return { isSignedIn: true, username: normalizedUsername };
+        }
+
         try {
             return await amplifySignIn({
                 username,
@@ -95,6 +188,18 @@ export const authService = {
     /* ---------------- FORGOT PASSWORD ---------------- */
 
     async resetPassword({ username }) {
+        if (!isAwsConfigured) {
+            const normalizedUsername = normalizeUsername(username);
+            const existingUser = findStoredUser(normalizedUsername);
+            if (!existingUser) {
+                throw createLocalAuthError(
+                    "UserNotFoundException",
+                    "No account found with this email or phone number."
+                );
+            }
+            return { codeDeliveryDetails: { destination: normalizedUsername } };
+        }
+
         try {
             return await amplifyResetPassword({
                 username,
@@ -111,6 +216,23 @@ export const authService = {
         confirmationCode,
         newPassword,
     }) {
+        if (!isAwsConfigured) {
+            const normalizedUsername = normalizeUsername(username);
+            const existingUser = findStoredUser(normalizedUsername);
+            if (!existingUser) {
+                throw createLocalAuthError(
+                    "UserNotFoundException",
+                    "No account found with this email or phone number."
+                );
+            }
+            if (!String(confirmationCode || "").trim()) {
+                throw createLocalAuthError("CodeMismatchException", "Incorrect verification code.");
+            }
+            existingUser.password = newPassword;
+            saveStoredUser(existingUser);
+            return { success: true };
+        }
+
         try {
             return await amplifyConfirmResetPassword({
                 username,
@@ -124,23 +246,30 @@ export const authService = {
 
     /* ---------------- GOOGLE / SOCIAL SIGN-IN ---------------- */
 
-    // Fixed: now correctly accepts and uses the `provider` argument.
-    // Previously, the function signature ignored its argument and hard-coded "Google".
     async federatedSignIn(provider = "Google") {
+        if (!isAwsConfigured) {
+            throw new Error(
+                "AWS Cognito is not configured for Google sign-in. Copy .env.example to .env and fill in VITE_AWS_USER_POOL_ID, VITE_AWS_USER_POOL_CLIENT_ID, VITE_AWS_COGNITO_DOMAIN, VITE_AWS_REDIRECT_SIGN_IN, and VITE_AWS_REDIRECT_SIGN_OUT."
+            );
+        }
+
         try {
             return await signInWithRedirect({ provider });
         } catch (err) {
-            // Log the full error for debugging OAuth issues
             console.error("[federatedSignIn] Full error:", err);
             console.error("[federatedSignIn] Name:", err.name);
             console.error("[federatedSignIn] Message:", err.message);
-            throw err;
+            throw new Error(err.message || "Google sign-in failed.");
         }
     },
 
     /* ---------------- CURRENT USER ---------------- */
 
     async getCurrentUser() {
+        if (!isAwsConfigured) {
+            return getStoredSession() || null;
+        }
+
         try {
             return await amplifyGetCurrentUser();
         } catch {
@@ -151,6 +280,11 @@ export const authService = {
     /* ---------------- LOGOUT ---------------- */
 
     async signOut() {
+        if (!isAwsConfigured) {
+            clearStoredSession();
+            return;
+        }
+
         try {
             await amplifySignOut();
         } catch (err) {
