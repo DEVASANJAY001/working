@@ -1,12 +1,27 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView, ActivityIndicator, ImageBackground, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView, ActivityIndicator, ImageBackground, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import { authService } from '../services/authService';
 import { safeStorage } from '../utils/storage';
 
-WebBrowser.maybeCompleteAuthSession();
+let GoogleSignin = null;
+let statusCodes = {};
+try {
+  const googleModule = require('@react-native-google-signin/google-signin');
+  GoogleSignin = googleModule.GoogleSignin;
+  statusCodes = googleModule.statusCodes;
+  
+  if (GoogleSignin) {
+    GoogleSignin.configure({
+      webClientId: '1070529505739-g4pbc55p8egcf624c9kth6oec3ad9998.apps.googleusercontent.com',
+      offlineAccess: true,
+    });
+  }
+} catch (e) {
+  console.log('[GoogleSignin] Native TurboModule RNGoogleSignin not linked in standard Expo Go sandbox.');
+}
 
 export default function RegisterScreen({ onBack, onRegisterSuccess, onGoToLogin }) {
   const [fullName, setFullName] = useState('');
@@ -19,33 +34,36 @@ export default function RegisterScreen({ onBack, onRegisterSuccess, onGoToLogin 
   const [loading, setLoading] = useState(false);
 
   const handleGoogleRegister = async () => {
+    if (!GoogleSignin) {
+      Alert.alert(
+        'Native Build Required',
+        'RNGoogleSignin is a native C++/Java TurboModule not compiled inside standard Expo Go app.\n\nTo test real Google Sign-In, please run a Native Development Build:\n\nnpx expo run:android'
+      );
+      return;
+    }
+
     setLoading(true);
     try {
-      const redirectUri = 'https://auth.expo.io/@anonymous/mobile';
-      console.log('[Google Auth] Redirect URI:', redirectUri);
-      
-      const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' + 
-        'client_id=1070529505739-g4pbc55p8egcf624c9kth6oec3ad9998.apps.googleusercontent.com&' +
-        'redirect_uri=' + encodeURIComponent(redirectUri) + '&' +
-        'response_type=token&' +
-        'scope=openid%20profile%20email&' +
-        'prompt=select_account';
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const response = await GoogleSignin.signIn();
+      const user = response.data?.user || response.user;
+      const googleEmail = user?.email;
+      const name = user?.name || user?.email?.split('@')[0] || 'User';
 
-      await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
-      
-      // Default to new_google_user@gmail.com on redirect success or web completion
-      const googleEmail = "new_google_user@gmail.com";
-      
+      if (!googleEmail) {
+        throw new Error('Google Sign-In did not return an email address.');
+      }
+
       let profile = await authService.getUserProfile(googleEmail);
       if (!profile) {
         try {
-          await authService.signUp(googleEmail, googleEmail.split('@')[0], 'GooglePass123!');
+          await authService.signUp(googleEmail, name.replace(/\s+/g, '_').toLowerCase(), 'GooglePass123!');
         } catch (signUpErr) {
           // Ignore if user already exists
         }
         profile = {
-          fullName: googleEmail.split('@')[0],
-          username: googleEmail.split('@')[0],
+          fullName: name,
+          username: name.replace(/\s+/g, '_').toLowerCase(),
           email: googleEmail,
           isLoggedIn: true,
           isProfileCompleted: false,
@@ -57,17 +75,23 @@ export default function RegisterScreen({ onBack, onRegisterSuccess, onGoToLogin 
         profile.googleConnected = true;
         await authService.updateUserProfile(profile);
       }
-      
+
       await safeStorage.setItem('user_profile', JSON.stringify(profile));
       await safeStorage.setItem('user_session', JSON.stringify({ isLoggedIn: true, email: googleEmail }));
-      
+
       setLoading(false);
-      
-      // Navigate using register success callback which triggers email setup / profile setup
       onRegisterSuccess(googleEmail);
-    } catch (e) {
+    } catch (error) {
       setLoading(false);
-      Alert.alert("Google Signup Failed", e.message || "Could not authenticate with Google.");
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        console.log('User cancelled the Google Sign-In flow');
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        Alert.alert('Sign In Progress', 'Google Sign-In is already in progress.');
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Alert.alert('Play Services Error', 'Google Play Services is not available or outdated on this device.');
+      } else {
+        Alert.alert('Google Sign-In Error', error.message || 'An error occurred during Google Sign-In.');
+      }
     }
   };
 
@@ -97,12 +121,13 @@ export default function RegisterScreen({ onBack, onRegisterSuccess, onGoToLogin 
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: '#FFFFFF' }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-      <StatusBar style="dark" />
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView contentContainerStyle={[styles.scrollContainer, { backgroundColor: '#FFFFFF' }]} keyboardShouldPersistTaps="handled">
+        <StatusBar style="dark" />
       
       {/* Header Area */}
       <View style={styles.header}>
@@ -232,18 +257,9 @@ export default function RegisterScreen({ onBack, onRegisterSuccess, onGoToLogin 
             <Text style={styles.socialButtonText}>Continue with Google</Text>
           </TouchableOpacity>
         </View>
-      </View>
-
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          Already have an account?{' '}
-          <Text style={styles.footerLink} onPress={onGoToLogin}>
-            Login
-          </Text>
-        </Text>
-      </View>
+        </View>
       </ScrollView>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }
@@ -420,5 +436,87 @@ const styles = StyleSheet.create({
   footerLink: {
     color: '#7C3AED',
     fontWeight: 'bold',
+  },
+
+  // Google Account Chooser Popup Styles
+  googleOverlayBg: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  googleDismissOverlay: {
+    flex: 1,
+  },
+  googleAccountSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 32,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  googleSheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#E5E7EB',
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  googleBrandHeader: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  googleSheetTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1F2937',
+    marginTop: 8,
+  },
+  googleSheetSub: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  googleAccountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  googleAvatarCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  googleAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  googleAccountName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  googleAccountEmail: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 1,
+  },
+  googleDisclaimer: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginTop: 20,
+    lineHeight: 15,
   },
 });

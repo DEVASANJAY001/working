@@ -1,5 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, Image, ImageBackground } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TextInput, 
+  TouchableOpacity, 
+  Alert, 
+  ActivityIndicator, 
+  Image, 
+  ImageBackground,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Platform 
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { authService } from '../services/authService';
@@ -50,6 +64,15 @@ export default function EmailVerificationScreen({ email, onBack, onVerifySuccess
     if (text && index < 5) {
       inputs.current[index + 1].focus();
     }
+
+    // Auto verify check if code is full
+    const fullCode = newCode.join('');
+    if (fullCode.length === 6) {
+      Keyboard.dismiss();
+      setTimeout(() => {
+        handleVerifyDirect(fullCode);
+      }, 100);
+    }
   };
 
   const handleKeyPress = (e, index) => {
@@ -64,12 +87,7 @@ export default function EmailVerificationScreen({ email, onBack, onVerifySuccess
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleVerify = async () => {
-    const fullCode = code.join('');
-    if (fullCode.length < 6) {
-      Alert.alert('Error', 'Please enter the complete 6-digit code.');
-      return;
-    }
+  const handleVerifyDirect = async (fullCode) => {
     setLoading(true);
     try {
       await authService.confirmSignUp(activeEmail || 'your email', fullCode);
@@ -81,6 +99,15 @@ export default function EmailVerificationScreen({ email, onBack, onVerifySuccess
     }
   };
 
+  const handleVerify = async () => {
+    const fullCode = code.join('');
+    if (fullCode.length < 6) {
+      Alert.alert('Error', 'Please enter the complete 6-digit code.');
+      return;
+    }
+    handleVerifyDirect(fullCode);
+  };
+
   const handleResend = () => {
     if (timer === 0) {
       setTimer(45);
@@ -89,79 +116,87 @@ export default function EmailVerificationScreen({ email, onBack, onVerifySuccess
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="dark" />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Ionicons name="arrow-back" size={24} color="#1F2937" />
-        </TouchableOpacity>
-      </View>
+    <KeyboardAvoidingView 
+      style={{ flex: 1 }} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.container}>
+          <StatusBar style="dark" />
+          
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backButton} onPress={onBack}>
+              <Ionicons name="arrow-back" size={24} color="#1F2937" />
+            </TouchableOpacity>
+          </View>
 
-      {/* Content & Illustration */}
-      <View style={styles.content}>
-        <Image
-          source={require('../../assets/email_verification.png')}
-          style={styles.illustrationImage}
-          resizeMode="contain"
-        />
-
-        <Text style={styles.title}>Verify your email</Text>
-        <Text style={styles.subtitle}>
-          We've sent a verification code to{'\n'}
-          <Text style={styles.emailText}>{activeEmail || 'your email'}</Text>
-        </Text>
-
-        {/* 6 Digit Input Group */}
-        <View style={styles.otpContainer}>
-          {code.map((digit, index) => (
-            <TextInput
-              key={index}
-              ref={(ref) => (inputs.current[index] = ref)}
-              style={styles.otpInput}
-              keyboardType="number-pad"
-              maxLength={1}
-              value={digit}
-              onChangeText={(text) => handleChange(text, index)}
-              onKeyPress={(e) => handleKeyPress(e, index)}
-              placeholder="0"
-              placeholderTextColor="#D1D5DB"
+          {/* Content & Illustration */}
+          <View style={styles.content}>
+            <Image
+              source={require('../../assets/email_verification.png')}
+              style={styles.illustrationImage}
+              resizeMode="contain"
             />
-          ))}
-        </View>
-      </View>
 
-      {/* Button & Resend Footer */}
-      <View style={styles.actionContainer}>
-        <TouchableOpacity style={styles.verifyButton} onPress={handleVerify} disabled={loading}>
-          <ImageBackground
-            source={require('../../assets/image.png')}
-            style={styles.gradientButton}
-            resizeMode="cover"
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
-            ) : (
-              <Text style={styles.verifyButtonText}>Verify Email</Text>
-            )}
-          </ImageBackground>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          onPress={handleResend}
-          disabled={timer > 0}
-          style={styles.resendButton}
-        >
-          <Text style={[styles.resendText, timer > 0 && styles.resendTextDisabled]}>
-            Didn't receive the code?{' '}
-            <Text style={styles.resendLink}>
-              Resend Email {timer > 0 ? `(${formatTimer(timer)})` : ''}
+            <Text style={styles.title}>Verify your email</Text>
+            <Text style={styles.subtitle}>
+              We've sent a verification code to{'\n'}
+              <Text style={styles.emailText}>{activeEmail || 'your email'}</Text>
             </Text>
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+
+            {/* 6 Digit Input Group */}
+            <View style={styles.otpContainer}>
+              {code.map((digit, index) => (
+                <TextInput
+                  key={index}
+                  ref={(ref) => (inputs.current[index] = ref)}
+                  style={styles.otpInput}
+                  keyboardType="number-pad"
+                  maxLength={1}
+                  value={digit}
+                  onChangeText={(text) => handleChange(text, index)}
+                  onKeyPress={(e) => handleKeyPress(e, index)}
+                  placeholder="0"
+                  placeholderTextColor="#D1D5DB"
+                />
+              ))}
+            </View>
+          </View>
+
+          {/* Button & Resend Footer */}
+          <View style={styles.actionContainer}>
+            <TouchableOpacity style={styles.verifyButton} onPress={handleVerify} disabled={loading}>
+              <ImageBackground
+                source={require('../../assets/image.png')}
+                style={styles.gradientButton}
+                resizeMode="cover"
+              >
+                {loading ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.verifyButtonText}>Verify Email</Text>
+                )}
+              </ImageBackground>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              onPress={handleResend}
+              disabled={timer > 0}
+              style={styles.resendButton}
+            >
+              <Text style={[styles.resendText, timer > 0 && styles.resendTextDisabled]}>
+                Didn't receive the code?{' '}
+                <Text style={styles.resendLink}>
+                  Resend Email {timer > 0 ? `(${formatTimer(timer)})` : ''}
+                </Text>
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 

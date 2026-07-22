@@ -193,6 +193,70 @@ export const authService = {
     return { success: true, timestamp: new Date().toISOString(), data: profileData };
   },
 
+  // Link Google Account to Current Logged In User
+  async linkGoogleAccount(currentEmail, googleEmail, googleName) {
+    console.log(`[AWS Auth Service] Linking Google account ${googleEmail} to user ${currentEmail}`);
+    const storedDbStr = await safeStorage.getItem('aws_dynamodb_profiles') || '{}';
+    const db = JSON.parse(storedDbStr);
+
+    // Check if this Google account is already linked to ANY OTHER existing user in system
+    for (const key of Object.keys(db)) {
+      const profile = db[key];
+      if (
+        profile &&
+        profile.email &&
+        profile.email.toLowerCase() !== currentEmail.toLowerCase() &&
+        profile.googleConnected &&
+        profile.googleEmail &&
+        profile.googleEmail.toLowerCase() === googleEmail.toLowerCase()
+      ) {
+        throw new Error('ALREADY_LINKED_TO_OTHER');
+      }
+    }
+
+    // Retrieve active profile
+    let activeProfile = await this.getUserProfile(currentEmail);
+    if (!activeProfile) {
+      activeProfile = {
+        fullName: googleName || currentEmail.split('@')[0],
+        email: currentEmail,
+        isLoggedIn: true,
+        isProfileCompleted: true,
+      };
+    }
+
+    // Perform Link
+    activeProfile.googleConnected = true;
+    activeProfile.googleEmail = googleEmail;
+    activeProfile.updatedAt = new Date().toISOString();
+
+    await this.updateUserProfile(activeProfile);
+    return activeProfile;
+  },
+
+  // Unlink Google Account from Current Logged In User
+  async unlinkGoogleAccount(currentEmail) {
+    console.log(`[AWS Auth Service] Unlinking Google account for user ${currentEmail}`);
+    const activeProfile = await this.getUserProfile(currentEmail);
+    
+    if (!activeProfile) {
+      throw new Error('User profile not found.');
+    }
+
+    // Edge case: If user signed up via Google only and has no password / alternative auth method
+    if (!activeProfile.hasPassword && (!activeProfile.passwordHash && !activeProfile.emailVerified)) {
+      // Prompt user to set a password first
+      throw new Error('NO_PASSWORD_SET');
+    }
+
+    activeProfile.googleConnected = false;
+    activeProfile.googleEmail = null;
+    activeProfile.updatedAt = new Date().toISOString();
+
+    await this.updateUserProfile(activeProfile);
+    return activeProfile;
+  },
+
   // Mock Communities database helper
   async getCommunities() {
     try {

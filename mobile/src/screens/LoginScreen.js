@@ -1,12 +1,41 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator, ImageBackground } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TextInput, 
+  TouchableOpacity, 
+  Alert, 
+  ActivityIndicator, 
+  ImageBackground,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
+  ScrollView,
+  Platform 
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import { safeStorage } from '../utils/storage';
 import { authService } from '../services/authService';
 
-WebBrowser.maybeCompleteAuthSession();
+let GoogleSignin = null;
+let statusCodes = {};
+try {
+  const googleModule = require('@react-native-google-signin/google-signin');
+  GoogleSignin = googleModule.GoogleSignin;
+  statusCodes = googleModule.statusCodes;
+  
+  if (GoogleSignin) {
+    GoogleSignin.configure({
+      webClientId: '1070529505739-g4pbc55p8egcf624c9kth6oec3ad9998.apps.googleusercontent.com',
+      offlineAccess: true,
+    });
+  }
+} catch (e) {
+  console.log('[GoogleSignin] Native TurboModule RNGoogleSignin not linked in standard Expo Go sandbox.');
+}
 
 export default function LoginScreen({ onBack, onLoginSuccess, onForgotPassword, onGoToRegister }) {
   const [emailOrPhone, setEmailOrPhone] = useState('');
@@ -15,33 +44,36 @@ export default function LoginScreen({ onBack, onLoginSuccess, onForgotPassword, 
   const [loading, setLoading] = useState(false);
 
   const handleGoogleLogin = async () => {
+    if (!GoogleSignin) {
+      Alert.alert(
+        'Native Build Required',
+        'RNGoogleSignin is a native C++/Java TurboModule not compiled inside standard Expo Go app.\n\nTo test real Google Sign-In, please run a Native Development Build:\n\nnpx expo run:android'
+      );
+      return;
+    }
+
     setLoading(true);
     try {
-      const redirectUri = 'https://auth.expo.io/@anonymous/mobile';
-      console.log('[Google Auth] Redirect URI:', redirectUri);
-      
-      const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' + 
-        'client_id=1070529505739-g4pbc55p8egcf624c9kth6oec3ad9998.apps.googleusercontent.com&' +
-        'redirect_uri=' + encodeURIComponent(redirectUri) + '&' +
-        'response_type=token&' +
-        'scope=openid%20profile%20email&' +
-        'prompt=select_account';
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const response = await GoogleSignin.signIn();
+      const user = response.data?.user || response.user;
+      const email = user?.email;
+      const name = user?.name || user?.email?.split('@')[0] || 'User';
 
-      await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
-      
-      // Default to devasanjay@gmail.com on redirect success or web completion
-      const email = "devasanjay@gmail.com";
-      
+      if (!email) {
+        throw new Error('Google Sign-In did not return an email address.');
+      }
+
       let profile = await authService.getUserProfile(email);
       if (!profile) {
         try {
-          await authService.signUp(email, email.split('@')[0], 'GooglePass123!');
+          await authService.signUp(email, name.replace(/\s+/g, '_').toLowerCase(), 'GooglePass123!');
         } catch (signUpErr) {
           // Ignore if user already exists
         }
         profile = {
-          fullName: email.split('@')[0],
-          username: email.split('@')[0],
+          fullName: name,
+          username: name.replace(/\s+/g, '_').toLowerCase(),
           email: email,
           isLoggedIn: true,
           isProfileCompleted: false,
@@ -53,15 +85,23 @@ export default function LoginScreen({ onBack, onLoginSuccess, onForgotPassword, 
         profile.googleConnected = true;
         await authService.updateUserProfile(profile);
       }
-      
+
       await safeStorage.setItem('user_profile', JSON.stringify(profile));
       await safeStorage.setItem('user_session', JSON.stringify({ isLoggedIn: true, email: email }));
-      
+
       setLoading(false);
       onLoginSuccess(email);
-    } catch (e) {
+    } catch (error) {
       setLoading(false);
-      Alert.alert("Google Login Failed", e.message || "Could not authenticate with Google.");
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        console.log('User cancelled the Google Sign-In flow');
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        Alert.alert('Sign In Progress', 'Google Sign-In is already in progress.');
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Alert.alert('Play Services Error', 'Google Play Services is not available or outdated on this device.');
+      } else {
+        Alert.alert('Google Sign-In Error', error.message || 'An error occurred during Google Sign-In.');
+      }
     }
   };
 
@@ -88,121 +128,138 @@ export default function LoginScreen({ onBack, onLoginSuccess, onForgotPassword, 
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="dark" />
-      
-      {/* Header Area */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Ionicons name="arrow-back" size={24} color="#1F2937" />
-        </TouchableOpacity>
-      </View>
+    <KeyboardAvoidingView 
+      style={{ flex: 1, backgroundColor: '#FFFFFF' }} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView 
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'space-between', paddingBottom: 40, backgroundColor: '#FFFFFF' }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={[styles.container, { backgroundColor: '#FFFFFF' }]}>
+            <StatusBar style="dark" />
+            
+            {/* Header Area */}
+            <View style={styles.header}>
+              <TouchableOpacity style={styles.backButton} onPress={onBack}>
+                <Ionicons name="arrow-back" size={24} color="#1F2937" />
+              </TouchableOpacity>
+            </View>
 
-      {/* Welcome Title */}
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>Welcome back! 👋</Text>
-        <Text style={styles.subtitle}>Login to continue</Text>
-      </View>
+            {/* Welcome Title */}
+            <View style={styles.titleContainer}>
+              <Text style={styles.title}>Welcome back! 👋</Text>
+              <Text style={styles.subtitle}>Login to continue</Text>
+            </View>
 
-      {/* Form Fields */}
-      <View style={styles.form}>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Email or Phone</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your email or phone"
-            placeholderTextColor="#9CA3AF"
-            value={emailOrPhone}
-            onChangeText={setEmailOrPhone}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </View>
+            {/* Form Fields */}
+            <View style={styles.form}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Email or Phone</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your email or phone"
+                  placeholderTextColor="#9CA3AF"
+                  value={emailOrPhone}
+                  onChangeText={setEmailOrPhone}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Password</Text>
-          <View style={styles.passwordContainer}>
-            <TextInput
-              style={styles.passwordInput}
-              placeholder="Enter your password"
-              placeholderTextColor="#9CA3AF"
-              secureTextEntry={secureText}
-              value={password}
-              onChangeText={setPassword}
-              autoCapitalize="none"
-            />
-            <TouchableOpacity onPress={() => setSecureText(!secureText)}>
-              <Ionicons
-                name={secureText ? "eye-off-outline" : "eye-outline"}
-                size={20}
-                color="#6B7280"
-              />
-            </TouchableOpacity>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Password</Text>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={styles.passwordInput}
+                    placeholder="Enter your password"
+                    placeholderTextColor="#9CA3AF"
+                    secureTextEntry={secureText}
+                    value={password}
+                    onChangeText={setPassword}
+                    autoCapitalize="none"
+                  />
+                  <TouchableOpacity onPress={() => setSecureText(!secureText)}>
+                    <Ionicons
+                      name={secureText ? "eye-off-outline" : "eye-outline"}
+                      size={20}
+                      color="#6B7280"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <TouchableOpacity style={styles.forgotPassword} onPress={onForgotPassword}>
+                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Buttons */}
+            <View style={styles.actionContainer}>
+              <TouchableOpacity style={styles.loginButton} onPress={handleLogin} disabled={loading}>
+                <ImageBackground
+                  source={require('../../assets/image.png')}
+                  style={styles.gradientButton}
+                  resizeMode="cover"
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <Text style={styles.loginText}>Login</Text>
+                  )}
+                </ImageBackground>
+              </TouchableOpacity>
+
+              {/* Divider */}
+              <View style={styles.dividerContainer}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>or continue with</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              {/* Social Buttons */}
+              <View style={styles.socialContainer}>
+                <TouchableOpacity 
+                  style={[styles.socialButton, { width: '100%' }]}
+                  onPress={handleGoogleLogin}
+                >
+                  <Ionicons name="logo-google" size={20} color="#EA4335" style={styles.socialIcon} />
+                  <Text style={styles.socialButtonText}>Continue with Google</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Footer */}
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>
+                Don't have an account?{' '}
+                <Text style={styles.footerLink} onPress={onGoToRegister}>
+                  Register
+                </Text>
+              </Text>
+            </View>
           </View>
-        </View>
-
-        <TouchableOpacity style={styles.forgotPassword} onPress={onForgotPassword}>
-          <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Buttons */}
-      <View style={styles.actionContainer}>
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin} disabled={loading}>
-          <ImageBackground
-            source={require('../../assets/image.png')}
-            style={styles.gradientButton}
-            resizeMode="cover"
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
-            ) : (
-              <Text style={styles.loginText}>Login</Text>
-            )}
-          </ImageBackground>
-        </TouchableOpacity>
-
-        {/* Divider */}
-        <View style={styles.dividerContainer}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>or continue with</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        {/* Social Buttons */}
-        <View style={styles.socialContainer}>
-          <TouchableOpacity 
-            style={[styles.socialButton, { width: '100%' }]}
-            onPress={handleGoogleLogin}
-          >
-            <Ionicons name="logo-google" size={20} color="#EA4335" style={styles.socialIcon} />
-            <Text style={styles.socialButtonText}>Continue with Google</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          Don't have an account?{' '}
-          <Text style={styles.footerLink} onPress={onGoToRegister}>
-            Register
-          </Text>
-        </Text>
-      </View>
-    </View>
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 24,
-    paddingTop: 50,
-    justifyContent: 'space-between',
-    paddingBottom: 40,
-  },
+    KeyboardAvoidingView: {
+      flex: 1,
+      backgroundColor: '#FFFFFF',
+    },
+    container: {
+      flex: 1,
+      backgroundColor: '#FFFFFF',
+      paddingHorizontal: 24,
+      paddingTop: 30,
+      justifyContent: 'space-between',
+      paddingBottom: 30,
+    },
   header: {
     height: 48,
     justifyContent: 'center',
@@ -342,5 +399,87 @@ const styles = StyleSheet.create({
   footerLink: {
     color: '#7C3AED',
     fontWeight: 'bold',
+  },
+
+  // Google Account Chooser Popup Styles
+  googleOverlayBg: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  googleDismissOverlay: {
+    flex: 1,
+  },
+  googleAccountSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 32,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  googleSheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#E5E7EB',
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  googleBrandHeader: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  googleSheetTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1F2937',
+    marginTop: 8,
+  },
+  googleSheetSub: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  googleAccountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  googleAvatarCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  googleAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  googleAccountName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  googleAccountEmail: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 1,
+  },
+  googleDisclaimer: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginTop: 20,
+    lineHeight: 15,
   },
 });

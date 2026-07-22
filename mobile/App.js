@@ -1,10 +1,68 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SafeAreaView, StyleSheet, Animated, Text, TextInput } from 'react-native';
+import { SafeAreaView, StyleSheet, Animated, Text, TextInput, Platform, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 
 import { safeStorage } from './src/utils/storage';
 import { authService } from './src/services/authService';
+
+// Global JS Exception Handler to log crashes to persistent storage
+import { Alert } from 'react-native';
+
+const logCrashToStorage = async (error, isFatal) => {
+  try {
+    const logMsg = `[CRASH] Fatal: ${isFatal} | Time: ${new Date().toISOString()} | Msg: ${error.message}\nStack: ${error.stack}\n\n`;
+    const existingLogs = await safeStorage.getItem('app_crash_logs') || '';
+    await safeStorage.setItem('app_crash_logs', existingLogs + logMsg);
+    console.log('Crash logged persistently:', logMsg);
+  } catch (e) {
+    console.log('Failed to write crash log:', e);
+  }
+};
+
+if (Platform.OS !== 'web') {
+  const defaultHandler = ErrorUtils.getGlobalHandler();
+  ErrorUtils.setGlobalHandler(async (error, isFatal) => {
+    await logCrashToStorage(error, isFatal);
+    if (defaultHandler) {
+      defaultHandler(error, isFatal);
+    }
+  });
+}
+
+class ErrorBoundary extends React.Component {
+  state = { hasError: false, error: null };
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    logCrashToStorage(error, false);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#EF4444', marginBottom: 12 }}>App Crash Detected</Text>
+          <Text style={{ fontSize: 13, color: '#4B5563', textAlign: 'center', marginBottom: 24 }}>
+            {this.state.error?.message || 'An unexpected error occurred.'}
+          </Text>
+          <TouchableOpacity 
+            style={{ backgroundColor: '#7C3AED', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 }}
+            onPress={async () => {
+              try {
+                const logs = await safeStorage.getItem('app_crash_logs');
+                Alert.alert('Crash Diagnostics Log', logs || 'No crash logs registered yet.');
+              } catch (e) {}
+            }}
+          >
+            <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Show Diagnostic Logs</Text>
+          </TouchableOpacity>
+        </SafeAreaView>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // Import Screens
 import SplashScreen from './src/screens/SplashScreen';
@@ -23,6 +81,7 @@ import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 import CreateContentScreen from './src/screens/CreateContentScreen';
 import LoginLoadingScreen from './src/screens/LoginLoadingScreen';
 import CommunityManagerScreen from './src/screens/CommunityManagerScreen';
+import ScreenNavigator from './src/components/ScreenNavigator';
 
 // Globally monkey-patch Text & TextInput to set Inter Font Family based on fontWeight
 const patchComponentFont = (Component) => {
@@ -51,8 +110,10 @@ const patchComponentFont = (Component) => {
   }
 };
 
-patchComponentFont(Text);
-patchComponentFont(TextInput);
+if (Platform.OS !== 'web') {
+  patchComponentFont(Text);
+  patchComponentFont(TextInput);
+}
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('Splash');
@@ -124,30 +185,10 @@ export default function App() {
     'Inter-Bold': Inter_700Bold,
   });
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(15)).current;
+  // Animation is now delegated to ScreenNavigator component
 
-  useEffect(() => {
-    // Trigger smooth fade-in and slide-up transition when screen changes
-    fadeAnim.setValue(0);
-    slideAnim.setValue(15);
-
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [currentScreen]);
-
-  const renderScreen = () => {
-    switch (currentScreen) {
+  const renderScreen = (screenName = currentScreen) => {
+    switch (screenName) {
       case 'Splash':
         return (
           <SplashScreen 
@@ -350,20 +391,12 @@ export default function App() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="dark" />
-      <Animated.View 
-        style={[
-          styles.animatedScreen, 
-          { 
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }] 
-          }
-        ]}
-      >
-        {renderScreen()}
-      </Animated.View>
-    </SafeAreaView>
+    <ErrorBoundary>
+      <SafeAreaView style={styles.container}>
+        <StatusBar style="dark" />
+        <ScreenNavigator currentScreen={currentScreen} renderScreen={renderScreen} />
+      </SafeAreaView>
+    </ErrorBoundary>
   );
 }
 
@@ -371,6 +404,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    paddingTop: Platform.OS === 'android' ? 32 : 12,
+    paddingBottom: Platform.OS === 'android' ? 12 : 8,
   },
   animatedScreen: {
     flex: 1,

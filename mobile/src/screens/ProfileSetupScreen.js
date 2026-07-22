@@ -35,6 +35,107 @@ export default function ProfileSetupScreen({ onBack, onContinue, initialUserData
   const [gender, setGender] = useState('Male');
   const [bio, setBio] = useState('Exploring clean tech & innovative digital experiences! 🚀');
 
+  // Google Account Linking State
+  const [googleConnected, setGoogleConnected] = useState(initialUserData?.googleConnected || false);
+  const [googleEmail, setGoogleEmail] = useState(initialUserData?.googleEmail || initialUserData?.email || '');
+  const [linkingLoading, setLinkingLoading] = useState(false);
+
+  useEffect(() => {
+    if (initialUserData) {
+      if (initialUserData.googleConnected !== undefined) setGoogleConnected(initialUserData.googleConnected);
+      if (initialUserData.googleEmail) setGoogleEmail(initialUserData.googleEmail);
+    }
+  }, [initialUserData]);
+
+  // Handle Native Google Link
+  const handleLinkGoogle = async () => {
+    let GoogleSignin = null;
+    let statusCodes = {};
+    try {
+      const googleModule = require('@react-native-google-signin/google-signin');
+      GoogleSignin = googleModule.GoogleSignin;
+      statusCodes = googleModule.statusCodes;
+    } catch (e) {
+      console.log('[GoogleSignin] Native TurboModule RNGoogleSignin not linked in standard Expo Go sandbox.');
+    }
+
+    if (!GoogleSignin) {
+      Alert.alert(
+        'Native Build Required',
+        'RNGoogleSignin is a native C++/Java TurboModule not compiled inside standard Expo Go app.\n\nTo test native Google Account linking, please run a Native Development Build:\n\nnpx expo run:android'
+      );
+      return;
+    }
+
+    if (googleConnected) {
+      Alert.alert('Already Connected', 'A Google account is already linked to your profile.');
+      return;
+    }
+
+    setLinkingLoading(true);
+    try {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const response = await GoogleSignin.signIn();
+      const user = response.data?.user || response.user;
+      const pickedGoogleEmail = user?.email;
+      const pickedGoogleName = user?.name || user?.email?.split('@')[0] || 'User';
+
+      if (!pickedGoogleEmail) {
+        throw new Error('Google Sign-In did not return an email address.');
+      }
+
+      const currentEmail = initialUserData?.email || googleEmail || 'devasanjay@gmail.com';
+
+      // Link identity in backend database
+      const updatedProfile = await authService.linkGoogleAccount(currentEmail, pickedGoogleEmail, pickedGoogleName);
+
+      setGoogleConnected(true);
+      setGoogleEmail(pickedGoogleEmail);
+      await safeStorage.setItem('user_profile', JSON.stringify(updatedProfile));
+
+      setLinkingLoading(false);
+      Alert.alert('Success', `Successfully connected Google account (${pickedGoogleEmail}).`);
+    } catch (error) {
+      setLinkingLoading(false);
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        // User cancelled native picker: Fail silently / gracefully
+        console.log('User cancelled native Google account picker');
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        Alert.alert('In Progress', 'Google Sign-In is already in progress.');
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Alert.alert('Play Services Unavailable', 'Google Play Services is not available or outdated on this device.');
+      } else if (error.message === 'ALREADY_LINKED_TO_OTHER') {
+        Alert.alert('Linking Error', 'This Google account is already connected to another user in our system.');
+      } else {
+        Alert.alert('Linking Failed', error.message || 'Could not link Google account.');
+      }
+    }
+  };
+
+  // Handle Unlink Google
+  const handleUnlinkGoogle = async () => {
+    const currentEmail = initialUserData?.email || googleEmail || 'devasanjay@gmail.com';
+    setLinkingLoading(true);
+    try {
+      const updatedProfile = await authService.unlinkGoogleAccount(currentEmail);
+      setGoogleConnected(false);
+      setGoogleEmail('');
+      await safeStorage.setItem('user_profile', JSON.stringify(updatedProfile));
+      setLinkingLoading(false);
+      Alert.alert('Disconnected', 'Google account has been disconnected.');
+    } catch (error) {
+      setLinkingLoading(false);
+      if (error.message === 'NO_PASSWORD_SET') {
+        Alert.alert(
+          'Cannot Disconnect',
+          'You registered via Google and do not have a password set yet. Please set a password first before disconnecting your Google account.'
+        );
+      } else {
+        Alert.alert('Disconnect Failed', error.message || 'Could not disconnect Google account.');
+      }
+    }
+  };
+
   // Calendar State
   const [calendarModalVisible, setCalendarModalVisible] = useState(false);
   const [calYear, setCalYear] = useState(1998);
@@ -341,6 +442,46 @@ export default function ProfileSetupScreen({ onBack, onContinue, initialUserData
               value={bio}
               onChangeText={setBio}
             />
+          </View>
+
+          {/* Connected Accounts & Identity Linking Section */}
+          <View style={[styles.inputGroup, { marginTop: 12 }]}>
+            <Text style={styles.label}>Connected Accounts</Text>
+            <View style={styles.accountLinkCard}>
+              <View style={styles.accountLinkMeta}>
+                <Ionicons name="logo-google" size={22} color="#EA4335" style={{ marginRight: 12 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.accountLinkTitle}>Google Account</Text>
+                  <Text style={styles.accountLinkSub}>
+                    {googleConnected && googleEmail 
+                      ? `Connected as ${googleEmail}` 
+                      : 'Not connected'}
+                  </Text>
+                </View>
+              </View>
+
+              {googleConnected ? (
+                <TouchableOpacity 
+                  style={styles.unlinkBtn} 
+                  onPress={handleUnlinkGoogle}
+                  disabled={linkingLoading}
+                >
+                  <Text style={styles.unlinkBtnText}>
+                    {linkingLoading ? 'Disconnecting...' : 'Disconnect'}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity 
+                  style={styles.linkBtn} 
+                  onPress={handleLinkGoogle}
+                  disabled={linkingLoading}
+                >
+                  <Text style={styles.linkBtnText}>
+                    {linkingLoading ? 'Connecting...' : 'Connect'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
 
@@ -697,6 +838,60 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     textAlignVertical: 'top',
   },
+
+  // Connected Accounts Card Styles
+  accountLinkCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  accountLinkMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 10,
+  },
+  accountLinkTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  accountLinkSub: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  linkBtn: {
+    backgroundColor: '#7C3AED',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  linkBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  unlinkBtn: {
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  unlinkBtnText: {
+    color: '#EF4444',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
   continueButton: {
     height: 52,
     borderRadius: 26,

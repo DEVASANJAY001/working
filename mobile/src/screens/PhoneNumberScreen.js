@@ -1,5 +1,18 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, Image, ImageBackground } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TextInput, 
+  TouchableOpacity, 
+  Alert, 
+  Image, 
+  ImageBackground,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Platform 
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 
@@ -17,66 +30,74 @@ export default function PhoneNumberScreen({ onBack, onContinue }) {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="dark" />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Ionicons name="arrow-back" size={24} color="#1F2937" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Content */}
-      <View style={styles.content}>
-        <Image
-          source={require('../../assets/phone_input.png')}
-          style={styles.illustrationImage}
-          resizeMode="contain"
-        />
-
-        <Text style={styles.title}>Enter your phone number</Text>
-        <Text style={styles.subtitle}>
-          We'll send you an OTP to verify
-        </Text>
-
-        {/* Phone Input Box */}
-        <View style={styles.inputContainer}>
-          <View style={styles.countryPicker}>
-            <Text style={styles.flag}>🇮🇳</Text>
-            <Text style={styles.countryCode}>India ({countryCode})</Text>
-            <Ionicons name="chevron-down" size={16} color="#6B7280" />
-          </View>
+    <KeyboardAvoidingView 
+      style={{ flex: 1 }} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.container}>
+          <StatusBar style="dark" />
           
-          <View style={styles.numberInputContainer}>
-            <Text style={styles.numberLabel}>Phone Number</Text>
-            <TextInput
-              style={styles.numberInput}
-              keyboardType="phone-pad"
-              placeholder="98765 43210"
-              placeholderTextColor="#9CA3AF"
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backButton} onPress={onBack}>
+              <Ionicons name="arrow-back" size={24} color="#1F2937" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Content */}
+          <View style={styles.content}>
+            <Image
+              source={require('../../assets/phone_input.png')}
+              style={styles.illustrationImage}
+              resizeMode="contain"
             />
+
+            <Text style={styles.title}>Enter your phone number</Text>
+            <Text style={styles.subtitle}>
+              We'll send you an OTP to verify
+            </Text>
+
+            {/* Phone Input Box */}
+            <View style={styles.inputContainer}>
+              <View style={styles.countryPicker}>
+                <Text style={styles.flag}>🇮🇳</Text>
+                <Text style={styles.countryCode}>India ({countryCode})</Text>
+                <Ionicons name="chevron-down" size={16} color="#6B7280" />
+              </View>
+              
+              <View style={styles.numberInputContainer}>
+                <Text style={styles.numberLabel}>Phone Number</Text>
+                <TextInput
+                  style={styles.numberInput}
+                  keyboardType="phone-pad"
+                  placeholder="98765 43210"
+                  placeholderTextColor="#9CA3AF"
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                />
+              </View>
+            </View>
+          </View>
+
+          {/* Action Footer */}
+          <View style={styles.actionContainer}>
+            <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
+              <ImageBackground
+                source={require('../../assets/image.png')}
+                style={styles.gradientButton}
+                resizeMode="cover"
+              >
+                <Text style={styles.continueText}>Continue</Text>
+              </ImageBackground>
+            </TouchableOpacity>
+            
+            <Text style={styles.infoText}>Your number is safe with us</Text>
           </View>
         </View>
-      </View>
-
-      {/* Action Footer */}
-      <View style={styles.actionContainer}>
-        <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
-          <ImageBackground
-            source={require('../../assets/image.png')}
-            style={styles.gradientButton}
-            resizeMode="cover"
-          >
-            <Text style={styles.continueText}>Continue</Text>
-          </ImageBackground>
-        </TouchableOpacity>
-        
-        <Text style={styles.infoText}>Your number is safe with us</Text>
-      </View>
-    </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 

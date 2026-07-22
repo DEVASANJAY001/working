@@ -1558,7 +1558,6 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToCom
               {/* Sidebar Menu Options */}
               <View style={styles.sidebarMenuSection}>
                 {[
-                  { label: 'Create Community / Mod Tools', icon: 'shield-checkmark-outline', action: () => { closeLeftPanel(); if (onGoToCommunityManager) onGoToCommunityManager(); } },
                   {label: 'Profile page', icon: 'person-circle-outline', action: () => { closeLeftPanel(); setShowProfilePageModal(true); }},
                   { label: 'Settings', icon: 'settings-outline', action: () => { closeLeftPanel(); setShowSettingsModal(true); } },
                   { label: 'Drafts', icon: 'document-text-outline', action: () => Alert.alert('Drafts', 'No saved drafts found.') },

@@ -413,34 +413,71 @@ export default function CreateContentScreen({ onBack, onPublish }) {
         )}
       </ScrollView>
 
-      {/* Bottom Sticky Toolbar */}
-      <View style={[styles.bottomToolbar, isKeyboardVisible && { height: 50, paddingBottom: 0 }]}>
-        <TouchableOpacity style={styles.toolbarItem} onPress={() => {
-          setTempLink('');
-          setShowLinkInputModal(true);
-        }}>
-          <Ionicons name="link-outline" size={22} color="#1F2937" />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.toolbarItem} onPress={() => setShowAddImageSheet(true)}>
-          <Ionicons name="image-outline" size={22} color="#1F2937" />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.toolbarItem} onPress={() => setShowAddVideoSheet(true)}>
-          <Ionicons name="play-circle-outline" size={22} color="#1F2937" />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.toolbarItem} onPress={() => {
-          setAttachedPoll({ question: '', options: ['', ''] });
-        }}>
-          <Ionicons name="list-outline" size={22} color="#1F2937" />
+      {/* Bottom Sticky Toolbar with Premium Option Badges */}
+      <View style={[styles.bottomToolbar, isKeyboardVisible && { height: 60, paddingBottom: 0 }]}>
+        <TouchableOpacity 
+          style={styles.toolbarItem} 
+          onPress={() => {
+            setTempLink('');
+            setShowLinkInputModal(true);
+          }}
+          accessibilityLabel="Add link attachment"
+          activeOpacity={0.7}
+        >
+          <View style={[styles.toolbarIconWrapper, attachedLink && styles.toolbarIconActive]}>
+            <Ionicons name="link-outline" size={24} color={attachedLink ? "#FFFFFF" : "#4B5563"} />
+          </View>
+          <Text style={[styles.toolbarItemLabel, attachedLink && styles.toolbarItemLabelActive]}>Link</Text>
         </TouchableOpacity>
 
         <TouchableOpacity 
-          style={[styles.toolbarItem, styles.amaToolbarItem]} 
-          onPress={() => { setAttachedAMA(true); }}
+          style={styles.toolbarItem} 
+          onPress={() => setShowAddImageSheet(true)}
+          accessibilityLabel="Add image attachment"
+          activeOpacity={0.7}
         >
-          <Text style={styles.amaText}>ama</Text>
+          <View style={[styles.toolbarIconWrapper, attachedImage && styles.toolbarIconActive]}>
+            <Ionicons name="image-outline" size={24} color={attachedImage ? "#FFFFFF" : "#4B5563"} />
+          </View>
+          <Text style={[styles.toolbarItemLabel, attachedImage && styles.toolbarItemLabelActive]}>Image</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.toolbarItem} 
+          onPress={() => setShowAddVideoSheet(true)}
+          accessibilityLabel="Add video attachment"
+          activeOpacity={0.7}
+        >
+          <View style={[styles.toolbarIconWrapper, attachedVideo && styles.toolbarIconActive]}>
+            <Ionicons name="play-circle-outline" size={24} color={attachedVideo ? "#FFFFFF" : "#4B5563"} />
+          </View>
+          <Text style={[styles.toolbarItemLabel, attachedVideo && styles.toolbarItemLabelActive]}>Video</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.toolbarItem} 
+          onPress={() => {
+            setAttachedPoll({ question: '', options: ['', ''] });
+          }}
+          accessibilityLabel="Add poll attachment"
+          activeOpacity={0.7}
+        >
+          <View style={[styles.toolbarIconWrapper, attachedPoll && styles.toolbarIconActive]}>
+            <Ionicons name="list-outline" size={24} color={attachedPoll ? "#FFFFFF" : "#4B5563"} />
+          </View>
+          <Text style={[styles.toolbarItemLabel, attachedPoll && styles.toolbarItemLabelActive]}>Poll</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.toolbarItem} 
+          onPress={() => { setAttachedAMA(true); }}
+          accessibilityLabel="Add AMA session"
+          activeOpacity={0.7}
+        >
+          <View style={[styles.toolbarIconWrapper, styles.amaToolbarWrapper, attachedAMA && styles.toolbarIconActive]}>
+            <Text style={[styles.amaText, attachedAMA && { color: '#FFFFFF' }]}>ama</Text>
+          </View>
+          <Text style={[styles.toolbarItemLabel, attachedAMA && styles.toolbarItemLabelActive]}>AMA</Text>
         </TouchableOpacity>
       </View>
 
@@ -783,32 +820,56 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
-    height: 72,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    height: 85,
+    paddingHorizontal: 8,
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: '#FFFFFF',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 8,
   },
   toolbarItem: {
-    padding: 10,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
+    width: 64,
+    height: 64,
   },
-  amaToolbarItem: {
+  toolbarIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  toolbarIconActive: {
+    backgroundColor: '#7C3AED',
+  },
+  toolbarItemLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  toolbarItemLabelActive: {
+    color: '#7C3AED',
+    fontWeight: 'bold',
+  },
+  amaToolbarWrapper: {
     borderWidth: 1.5,
-    borderColor: '#1F2937',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    borderColor: '#4B5563',
+    backgroundColor: 'transparent',
   },
   amaText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '900',
-    color: '#1F2937',
+    color: '#4B5563',
     textTransform: 'uppercase',
   },
   modalContainer: {
