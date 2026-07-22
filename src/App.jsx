@@ -16,23 +16,32 @@ import HomeDashboardScreen from './components/mobile-web/HomeDashboardScreen';
 import ForgotPasswordScreen from './components/mobile-web/ForgotPasswordScreen';
 import ResetPasswordScreen from './components/mobile-web/ResetPasswordScreen';
 import CreateContentScreen from './components/mobile-web/CreateContentScreen';
+import AdminDashboardScreen from './components/mobile-web/AdminDashboardScreen';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('Splash');
   const [userEmail, setUserEmail] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // ── Resolve the current user session ──
   async function checkUserSession() {
     try {
-      const currentUser = await authService.getCurrentUser();
-      if (currentUser) {
-        setCurrentScreen('Home');
+      const user = await authService.getCurrentUser();
+      if (user) {
+        setCurrentUser(user);
+        if (user.isAdmin || user.role === 'admin') {
+          setCurrentScreen('Admin');
+        } else {
+          setCurrentScreen('Home');
+        }
       } else {
+        setCurrentUser(null);
         // Only reset to Splash/GetStarted if not on auth sub-screens
         setCurrentScreen(prev => (prev === 'Splash' ? 'GetStarted' : prev));
       }
     } catch (err) {
+      setCurrentUser(null);
       setCurrentScreen(prev => (prev === 'Splash' ? 'GetStarted' : prev));
     } finally {
       setLoading(false);
@@ -98,7 +107,13 @@ export default function App() {
         return (
           <LoginScreen
             onBack={() => setCurrentScreen('GetStarted')}
-            onLoginSuccess={() => setCurrentScreen('Home')}
+            onLoginSuccess={(user) => {
+              if (user?.isAdmin || user?.role === 'admin') {
+                setCurrentScreen('Admin');
+              } else {
+                setCurrentScreen('Home');
+              }
+            }}
             onForgotPassword={() => setCurrentScreen('ForgotPassword')}
             onGoToRegister={() => setCurrentScreen('Register')}
           />
@@ -158,11 +173,22 @@ export default function App() {
           />
         );
       
+      case 'Admin':
+        return (
+          <AdminDashboardScreen
+            onLogout={handleLogout}
+            onGoToFeed={() => setCurrentScreen('Home')}
+            currentUser={currentUser}
+          />
+        );
+
       case 'Home':
         return (
           <HomeDashboardScreen 
             onLogout={handleLogout} 
             onCreatePress={() => setCurrentScreen('CreateContent')}
+            onGoToAdmin={() => setCurrentScreen('Admin')}
+            currentUser={currentUser}
           />
         );
       

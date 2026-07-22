@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, 
   Bell, 
@@ -37,8 +37,14 @@ import {
   ChevronRight,
   Train,
   Trophy,
-  AlertTriangle
+  AlertTriangle,
+  ShieldAlert,
+  Pin,
+  Sparkles,
+  Flag,
+  Megaphone
 } from 'lucide-react';
+import { adminStore } from '../../services/adminStore';
 
 // Dynamic Time-Based Greeting
 const getDynamicGreeting = () => {
@@ -125,9 +131,29 @@ const joinedCommunities = [
   { id: 'jc4', name: 'Crypto & AI South', members: '9.3k', icon: Cpu, color: 'text-purple-500 bg-purple-50' },
 ];
 
-export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
+export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdmin, currentUser }) {
   const [activeTab, setActiveTab] = useState('Home Feed'); 
   const [posts, setPosts] = useState(initialPosts);
+  
+  // Admin Data State
+  const [pinnedAnnouncement, setPinnedAnnouncement] = useState(adminStore.getAnnouncement());
+  const [ads, setAds] = useState(adminStore.getAds());
+  const [deletedPostIds, setDeletedPostIds] = useState(adminStore.getDeletedPostIds());
+  const [activeReportPostId, setActiveReportPostId] = useState(null);
+  const [toastMsg, setToastMsg] = useState('');
+
+  useEffect(() => {
+    setPinnedAnnouncement(adminStore.getAnnouncement());
+    setAds(adminStore.getAds());
+    setDeletedPostIds(adminStore.getDeletedPostIds());
+  }, []);
+
+  const handleReportPost = (post) => {
+    adminStore.reportPost(post.id, post, "Inappropriate content / Spam");
+    setToastMsg(`Post reported to Super User Admin for moderation.`);
+    setActiveReportPostId(null);
+    setTimeout(() => setToastMsg(''), 3500);
+  };
   
   // Profile picture image or initial fallback
   const [profileImage, setProfileImage] = useState('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80');
@@ -277,6 +303,16 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
           </div>
 
           <nav className="space-y-1">
+            {onGoToAdmin && (
+              <button
+                onClick={onGoToAdmin}
+                className="w-full flex items-center gap-4 py-3 px-4 rounded-2xl text-xs font-black transition-all cursor-pointer bg-gradient-to-r from-violet-600 via-purple-600 to-orange-500 text-white shadow-lg shadow-violet-500/20 hover:opacity-90 mb-3"
+              >
+                <ShieldAlert className="w-5 h-5" />
+                <span>Super User Console</span>
+              </button>
+            )}
+
             {menuItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -453,6 +489,32 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
                   </div>
                 </div>
 
+                {/* ── PINNED SUPER USER ANNOUNCEMENT ── */}
+                {pinnedAnnouncement && (
+                  <div className="border-2 border-violet-500/80 rounded-3xl p-5 bg-gradient-to-br from-violet-900/10 via-purple-500/5 to-white shadow-md relative overflow-hidden space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-1 bg-gradient-to-r from-violet-600 to-orange-500 text-white font-black text-[11px] rounded-full flex items-center gap-1.5 shadow-sm">
+                          <Pin className="w-3.5 h-3.5" /> Pinned by Super User
+                        </span>
+                        <span className="text-xs font-bold text-gray-900">{pinnedAnnouncement.authorName}</span>
+                      </div>
+                      <span className="text-[10px] font-black text-violet-600 uppercase tracking-widest bg-violet-100 px-2 py-0.5 rounded-md">
+                        Official Announcement
+                      </span>
+                    </div>
+
+                    <h3 className="text-base font-black text-gray-900">{pinnedAnnouncement.title}</h3>
+                    <p className="text-xs text-gray-700 leading-relaxed font-medium">{pinnedAnnouncement.text}</p>
+
+                    {pinnedAnnouncement.image && (
+                      <div className="w-full h-56 rounded-2xl overflow-hidden shadow-sm">
+                        <img src={pinnedAnnouncement.image} alt="Announcement" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Stories */}
                 <div className="bg-white border border-gray-100 rounded-2xl py-4 shadow-sm">
                   <div className="flex gap-4 px-5 overflow-x-auto no-scrollbar">
@@ -475,8 +537,24 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
                   </div>
                 </div>
 
-                {/* Infinite Feed Post */}
-                {posts.filter(p => p.id === 'post_1').map(post => renderPostCard(post))}
+                {/* ── LIVE ADVERTISEMENT BANNER ── */}
+                {ads && ads.filter(a => a.active).length > 0 && (
+                  <div className="border border-emerald-300 rounded-3xl p-4 bg-gradient-to-r from-emerald-50 via-teal-50 to-white shadow-sm flex items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <span className="px-2 py-0.5 bg-emerald-600 text-white text-[9px] font-black uppercase tracking-wider rounded-md">
+                        Sponsored
+                      </span>
+                      <h4 className="text-xs font-bold text-gray-900">{ads.find(a => a.active).title}</h4>
+                      <p className="text-[10px] text-gray-500">{ads.find(a => a.active).sponsor}</p>
+                    </div>
+                    {ads.find(a => a.active).image && (
+                      <img src={ads.find(a => a.active).image} alt="Ad" className="w-16 h-16 object-cover rounded-xl shrink-0 border border-emerald-200" />
+                    )}
+                  </div>
+                )}
+
+                {/* Infinite Feed Posts (Filtered for deleted posts) */}
+                {posts.filter(p => !deletedPostIds.includes(p.id)).map(post => renderPostCard(post))}
               </div>
             )}
 
@@ -854,8 +932,15 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
                 </div>
               );
             })()}
-
           </div>
+        </div>
+      )}
+
+      {/* TOAST NOTIFICATION OVERLAY */}
+      {toastMsg && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs font-bold px-5 py-3 rounded-2xl shadow-2xl z-50 flex items-center gap-2 border border-gray-700 animate-fade-in">
+          <AlertTriangle className="w-4 h-4 text-amber-400" />
+          <span>{toastMsg}</span>
         </div>
       )}
 
@@ -878,9 +963,26 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress }) {
               <p className="text-[11px] text-gray-400">@{post.authorHandle} • {post.time}</p>
             </div>
           </div>
-          <button className="text-gray-400 hover:text-gray-600 cursor-pointer">
-            <MoreHorizontal className="w-5 h-5" />
-          </button>
+          
+          <div className="relative">
+            <button 
+              onClick={() => setActiveReportPostId(activeReportPostId === post.id ? null : post.id)} 
+              className="text-gray-400 hover:text-gray-600 cursor-pointer p-1.5 rounded-lg hover:bg-gray-50"
+            >
+              <MoreHorizontal className="w-5 h-5" />
+            </button>
+
+            {activeReportPostId === post.id && (
+              <div className="absolute right-0 top-8 w-44 bg-white border border-gray-200 rounded-2xl shadow-xl z-30 p-1 space-y-1 animate-fade-in">
+                <button
+                  onClick={() => handleReportPost(post)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                >
+                  <Flag className="w-4 h-4" /> Report Post
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div onClick={() => setSelectedPost(post)} className="cursor-pointer">

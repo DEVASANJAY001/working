@@ -148,8 +148,27 @@ export const authService = {
     /* ---------------- LOGIN ---------------- */
 
     async signIn({ username, password }) {
+        const normalizedUsername = normalizeUsername(username);
+        const adminEmails = ["aadithya.danvs@gmai.com", "aadithya.danvs@gmail.com"];
+
+        // Super User / Admin Authentication
+        if (adminEmails.includes(normalizedUsername)) {
+            if (password !== "Aadithya1234#") {
+                throw createLocalAuthError("NotAuthorizedException", "Incorrect password.");
+            }
+            const adminSession = {
+                username: normalizedUsername,
+                name: "Aadithya (Super User)",
+                email: normalizedUsername,
+                role: "admin",
+                isAdmin: true,
+                isAuthenticated: true,
+            };
+            setStoredSession(adminSession);
+            return { isSignedIn: true, username: normalizedUsername, role: "admin", isAdmin: true };
+        }
+
         if (!isAwsConfigured) {
-            const normalizedUsername = normalizeUsername(username);
             const existingUser = findStoredUser(normalizedUsername);
             if (!existingUser) {
                 throw createLocalAuthError(
@@ -266,14 +285,19 @@ export const authService = {
     /* ---------------- CURRENT USER ---------------- */
 
     async getCurrentUser() {
+        const storedSession = getStoredSession();
+        if (storedSession?.isAdmin) {
+            return storedSession;
+        }
+
         if (!isAwsConfigured) {
-            return getStoredSession() || null;
+            return storedSession || null;
         }
 
         try {
             return await amplifyGetCurrentUser();
         } catch {
-            return null;
+            return storedSession || null;
         }
     },
 

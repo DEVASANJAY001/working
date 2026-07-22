@@ -82,7 +82,7 @@ export default function RegisterScreen({ onBack, onRegisterSuccess, onGoToLogin,
       {/* Left side banner */}
       <div className="md:w-1/2 bg-gradient-to-br from-violet-600 via-pink-500 to-orange-500 text-white hidden md:flex flex-col items-center justify-center p-8 text-center select-none relative">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/10 to-transparent pointer-events-none" />
-        
+
         {/* Flower / Clover Logo */}
         <div className="w-16 h-16 relative flex items-center justify-center mb-4">
           <div className="absolute top-0 w-5.5 h-5.5 bg-white rounded-tl-2xl rounded-br-2xl -rotate-45" />
@@ -91,7 +91,7 @@ export default function RegisterScreen({ onBack, onRegisterSuccess, onGoToLogin,
           <div className="absolute right-0 w-5.5 h-5.5 bg-white rounded-tl-2xl rounded-br-2xl rotate 45" />
           <div className="absolute w-2 h-2 border-2 border-violet-600 rounded-full" />
         </div>
-        
+
         <h1 className="text-3xl font-extrabold tracking-wider">Start Your Journey 🚀</h1>
         <p className="text-gray-100 text-xs mt-2 tracking-wide max-w-xs leading-relaxed opacity-90">
           Create an account and connect with a fast, modern, and beautiful community portal.
