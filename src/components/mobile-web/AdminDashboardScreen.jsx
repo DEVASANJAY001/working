@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import {
-  ShieldAlert,
-  Users,
-  FileText,
-  AlertTriangle,
-  Megaphone,
-  TrendingUp,
-  Trash2,
-  UserX,
-  UserCheck,
-  Plus,
-  Eye,
-  CheckCircle,
-  LogOut,
-  Sparkles,
-  Image as ImageIcon,
-  Link as LinkIcon,
+import { 
+  ShieldAlert, 
+  Users, 
+  FileText, 
+  AlertTriangle, 
+  Megaphone, 
+  TrendingUp, 
+  Trash2, 
+  UserX, 
+  UserCheck, 
+  Plus, 
+  Eye, 
+  CheckCircle, 
+  LogOut, 
+  Sparkles, 
+  Image as ImageIcon, 
+  Link as LinkIcon, 
   ExternalLink,
   Search,
   Filter,
@@ -23,13 +23,16 @@ import {
   Flame,
   ArrowRight,
   Pin,
-  RefreshCw
+  RefreshCw,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { adminStore } from '../../services/adminStore';
 
 export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser }) {
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'announcement' | 'users' | 'moderation' | 'trending' | 'ads'
-
+  
   // Data states
   const [announcement, setAnnouncement] = useState(adminStore.getAnnouncement());
   const [ads, setAds] = useState(adminStore.getAds());
@@ -170,41 +173,64 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
     setReportedPosts(updated);
   };
 
-  const filteredUsers = allUsers.filter(u =>
+  const filteredUsers = allUsers.filter(u => 
     u.name.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
     u.email.toLowerCase().includes(userSearchQuery.toLowerCase())
   );
 
+  const themePageBg = isDarkMode ? "bg-[#121212] text-gray-100" : "bg-[#F6F7F8] text-gray-900";
+  const themeHeaderBg = isDarkMode ? "bg-[#1C1C1E] border-[#2C2C2E] border-b" : "bg-white border-b border-gray-200";
+  const themeHeaderTitle = isDarkMode ? "text-white" : "text-gray-900";
+  const themeSubtext = isDarkMode ? "text-gray-400" : "text-gray-500";
+  const themeCardBg = isDarkMode ? "bg-[#1C1C1E] border border-[#2C2C2E]" : "bg-white border border-gray-200 shadow-sm";
+  const themeSubCardBg = isDarkMode ? "bg-[#2C2C2E]/60 border border-[#3C3C3E]" : "bg-gray-50 border border-gray-100";
+  const themeInputBg = isDarkMode ? "bg-[#121212] border-gray-700 text-white" : "bg-white border border-gray-200 text-gray-900";
+  const themeTableHeader = isDarkMode ? "bg-[#121212] text-gray-400 border-gray-800" : "bg-gray-50 text-gray-600 border-gray-200";
+  
+  // Secondary buttons: glass glossy for dark mode, normal border/light gray for light mode
+  const themeBtnSecondary = isDarkMode 
+    ? "bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]" 
+    : "bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300";
+
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col font-sans select-none">
+    <div className={`min-h-screen ${themePageBg} flex flex-col font-sans transition-colors duration-300 select-none`}>
       {/* ── Top Bar ── */}
-      <header className="bg-gray-900 border-b border-gray-800 sticky top-0 z-40 px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+      <header className={`${themeHeaderBg} sticky top-0 z-40 px-6 py-4 flex flex-wrap items-center justify-between gap-4 transition-colors`}>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-violet-600 via-pink-500 to-orange-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
             <ShieldAlert className="w-6 h-6 text-white" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="font-extrabold text-lg tracking-wide text-white">Super User Console</h1>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-violet-500/20 text-violet-300 border border-violet-500/30 flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-violet-400" /> Admin
+              <h1 className={`font-extrabold text-lg tracking-wide ${themeHeaderTitle}`}>Super User Console</h1>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-violet-500/20 text-violet-600 border border-violet-500/30 flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-violet-500" /> Admin
               </span>
             </div>
-            <p className="text-xs text-gray-400">Logged in as <span className="text-violet-400 font-bold">aadithya.danvs@gmail.com</span></p>
+            <p className={`text-xs ${themeSubtext}`}>Logged in as <span className="text-violet-600 font-bold">{currentUser?.email || "aasithya.daven@gmail.com"}</span></p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={onGoToFeed}
-            className="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-bold transition-all flex items-center gap-2 border border-gray-700 cursor-pointer hover:border-gray-600"
+          {/* Light/Dark Toggle Switch */}
+          <button 
+            onClick={() => setIsDarkMode(!isDarkMode)}
+            className={`p-2.5 rounded-xl transition-all cursor-pointer ${themeBtnSecondary}`}
+            title="Toggle Light / Dark Mode"
           >
-            <Eye className="w-4 h-4 text-violet-400" /> View Live User Feed
+            {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-violet-600" />}
           </button>
 
+          <button 
+            onClick={onGoToFeed}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${themeBtnSecondary}`}
+          >
+            <Eye className="w-4 h-4 text-violet-500" /> View Live User Feed
+          </button>
+          
           <button
             onClick={onLogout}
-            className="px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold transition-all flex items-center gap-2 border border-red-500/20 cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs font-bold transition-all flex items-center gap-2 border border-red-500/20 cursor-pointer"
           >
             <LogOut className="w-4 h-4" /> Logout
           </button>
@@ -214,7 +240,7 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
       {/* ── Main Layout ── */}
       <div className="flex-1 flex flex-col md:flex-row max-w-7xl w-full mx-auto p-4 md:p-8 gap-8">
         {/* Sidebar Navigation */}
-        <aside className="w-full md:w-64 bg-gray-900 border border-gray-800 rounded-3xl p-4 flex flex-col justify-between shrink-0">
+        <aside className={`${themeCardBg} w-full md:w-64 rounded-3xl p-4 flex flex-col justify-between shrink-0 transition-colors`}>
           <div className="space-y-1.5">
             <div className="px-3 py-2 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
               Management Modules
@@ -222,36 +248,39 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
 
             <button
               onClick={() => setActiveTab('overview')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'overview'
-                  ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
-                  : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'overview' 
+                  ? 'bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg shadow-violet-600/30' 
+                  : `${isDarkMode ? 'text-gray-400 hover:bg-white/5 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`
+              }`}
             >
               <BarChart3 className="w-4 h-4" /> Overview Dashboard
             </button>
 
             <button
               onClick={() => setActiveTab('announcement')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'announcement'
-                  ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
-                  : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'announcement' 
+                  ? 'bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg shadow-violet-600/30' 
+                  : `${isDarkMode ? 'text-gray-400 hover:bg-white/5 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`
+              }`}
             >
               <Pin className="w-4 h-4" /> Pinned Super User Post
             </button>
 
             <button
               onClick={() => setActiveTab('users')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer justify-between ${activeTab === 'users'
-                  ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
-                  : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer justify-between ${
+                activeTab === 'users' 
+                  ? 'bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg shadow-violet-600/30' 
+                  : `${isDarkMode ? 'text-gray-400 hover:bg-white/5 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`
+              }`}
             >
               <div className="flex items-center gap-3">
                 <Users className="w-4 h-4" /> User Management
               </div>
               {bannedUsers.length > 0 && (
-                <span className="px-2 py-0.5 text-[10px] bg-red-500/20 text-red-300 rounded-full border border-red-500/30">
+                <span className="px-2 py-0.5 text-[10px] bg-red-500/20 text-red-500 rounded-full border border-red-500/30">
                   {bannedUsers.length} Banned
                 </span>
               )}
@@ -259,16 +288,17 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
 
             <button
               onClick={() => setActiveTab('moderation')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer justify-between ${activeTab === 'moderation'
-                  ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
-                  : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer justify-between ${
+                activeTab === 'moderation' 
+                  ? 'bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg shadow-violet-600/30' 
+                  : `${isDarkMode ? 'text-gray-400 hover:bg-white/5 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`
+              }`}
             >
               <div className="flex items-center gap-3">
                 <AlertTriangle className="w-4 h-4" /> Reported Content
               </div>
               {reportedPosts.length > 0 && (
-                <span className="px-2 py-0.5 text-[10px] bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/30 font-extrabold">
+                <span className="px-2 py-0.5 text-[10px] bg-amber-500/20 text-amber-500 rounded-full border border-amber-500/30 font-extrabold">
                   {reportedPosts.length}
                 </span>
               )}
@@ -276,35 +306,37 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
 
             <button
               onClick={() => setActiveTab('trending')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'trending'
-                  ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
-                  : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'trending' 
+                  ? 'bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg shadow-violet-600/30' 
+                  : `${isDarkMode ? 'text-gray-400 hover:bg-white/5 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`
+              }`}
             >
-              <Flame className="w-4 h-4 text-orange-400" /> Popular Posts
+              <Flame className="w-4 h-4 text-orange-500" /> Popular Posts
             </button>
 
             <button
               onClick={() => setActiveTab('ads')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer justify-between ${activeTab === 'ads'
-                  ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
-                  : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer justify-between ${
+                activeTab === 'ads' 
+                  ? 'bg-gradient-to-r from-violet-600 to-orange-500 text-white shadow-lg shadow-violet-600/30' 
+                  : `${isDarkMode ? 'text-gray-400 hover:bg-white/5 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`
+              }`}
             >
               <div className="flex items-center gap-3">
-                <Megaphone className="w-4 h-4 text-emerald-400" /> Advertisements
+                <Megaphone className="w-4 h-4 text-emerald-500" /> Advertisements
               </div>
-              <span className="px-2 py-0.5 text-[10px] bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30 font-bold">
+              <span className="px-2 py-0.5 text-[10px] bg-emerald-500/20 text-emerald-500 rounded-full border border-emerald-500/30 font-bold">
                 {ads.filter(a => a.active).length} Active
               </span>
             </button>
           </div>
 
-          <div className="pt-4 mt-4 border-t border-gray-800/80">
-            <div className="bg-gradient-to-br from-violet-950/60 to-gray-900 border border-violet-500/20 rounded-2xl p-3.5 text-center">
-              <Sparkles className="w-5 h-5 text-violet-400 mx-auto mb-1.5" />
-              <p className="text-[11px] font-bold text-gray-200">Super User Authority Active</p>
-              <p className="text-[10px] text-gray-400 mt-1">Full control over users, announcements, ads, and moderation.</p>
+          <div className="pt-4 mt-4 border-t border-gray-855">
+            <div className="bg-gradient-to-br from-violet-500/10 to-orange-500/5 border border-violet-500/25 rounded-2xl p-3.5 text-center">
+              <Sparkles className="w-5 h-5 text-violet-500 mx-auto mb-1.5 animate-pulse" />
+              <p className="text-[11px] font-black">Super User Authority Active</p>
+              <p className={`text-[10px] ${themeSubtext} mt-1`}>Full control over users, announcements, ads, and moderation.</p>
             </div>
           </div>
         </aside>
@@ -314,10 +346,10 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
           {/* ── TAB 1: OVERVIEW DASHBOARD ── */}
           {activeTab === 'overview' && (
             <div className="space-y-6 animate-fade-in">
-              <div className="bg-gradient-to-r from-violet-900/40 via-purple-900/20 to-gray-900 border border-violet-500/30 rounded-3xl p-6 relative overflow-hidden">
+              <div className="bg-gradient-to-r from-violet-600/25 via-pink-500/10 to-orange-500/5 border border-violet-500/30 rounded-3xl p-6 relative overflow-hidden">
                 <div className="relative z-10 max-w-xl">
-                  <h2 className="text-2xl font-black text-white">Welcome back, Super User Aadithya 👋</h2>
-                  <p className="text-gray-300 text-xs mt-2 leading-relaxed">
+                  <h2 className="text-2xl font-black">Welcome back, Super User Aadithya 👋</h2>
+                  <p className={`text-xs mt-2 leading-relaxed ${themeSubtext}`}>
                     You have total administration rights over the Inspire community web app. Monitor community health, handle reported posts, manage users, and post featured ads or pinned announcements.
                   </p>
                 </div>
@@ -325,54 +357,54 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
 
               {/* Stats Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5 hover:border-violet-500/40 transition-all">
-                  <div className="flex items-center justify-between text-gray-400 mb-3">
+                <div className={`${themeCardBg} rounded-3xl p-5 hover:border-violet-500/40 transition-all`}>
+                  <div className={`flex items-center justify-between ${themeSubtext} mb-3`}>
                     <span className="text-xs font-bold uppercase tracking-wider">Total Users</span>
-                    <div className="p-2 bg-violet-500/10 rounded-xl text-violet-400">
+                    <div className="p-2 bg-violet-500/10 rounded-xl text-violet-500">
                       <Users className="w-5 h-5" />
                     </div>
                   </div>
-                  <div className="text-3xl font-black text-white">{allUsers.length}</div>
-                  <div className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1 font-semibold">
+                  <div className="text-3xl font-black">{allUsers.length}</div>
+                  <div className="text-[11px] text-emerald-500 mt-1 flex items-center gap-1 font-semibold">
                     <TrendingUp className="w-3.5 h-3.5" /> +24% this week
                   </div>
                 </div>
 
-                <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5 hover:border-violet-500/40 transition-all">
-                  <div className="flex items-center justify-between text-gray-400 mb-3">
+                <div className={`${themeCardBg} rounded-3xl p-5 hover:border-violet-500/40 transition-all`}>
+                  <div className={`flex items-center justify-between ${themeSubtext} mb-3`}>
                     <span className="text-xs font-bold uppercase tracking-wider">Reported Content</span>
-                    <div className="p-2 bg-amber-500/10 rounded-xl text-amber-400">
+                    <div className="p-2 bg-amber-500/10 rounded-xl text-amber-500">
                       <AlertTriangle className="w-5 h-5" />
                     </div>
                   </div>
-                  <div className="text-3xl font-black text-white">{reportedPosts.length}</div>
-                  <div className="text-[11px] text-amber-400 mt-1 font-semibold">
+                  <div className="text-3xl font-black text-amber-500">{reportedPosts.length}</div>
+                  <div className="text-[11px] text-amber-500 mt-1 font-semibold">
                     Requires admin action
                   </div>
                 </div>
 
-                <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5 hover:border-violet-500/40 transition-all">
-                  <div className="flex items-center justify-between text-gray-400 mb-3">
+                <div className={`${themeCardBg} rounded-3xl p-5 hover:border-violet-500/40 transition-all`}>
+                  <div className={`flex items-center justify-between ${themeSubtext} mb-3`}>
                     <span className="text-xs font-bold uppercase tracking-wider">Banned Users</span>
-                    <div className="p-2 bg-red-500/10 rounded-xl text-red-400">
+                    <div className="p-2 bg-red-500/10 rounded-xl text-red-500">
                       <UserX className="w-5 h-5" />
                     </div>
                   </div>
-                  <div className="text-3xl font-black text-white">{bannedUsers.length}</div>
-                  <div className="text-[11px] text-red-400 mt-1 font-semibold">
+                  <div className="text-3xl font-black text-red-500">{bannedUsers.length}</div>
+                  <div className="text-[11px] text-red-500 mt-1 font-semibold">
                     Exploiters restricted
                   </div>
                 </div>
 
-                <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5 hover:border-violet-500/40 transition-all">
-                  <div className="flex items-center justify-between text-gray-400 mb-3">
+                <div className={`${themeCardBg} rounded-3xl p-5 hover:border-violet-500/40 transition-all`}>
+                  <div className={`flex items-center justify-between ${themeSubtext} mb-3`}>
                     <span className="text-xs font-bold uppercase tracking-wider">Active Ads</span>
-                    <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-400">
+                    <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-500">
                       <Megaphone className="w-5 h-5" />
                     </div>
                   </div>
-                  <div className="text-3xl font-black text-white">{ads.filter(a => a.active).length}</div>
-                  <div className="text-[11px] text-emerald-400 mt-1 font-semibold">
+                  <div className="text-3xl font-black text-emerald-500">{ads.filter(a => a.active).length}</div>
+                  <div className="text-[11px] text-emerald-500 mt-1 font-semibold">
                     Live banner campaigns
                   </div>
                 </div>
@@ -381,41 +413,41 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
               {/* Quick Actions Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Active Super User Announcement Card */}
-                <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 space-y-4">
+                <div className={`${themeCardBg} rounded-3xl p-6 space-y-4`}>
                   <div className="flex items-center justify-between">
-                    <h3 className="font-extrabold text-sm text-white flex items-center gap-2">
-                      <Pin className="w-4 h-4 text-violet-400" /> Active Pinned Super User Post
+                    <h3 className="font-extrabold text-sm flex items-center gap-2">
+                      <Pin className="w-4 h-4 text-violet-500" /> Active Pinned Super User Post
                     </h3>
-                    <button
+                    <button 
                       onClick={() => setActiveTab('announcement')}
-                      className="text-xs font-bold text-violet-400 hover:underline cursor-pointer"
+                      className="text-xs font-bold text-violet-500 hover:underline cursor-pointer"
                     >
                       Edit Pinned Post
                     </button>
                   </div>
 
                   {announcement ? (
-                    <div className="p-4 rounded-2xl bg-gray-950 border border-violet-500/30 space-y-3">
-                      <div className="flex items-center gap-2 text-xs font-bold text-violet-400">
+                    <div className={`p-4 rounded-2xl ${themeSubCardBg} space-y-3`}>
+                      <div className="flex items-center gap-2 text-xs font-bold text-violet-500">
                         <Sparkles className="w-3.5 h-3.5" /> Pinned at top of user feed
                       </div>
-                      <h4 className="font-bold text-white text-base">{announcement.title}</h4>
-                      <p className="text-xs text-gray-300 line-clamp-2">{announcement.text}</p>
+                      <h4 className="font-bold text-base">{announcement.title}</h4>
+                      <p className={`text-xs ${themeSubtext} line-clamp-2`}>{announcement.text}</p>
                     </div>
                   ) : (
-                    <p className="text-xs text-gray-500 italic">No pinned announcement currently set.</p>
+                    <p className={`text-xs ${themeSubtext} italic`}>No pinned announcement currently set.</p>
                   )}
                 </div>
 
                 {/* Moderation Queue Summary */}
-                <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 space-y-4">
+                <div className={`${themeCardBg} rounded-3xl p-6 space-y-4`}>
                   <div className="flex items-center justify-between">
-                    <h3 className="font-extrabold text-sm text-white flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 text-amber-400" /> Pending Moderation Reports
+                    <h3 className="font-extrabold text-sm flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-500" /> Pending Moderation Reports
                     </h3>
-                    <button
+                    <button 
                       onClick={() => setActiveTab('moderation')}
-                      className="text-xs font-bold text-amber-400 hover:underline cursor-pointer"
+                      className="text-xs font-bold text-amber-500 hover:underline cursor-pointer"
                     >
                       View All Reports
                     </button>
@@ -424,14 +456,14 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                   {reportedPosts.length > 0 ? (
                     <div className="space-y-2">
                       {reportedPosts.slice(0, 2).map((rep) => (
-                        <div key={rep.id} className="p-3 rounded-2xl bg-gray-950 border border-gray-800 flex items-center justify-between">
+                        <div key={rep.id} className={`p-3 rounded-2xl ${themeSubCardBg} flex items-center justify-between`}>
                           <div>
-                            <span className="text-xs font-bold text-gray-200">{rep.authorName}</span>
-                            <p className="text-[11px] text-amber-400">{rep.reportReason} ({rep.reportsCount} reports)</p>
+                            <span className="text-xs font-bold">{rep.authorName}</span>
+                            <p className="text-[11px] text-amber-500">{rep.reportReason} ({rep.reportsCount} reports)</p>
                           </div>
                           <button
                             onClick={() => handleDeleteReportedPost(rep.postId, rep.id)}
-                            className="px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 text-xs font-bold border border-red-500/30 transition-all cursor-pointer"
+                            className="px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-500 text-xs font-bold border border-red-500/30 transition-all cursor-pointer"
                           >
                             Delete Post
                           </button>
@@ -439,7 +471,7 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                       ))}
                     </div>
                   ) : (
-                    <div className="p-4 rounded-2xl bg-gray-950 text-center text-xs text-gray-500">
+                    <div className={`p-4 rounded-2xl ${themeSubCardBg} text-center text-xs ${themeSubtext}`}>
                       No pending reports! Community content is clean.
                     </div>
                   )}
@@ -450,18 +482,18 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
 
           {/* ── TAB 2: PINNED SUPER USER ANNOUNCEMENT ── */}
           {activeTab === 'announcement' && (
-            <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 md:p-8 space-y-6 animate-fade-in">
+            <div className={`${themeCardBg} rounded-3xl p-6 md:p-8 space-y-6 animate-fade-in`}>
               <div>
-                <h2 className="text-xl font-black text-white flex items-center gap-2">
-                  <Pin className="w-5 h-5 text-violet-400" /> Upload Super User Pinned Post
+                <h2 className="text-xl font-black flex items-center gap-2">
+                  <Pin className="w-5 h-5 text-violet-500" /> Upload Super User Pinned Post
                 </h2>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className={`text-xs ${themeSubtext} mt-1`}>
                   This post will be permanently pinned at the top of every user's feed when they open the platform first.
                 </p>
               </div>
 
               {annSuccessMsg && (
-                <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs rounded-2xl font-bold flex items-center gap-2">
+                <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-xs rounded-2xl font-bold flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span>{annSuccessMsg}</span>
                 </div>
@@ -469,31 +501,31 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
 
               <form onSubmit={handlePublishAnnouncement} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider">Announcement Title</label>
+                  <label className={`block text-xs font-bold ${themeSubtext} uppercase tracking-wider`}>Announcement Title</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Welcome to Inspire Platform!"
                     value={annTitle}
                     onChange={e => setAnnTitle(e.target.value)}
-                    className="w-full py-3 px-4 border border-gray-700 rounded-2xl bg-gray-950 text-white focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                    className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider">Post Message / Body</label>
+                  <label className={`block text-xs font-bold ${themeSubtext} uppercase tracking-wider`}>Post Message / Body</label>
                   <textarea
                     rows={4}
                     required
                     placeholder="Enter full announcement details for all community members..."
                     value={annText}
                     onChange={e => setAnnText(e.target.value)}
-                    className="w-full py-3 px-4 border border-gray-700 rounded-2xl bg-gray-950 text-white focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                    className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider">Banner Image URL (Optional)</label>
+                  <label className={`block text-xs font-bold ${themeSubtext} uppercase tracking-wider`}>Banner Image URL (Optional)</label>
                   <div className="relative">
                     <ImageIcon className="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5" />
                     <input
@@ -501,7 +533,7 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                       placeholder="https://images.unsplash.com/..."
                       value={annImage}
                       onChange={e => setAnnImage(e.target.value)}
-                      className="w-full py-3 pl-10 pr-4 border border-gray-700 rounded-2xl bg-gray-950 text-white focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                      className={`w-full py-3 pl-10 pr-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
                     />
                   </div>
                 </div>
@@ -518,13 +550,13 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
 
           {/* ── TAB 3: USER MANAGEMENT & SAFETY ── */}
           {activeTab === 'users' && (
-            <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 md:p-8 space-y-6 animate-fade-in">
+            <div className={`${themeCardBg} rounded-3xl p-6 md:p-8 space-y-6 animate-fade-in`}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-black text-white flex items-center gap-2">
-                    <Users className="w-5 h-5 text-violet-400" /> User Management & Platform Safety
+                  <h2 className="text-xl font-black flex items-center gap-2">
+                    <Users className="w-5 h-5 text-violet-505" /> User Management & Platform Safety
                   </h2>
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className={`text-xs ${themeSubtext} mt-1`}>
                     Super User authority to remove or ban users who exploit or violate platform rules.
                   </p>
                 </div>
@@ -536,15 +568,15 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                     placeholder="Search users..."
                     value={userSearchQuery}
                     onChange={e => setUserSearchQuery(e.target.value)}
-                    className="w-full py-2 pl-9 pr-4 border border-gray-700 rounded-xl bg-gray-950 text-white text-xs focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className={`w-full py-2 pl-9 pr-4 border rounded-xl ${themeInputBg} text-xs focus:outline-none focus:ring-2 focus:ring-violet-500`}
                   />
                 </div>
               </div>
 
               {/* Users Table */}
-              <div className="overflow-x-auto rounded-2xl border border-gray-800">
+              <div className={`overflow-x-auto rounded-2xl border ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`}>
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-gray-950 text-gray-400 font-bold uppercase tracking-wider border-b border-gray-800">
+                  <thead className={`${themeTableHeader} font-bold uppercase tracking-wider border-b`}>
                     <tr>
                       <th className="p-4">User</th>
                       <th className="p-4">Role</th>
@@ -553,28 +585,28 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                       <th className="p-4 text-right">Super User Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-800 text-gray-200">
+                  <tbody className="divide-y divide-gray-800/10 text-inherit">
                     {filteredUsers.map((user) => {
                       const isBanned = bannedUsers.includes(user.email.toLowerCase());
                       return (
-                        <tr key={user.id} className="hover:bg-gray-850 transition-colors">
+                        <tr key={user.id} className={`${isDarkMode ? 'hover:bg-white/5' : 'hover:bg-gray-50'} transition-colors`}>
                           <td className="p-4">
-                            <div className="font-bold text-white">{user.name}</div>
-                            <div className="text-gray-400 text-[11px]">{user.email}</div>
+                            <div className="font-bold">{user.name}</div>
+                            <div className={`${themeSubtext} text-[11px]`}>{user.email}</div>
                           </td>
                           <td className="p-4">
-                            <span className="px-2.5 py-1 rounded-lg bg-gray-800 border border-gray-700 font-semibold text-gray-300">
+                            <span className={`px-2.5 py-1 rounded-lg ${isDarkMode ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-gray-100 border-gray-200 text-gray-700'} border font-semibold`}>
                               {user.role}
                             </span>
                           </td>
-                          <td className="p-4 text-gray-400">{user.joined}</td>
+                          <td className={`p-4 ${themeSubtext}`}>{user.joined}</td>
                           <td className="p-4">
                             {isBanned ? (
-                              <span className="px-2.5 py-1 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 font-bold">
+                              <span className="px-2.5 py-1 rounded-lg bg-red-500/20 text-red-500 border border-red-500/30 font-bold">
                                 🚫 Banned
                               </span>
                             ) : (
-                              <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold">
+                              <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 font-bold">
                                 ✅ Active
                               </span>
                             )}
@@ -582,15 +614,16 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                           <td className="p-4 text-right">
                             <button
                               onClick={() => handleToggleBanUser(user.email)}
-                              className={`px-3 py-1.5 rounded-xl font-bold transition-all border cursor-pointer ${isBanned
-                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30'
-                                  : 'bg-red-500/20 text-red-300 border-red-500/30 hover:bg-red-500/30'
-                                }`}
+                              className={`px-3 py-1.5 rounded-xl font-bold transition-all border cursor-pointer ${
+                                isBanned 
+                                  ? 'bg-emerald-500/20 text-emerald-555 border-emerald-500/30 hover:bg-emerald-500/30'
+                                  : 'bg-red-500/20 text-red-500 border-red-500/30 hover:bg-red-500/30'
+                              }`}
                             >
                               {isBanned ? (
                                 <span className="flex items-center gap-1"><UserCheck className="w-3.5 h-3.5" /> Unban User</span>
                               ) : (
-                                <span className="flex items-center gap-1"><UserX className="w-3.5 h-3.5" /> Ban / Remove User</span>
+                                <span className="flex items-center gap-1"><UserX className="w-3.5 h-3.5" /> Ban User</span>
                               )}
                             </button>
                           </td>
@@ -605,47 +638,47 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
 
           {/* ── TAB 4: CONTENT MODERATION & REPORTED POSTS ── */}
           {activeTab === 'moderation' && (
-            <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 md:p-8 space-y-6 animate-fade-in">
+            <div className={`${themeCardBg} rounded-3xl p-6 md:p-8 space-y-6 animate-fade-in`}>
               <div>
-                <h2 className="text-xl font-black text-white flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-amber-400" /> Reported Posts & Content Moderation
+                <h2 className="text-xl font-black flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-amber-500" /> Reported Posts & Content Moderation
                 </h2>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className={`text-xs ${themeSubtext} mt-1`}>
                   Inspect community report flags and delete non-compliant posts immediately.
                 </p>
               </div>
 
               {reportedPosts.length === 0 ? (
-                <div className="p-12 text-center bg-gray-950 rounded-3xl border border-gray-800 space-y-3">
-                  <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto" />
-                  <h3 className="font-bold text-white text-base">No Reported Posts</h3>
-                  <p className="text-xs text-gray-400">All community posts are clean and compliant!</p>
+                <div className={`p-12 text-center ${themeSubCardBg} rounded-3xl border border-gray-800/10 space-y-3`}>
+                  <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto" />
+                  <h3 className="font-bold text-base">No Reported Posts</h3>
+                  <p className={`text-xs ${themeSubtext}`}>All community posts are clean and compliant!</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {reportedPosts.map((report) => (
-                    <div key={report.id} className="p-5 bg-gray-950 border border-amber-500/30 rounded-3xl space-y-3">
+                    <div key={report.id} className={`p-5 ${themeSubCardBg} border border-amber-500/30 rounded-3xl space-y-3`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="font-extrabold text-white text-sm">{report.authorName}</span>
-                          <span className="text-xs text-gray-400">({report.authorHandle})</span>
+                          <span className="font-extrabold text-sm">{report.authorName}</span>
+                          <span className={`text-xs ${themeSubtext}`}>({report.authorHandle})</span>
                         </div>
-                        <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                        <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-500/20 text-amber-500 border border-amber-500/30 flex items-center gap-1">
                           <AlertTriangle className="w-3.5 h-3.5" /> {report.reportsCount} Reports
                         </span>
                       </div>
 
-                      <p className="text-xs text-gray-200 bg-gray-900/80 p-3 rounded-2xl border border-gray-800 italic">
+                      <p className={`text-xs p-3 rounded-2xl ${themeInputBg} border italic`}>
                         "{report.text}"
                       </p>
 
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-800 text-xs">
-                        <span className="text-gray-400">Reason: <strong className="text-amber-300">{report.reportReason}</strong></span>
-
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-850 text-xs">
+                        <span className={themeSubtext}>Reason: <strong className="text-amber-505">{report.reportReason}</strong></span>
+                        
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleDismissReport(report.id)}
-                            className="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold border border-gray-700 transition-all cursor-pointer"
+                            className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${themeBtnSecondary}`}
                           >
                             Dismiss Report
                           </button>
@@ -653,7 +686,7 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                             onClick={() => handleDeleteReportedPost(report.postId, report.id)}
                             className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5"
                           >
-                            <Trash2 className="w-3.5 h-3.5" /> Delete Post Immediately
+                            <Trash2 className="w-3.5 h-3.5" /> Delete Post
                           </button>
                         </div>
                       </div>
@@ -666,27 +699,27 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
 
           {/* ── TAB 5: POPULAR POSTS ── */}
           {activeTab === 'trending' && (
-            <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 md:p-8 space-y-6 animate-fade-in">
+            <div className={`${themeCardBg} rounded-3xl p-6 md:p-8 space-y-6 animate-fade-in`}>
               <div>
-                <h2 className="text-xl font-black text-white flex items-center gap-2">
-                  <Flame className="w-5 h-5 text-orange-400" /> Popular & High-Engagement Posts
+                <h2 className="text-xl font-black flex items-center gap-2">
+                  <Flame className="w-5 h-5 text-orange-505" /> Popular & High-Engagement Posts
                 </h2>
-                <p className="text-xs text-gray-400 mt-1">
-                  View top performing content driving community engagement across the platform.
+                <p className={`text-xs ${themeSubtext} mt-1`}>
+                  View top performing content driving engagement across the platform.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 gap-4">
                 {trendingPosts.map((post, idx) => (
-                  <div key={post.id} className="p-5 bg-gray-950 border border-gray-800 rounded-3xl flex items-center justify-between gap-4">
+                  <div key={post.id} className={`p-5 ${themeSubCardBg} rounded-3xl flex items-center justify-between gap-4 border ${isDarkMode ? 'border-gray-800' : 'border-gray-100'}`}>
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-2xl bg-orange-500/20 text-orange-400 font-black flex items-center justify-center text-lg border border-orange-500/30">
+                      <div className="w-10 h-10 rounded-2xl bg-orange-500/20 text-orange-505 font-black flex items-center justify-center text-lg border border-orange-500/30">
                         #{idx + 1}
                       </div>
                       <div>
-                        <h4 className="font-extrabold text-white text-sm">{post.author}</h4>
-                        <p className="text-xs text-gray-300 line-clamp-1 mt-0.5">{post.text}</p>
-                        <div className="flex items-center gap-4 mt-2 text-[11px] text-gray-400 font-semibold">
+                        <h4 className="font-extrabold text-sm">{post.author}</h4>
+                        <p className={`text-xs ${themeSubtext} line-clamp-1 mt-0.5`}>{post.text}</p>
+                        <div className="flex items-center gap-4 mt-2 text-[11px] text-gray-500 font-semibold">
                           <span>❤️ {post.likes} Likes</span>
                           <span>💬 {post.comments} Comments</span>
                           <span>🔄 {post.shares} Shares</span>
@@ -694,7 +727,7 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                       </div>
                     </div>
 
-                    <span className="px-3 py-1.5 bg-emerald-500/20 text-emerald-300 font-extrabold rounded-xl border border-emerald-500/30 text-xs shrink-0">
+                    <span className="px-3 py-1.5 bg-emerald-500/20 text-emerald-500 font-extrabold rounded-xl border border-emerald-500/30 text-xs shrink-0">
                       {post.engagement} Score
                     </span>
                   </div>
@@ -707,18 +740,18 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
           {activeTab === 'ads' && (
             <div className="space-y-6 animate-fade-in">
               {/* Form to Add Ad */}
-              <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 md:p-8 space-y-6">
+              <div className={`${themeCardBg} rounded-3xl p-6 md:p-8 space-y-6`}>
                 <div>
-                  <h2 className="text-xl font-black text-white flex items-center gap-2">
-                    <Megaphone className="w-5 h-5 text-emerald-400" /> Upload Advertisement Campaign
+                  <h2 className="text-xl font-black flex items-center gap-2">
+                    <Megaphone className="w-5 h-5 text-emerald-505" /> Upload Advertisement Campaign
                   </h2>
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className={`text-xs ${themeSubtext} mt-1`}>
                     Super User feature to create and publish sponsored ad banners live into user feeds.
                   </p>
                 </div>
 
                 {adSuccessMsg && (
-                  <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs rounded-2xl font-bold flex items-center gap-2">
+                  <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-xs rounded-2xl font-bold flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
                     <span>{adSuccessMsg}</span>
                   </div>
@@ -726,47 +759,47 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
 
                 <form onSubmit={handleAddAd} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider">Ad Campaign Title</label>
+                    <label className={`block text-xs font-bold ${themeSubtext} uppercase tracking-wider`}>Ad Campaign Title</label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Boost Your Workflow with Inspire Pro"
+                      placeholder="e.g. Boost Your Creative Workflow"
                       value={adTitle}
                       onChange={e => setAdTitle(e.target.value)}
-                      className="w-full py-3 px-4 border border-gray-700 rounded-2xl bg-gray-950 text-white focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                      className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider">Sponsor Name</label>
+                    <label className={`block text-xs font-bold ${themeSubtext} uppercase tracking-wider`}>Sponsor Name</label>
                     <input
                       type="text"
-                      placeholder="e.g. Inspire Partner Network"
+                      placeholder="e.g. Inspire Network"
                       value={adSponsor}
                       onChange={e => setAdSponsor(e.target.value)}
-                      className="w-full py-3 px-4 border border-gray-700 rounded-2xl bg-gray-950 text-white focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                      className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider">Banner Image URL</label>
+                    <label className={`block text-xs font-bold ${themeSubtext} uppercase tracking-wider`}>Banner Image URL</label>
                     <input
                       type="url"
                       placeholder="https://images.unsplash.com/..."
                       value={adImage}
                       onChange={e => setAdImage(e.target.value)}
-                      className="w-full py-3 px-4 border border-gray-700 rounded-2xl bg-gray-950 text-white focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                      className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider">Target Link / URL</label>
+                    <label className={`block text-xs font-bold ${themeSubtext} uppercase tracking-wider`}>Target Link / URL</label>
                     <input
                       type="url"
                       placeholder="https://example.com/ad"
                       value={adTargetUrl}
                       onChange={e => setAdTargetUrl(e.target.value)}
-                      className="w-full py-3 px-4 border border-gray-700 rounded-2xl bg-gray-950 text-white focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+                      className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
                     />
                   </div>
 
@@ -782,12 +815,12 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
               </div>
 
               {/* Existing Campaigns List */}
-              <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 md:p-8 space-y-4">
-                <h3 className="font-extrabold text-white text-base">Active Advertisement Banners</h3>
+              <div className={`${themeCardBg} rounded-3xl p-6 md:p-8 space-y-4`}>
+                <h3 className="font-extrabold text-base">Active Advertisement Banners</h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {ads.map((ad) => (
-                    <div key={ad.id} className="p-4 bg-gray-950 border border-gray-800 rounded-2xl space-y-3 flex flex-col justify-between">
+                    <div key={ad.id} className={`p-4 ${themeSubCardBg} rounded-2xl space-y-3 flex flex-col justify-between border ${isDarkMode ? 'border-gray-800' : 'border-gray-150'}`}>
                       <div className="space-y-2">
                         <div className="h-32 rounded-xl overflow-hidden bg-gray-900 relative">
                           <img src={ad.image} alt={ad.title} className="w-full h-full object-cover" />
@@ -795,26 +828,27 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                             {ad.sponsor}
                           </span>
                         </div>
-                        <h4 className="font-bold text-white text-sm">{ad.title}</h4>
+                        <h4 className="font-bold text-sm">{ad.title}</h4>
                       </div>
 
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-800 text-xs">
-                        <span className="text-gray-400 font-semibold">{ad.clicks} Clicks</span>
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-800/10 text-xs">
+                        <span className={`${themeSubtext} font-semibold`}>{ad.clicks} Clicks</span>
 
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleToggleAd(ad.id)}
-                            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${ad.active
-                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                : 'bg-gray-800 text-gray-400 border border-gray-700'
-                              }`}
+                            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                              ad.active 
+                                ? 'bg-emerald-500/20 text-emerald-600 border border-emerald-500/30' 
+                                : `${isDarkMode ? 'bg-gray-800 text-gray-400 border border-gray-700' : 'bg-gray-150 text-gray-500 border border-gray-300'}`
+                            }`}
                           >
                             {ad.active ? 'Active' : 'Paused'}
                           </button>
 
                           <button
                             onClick={() => handleDeleteAd(ad.id)}
-                            className="p-1.5 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30 cursor-pointer"
+                            className="p-1.5 rounded-xl bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/30 cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
