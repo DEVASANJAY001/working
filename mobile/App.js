@@ -366,10 +366,11 @@ export default function App() {
         return (
           <ForgotPasswordScreen
             onBack={() => setCurrentScreen('Login')}
-            onCodeSent={(email) => {
+            onContinue={(email) => {
               setUserEmail(email);
               setCurrentScreen('ResetPassword');
             }}
+            onGoToLogin={() => setCurrentScreen('Login')}
           />
         );
       
