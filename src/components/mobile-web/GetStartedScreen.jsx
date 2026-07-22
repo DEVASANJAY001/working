@@ -1,28 +1,34 @@
 import React from 'react';
 import communityImage from '../../assets/get_started_community.png';
+import bgImage from '../../assets/image.png';
 
 export default function GetStartedScreen({ onLogin, onRegister }) {
   return (
     <div className="flex-1 flex flex-col md:flex-row min-h-screen bg-white text-gray-900 animate-fade-in">
       {/* Left side: Banner on Desktop / Top side on Mobile */}
-      <div className="md:w-1/2 bg-gradient-to-br from-violet-600 via-pink-500 to-orange-500 text-white flex flex-col items-center justify-center p-8 text-center select-none relative">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/10 to-transparent pointer-events-none" />
-        
-        {/* Flower / Clover Logo */}
-        <div className="w-20 h-20 flex items-center justify-center mb-4 relative">
-          <div className="w-14 h-14 relative flex items-center justify-center">
-            <div className="absolute top-0 w-6 h-6 bg-white rounded-tl-2xl rounded-br-2xl -rotate-45" />
-            <div className="absolute bottom-0 w-6 h-6 bg-white rounded-tl-2xl rounded-br-2xl rotate-[135deg]" />
-            <div className="absolute left-0 w-6 h-6 bg-white rounded-tl-2xl rounded-br-2xl rotate-[225deg]" />
-            <div className="absolute right-0 w-6 h-6 bg-white rounded-tl-2xl rounded-br-2xl rotate-45" />
-            <div className="absolute w-2.5 h-2.5 border-2 border-violet-600 rounded-full" />
+      <div className="p-[20px] md:w-1/2 flex">
+        <div
+          className="w-full text-white flex flex-col items-center justify-center p-8 text-center select-none relative rounded-3xl overflow-hidden shadow-lg bg-cover bg-center"
+          style={{ backgroundImage: `url(${bgImage})` }}
+        >
+          <div className="absolute inset-0 bg-black/20 pointer-events-none" />
+
+          {/* Flower / Clover Logo */}
+          <div className="w-28 h-28 flex items-center justify-center mb-6 relative z-10">
+            <div className="w-20 h-20 relative flex items-center justify-center">
+              <div className="absolute top-0 w-8.5 h-8.5 bg-white rounded-tl-3xl rounded-br-3xl -rotate-45" />
+              <div className="absolute bottom-0 w-8.5 h-8.5 bg-white rounded-tl-3xl rounded-br-3xl rotate-[135deg]" />
+              <div className="absolute left-0 w-8.5 h-8.5 bg-white rounded-tl-3xl rounded-br-3xl rotate-[225deg]" />
+              <div className="absolute right-0 w-8.5 h-8.5 bg-white rounded-tl-3xl rounded-br-3xl rotate-45" />
+              <div className="absolute w-3.5 h-3.5 border-3 border-violet-600 rounded-full" />
+            </div>
           </div>
+
+          <h1 className="text-5xl md:text-6xl font-black tracking-wider relative z-10 drop-shadow-md">Inspire</h1>
+          <p className="text-gray-100 text-base md:text-lg mt-3.5 tracking-wide max-w-sm leading-relaxed relative z-10 drop-shadow">
+            Connect. Share. Inspire. Join, connect and stay updated with what matters to you.
+          </p>
         </div>
-        
-        <h1 className="text-4xl font-extrabold tracking-wider">Inspire</h1>
-        <p className="text-gray-100 text-sm mt-2 tracking-wide max-w-xs leading-relaxed">
-          Connect. Share. Inspire. Join, connect and stay updated with what matters to you.
-        </p>
       </div>
 
       {/* Right side: Interactive Form Container */}
@@ -32,7 +38,7 @@ export default function GetStartedScreen({ onLogin, onRegister }) {
           <img
             src={communityImage}
             alt="Community Needs"
-            className="w-64 h-64 md:w-80 md:h-80 object-contain hover:scale-105 transition-transform duration-300"
+            className="w-100 h-100 md:w-124 md:h-124 object-contain hover:scale-105 transition-transform duration-300"
           />
         </div>
 
@@ -44,7 +50,7 @@ export default function GetStartedScreen({ onLogin, onRegister }) {
           <h2 className="text-3xl font-extrabold text-gray-900 mt-1">
             community needs.
           </h2>
-          <p className="text-sm text-gray-505 mt-2.5 leading-relaxed">
+          <p className="text-sm text-gray-500 mt-2.5 leading-relaxed">
             Simple, fast, and secure passwordless verification.
           </p>
         </div>
@@ -53,19 +59,20 @@ export default function GetStartedScreen({ onLogin, onRegister }) {
         <div className="w-full flex flex-col items-center">
           <button
             onClick={onLogin}
-            className="w-full max-w-md h-13 rounded-full text-white font-bold text-base bg-gradient-to-r from-violet-600 to-orange-500 hover:opacity-90 hover:shadow-lg active:scale-[0.98] transition-all flex items-center justify-center shadow-md shadow-violet-500/20 mb-4 cursor-pointer"
+            className="w-full max-w-md h-13 rounded-full text-white font-bold text-base bg-cover bg-center hover:opacity-90 hover:shadow-lg active:scale-[0.98] transition-all flex items-center justify-center shadow-md shadow-violet-500/20 mb-4 cursor-pointer overflow-hidden relative"
+            style={{ backgroundImage: `url(${bgImage})` }}
           >
-            Login
+            <span className="relative z-10">Login</span>
           </button>
 
           <button
             onClick={onRegister}
-            className="w-full max-w-md h-13 rounded-full border-1.5 border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-855 font-bold text-base active:scale-[0.98] transition-all flex items-center justify-center bg-white mb-6 cursor-pointer"
+            className="w-full max-w-md h-13 rounded-full border-2 border-violet-600 hover:bg-violet-50 text-violet-700 font-bold text-base active:scale-[0.98] transition-all flex items-center justify-center bg-white mb-6 cursor-pointer"
           >
             Create Account
           </button>
 
-          <p className="text-[11px] text-gray-400 text-center leading-relaxed max-w-xs">
+          <p className="text-[11px] text-gray-400 text-center leading-relaxed max-w-md whitespace-nowrap">
             By continuing, you agree to our{' '}
             <span className="text-violet-600 underline cursor-pointer hover:text-violet-700">Privacy Policy</span> and{' '}
             <span className="text-violet-600 underline cursor-pointer hover:text-violet-700">Terms of Service</span>
