@@ -204,7 +204,7 @@ export default function UserProfileScreen({
       >
         <div className="w-full space-y-6 pl-6 pr-4">
           {/* Header Back & Logo Banner with custom margins */}
-          <div className="flex items-center gap-4 pb-4 border-b border-gray-150">
+          <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
             <button 
               onClick={onGoToFeed}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer flex items-center justify-center border border-gray-200"
