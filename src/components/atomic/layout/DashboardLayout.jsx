@@ -111,7 +111,7 @@ export default function DashboardLayout({
         </div>
 
         {/* Center Feed */}
-        <main className={`flex-1 h-full overflow-y-auto no-scrollbar p-4 lg:p-6 min-w-0 ${hideRightSidebar ? 'max-w-[1200px] mx-auto' : 'max-w-3xl mx-auto'}`}>
+        <main className={`flex-1 h-full overflow-y-auto no-scrollbar px-0 py-3 sm:px-4 lg:p-6 min-w-0 ${hideRightSidebar ? 'max-w-[1200px] mx-auto' : 'max-w-3xl mx-auto'}`}>
           {children}
         </main>
 

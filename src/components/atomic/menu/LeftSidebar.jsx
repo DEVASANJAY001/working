@@ -8,12 +8,78 @@ import { GameBannerCard } from '../molecules';
 import LeftSidebarItem from './LeftSidebarItem';
 
 export default function LeftSidebar({ activeNav, setActiveNav, isOpen = true, isMobileDrawer = false }) {
-  const [gamesOpen, setGamesOpen] = useState(false);
-  const [modOpen, setModOpen] = useState(true);
-  const [customFeedsOpen, setCustomFeedsOpen] = useState(true);
-  const [recentOpen, setRecentOpen] = useState(true);
-  const [communitiesOpen, setCommunitiesOpen] = useState(true);
-  const [resourcesOpen, setResourcesOpen] = useState(true);
+  const [gamesOpen, setGamesOpen] = useState(() => {
+    const val = localStorage.getItem('inspire_sidebar_games');
+    return val !== null ? JSON.parse(val) : false;
+  });
+  const [modOpen, setModOpen] = useState(() => {
+    const val = localStorage.getItem('inspire_sidebar_mod');
+    return val !== null ? JSON.parse(val) : true;
+  });
+  const [customFeedsOpen, setCustomFeedsOpen] = useState(() => {
+    const val = localStorage.getItem('inspire_sidebar_custom');
+    return val !== null ? JSON.parse(val) : true;
+  });
+  const [recentOpen, setRecentOpen] = useState(() => {
+    const val = localStorage.getItem('inspire_sidebar_recent');
+    return val !== null ? JSON.parse(val) : true;
+  });
+  const [communitiesOpen, setCommunitiesOpen] = useState(() => {
+    const val = localStorage.getItem('inspire_sidebar_comm');
+    return val !== null ? JSON.parse(val) : true;
+  });
+  const [resourcesOpen, setResourcesOpen] = useState(() => {
+    const val = localStorage.getItem('inspire_sidebar_res');
+    return val !== null ? JSON.parse(val) : true;
+  });
+
+  const toggleGames = () => {
+    setGamesOpen(prev => {
+      const next = !prev;
+      localStorage.setItem('inspire_sidebar_games', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const toggleMod = () => {
+    setModOpen(prev => {
+      const next = !prev;
+      localStorage.setItem('inspire_sidebar_mod', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const toggleCustomFeeds = () => {
+    setCustomFeedsOpen(prev => {
+      const next = !prev;
+      localStorage.setItem('inspire_sidebar_custom', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const toggleRecent = () => {
+    setRecentOpen(prev => {
+      const next = !prev;
+      localStorage.setItem('inspire_sidebar_recent', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const toggleCommunities = () => {
+    setCommunitiesOpen(prev => {
+      const next = !prev;
+      localStorage.setItem('inspire_sidebar_comm', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const toggleResources = () => {
+    setResourcesOpen(prev => {
+      const next = !prev;
+      localStorage.setItem('inspire_sidebar_res', JSON.stringify(next));
+      return next;
+    });
+  };
 
   return (
     <aside
@@ -51,7 +117,7 @@ export default function LeftSidebar({ activeNav, setActiveNav, isOpen = true, is
       {/* RECENT */}
       <div>
         <button
-          onClick={() => setRecentOpen(!recentOpen)}
+          onClick={toggleRecent}
           className="w-full flex items-center justify-between text-xs font-black text-gray-500 tracking-wider uppercase px-2 mb-2 cursor-pointer"
         >
           <span>RECENT</span>
@@ -77,7 +143,7 @@ export default function LeftSidebar({ activeNav, setActiveNav, isOpen = true, is
       {/* GAMES ON REDDIT */}
       <div>
         <button
-          onClick={() => setGamesOpen(!gamesOpen)}
+          onClick={toggleGames}
           className="w-full flex items-center justify-between text-xs font-black text-gray-500 tracking-wider uppercase px-2 mb-2 cursor-pointer"
         >
           <span>GAMES ON REDDIT</span>
@@ -113,7 +179,7 @@ export default function LeftSidebar({ activeNav, setActiveNav, isOpen = true, is
       {/* CUSTOM FEEDS */}
       <div>
         <button
-          onClick={() => setCustomFeedsOpen(!customFeedsOpen)}
+          onClick={toggleCustomFeeds}
           className="w-full flex items-center justify-between text-xs font-black text-gray-500 tracking-wider uppercase px-2 mb-2 cursor-pointer"
         >
           <span>CUSTOM FEEDS</span>
@@ -141,7 +207,7 @@ export default function LeftSidebar({ activeNav, setActiveNav, isOpen = true, is
       {/* COMMUNITIES */}
       <div>
         <button
-          onClick={() => setCommunitiesOpen(!communitiesOpen)}
+          onClick={toggleCommunities}
           className="w-full flex items-center justify-between text-xs font-black text-gray-500 tracking-wider uppercase px-2 mb-2 cursor-pointer"
         >
           <span>COMMUNITIES</span>
@@ -177,7 +243,7 @@ export default function LeftSidebar({ activeNav, setActiveNav, isOpen = true, is
       {/* MODERATION */}
       <div>
         <button
-          onClick={() => setModOpen(!modOpen)}
+          onClick={toggleMod}
           className="w-full flex items-center justify-between text-xs font-black text-gray-500 tracking-wider uppercase px-2 mb-2 cursor-pointer"
         >
           <span>MODERATION</span>
@@ -224,7 +290,7 @@ export default function LeftSidebar({ activeNav, setActiveNav, isOpen = true, is
       {/* RESOURCES */}
       <div>
         <button
-          onClick={() => setResourcesOpen(!resourcesOpen)}
+          onClick={toggleResources}
           className="w-full flex items-center justify-between text-xs font-black text-gray-500 tracking-wider uppercase px-2 mb-2 cursor-pointer"
         >
           <span>RESOURCES</span>

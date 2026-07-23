@@ -257,7 +257,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
       recentPostsList={recentPostsList}
     >
       {/* Top Sort Controls */}
-      <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
+      <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100 px-4 sm:px-0">
         <div className="flex items-center gap-3 text-xs font-bold text-gray-700">
           <button className="flex items-center gap-1 hover:bg-gray-100 px-3 py-1.5 rounded-full cursor-pointer">
             <span>{sortFilter}</span>
