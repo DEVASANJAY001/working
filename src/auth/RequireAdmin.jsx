@@ -1,8 +1,9 @@
 import React from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { canAccessAdmin } from '../utils/permissions';
 
-export function ProtectedRoute({ children, fallbackScreen = 'Login', onRedirect }) {
-  const { isAuthenticated, loading } = useAuth();
+export function RequireAdmin({ children, onRedirect }) {
+  const { isAuthenticated, role, loading } = useAuth();
 
   if (loading) {
     return (
@@ -17,7 +18,14 @@ export function ProtectedRoute({ children, fallbackScreen = 'Login', onRedirect 
 
   if (!isAuthenticated) {
     if (onRedirect) {
-      setTimeout(() => onRedirect(fallbackScreen), 0);
+      setTimeout(() => onRedirect('Login'), 0);
+    }
+    return null;
+  }
+
+  if (!canAccessAdmin(role)) {
+    if (onRedirect) {
+      setTimeout(() => onRedirect('Home'), 0);
     }
     return null;
   }

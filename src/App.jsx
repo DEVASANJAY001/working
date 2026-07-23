@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Hub } from 'aws-amplify/utils';
 import { authService } from './services/authService';
+import { AuthProvider } from './auth/AuthProvider';
+import { ROLES } from './constants/roles';
+import { canAccessAdmin } from './utils/permissions';
 
 // Import Web Screen Components
 import SplashScreen from './components/mobile-web/SplashScreen';
@@ -18,11 +21,74 @@ import ResetPasswordScreen from './components/mobile-web/ResetPasswordScreen';
 import CreateContentScreen from './components/mobile-web/CreateContentScreen';
 import AdminDashboardScreen from './components/mobile-web/AdminDashboardScreen';
 
-export default function App() {
+// ── URL ↔ Screen mapping ──────────────────────────────────
+const SCREEN_TO_PATH = {
+  GetStarted: '/',
+  Login: '/login',
+  Register: '/register',
+  EmailVerification: '/verify-email',
+  PhoneNumber: '/phone',
+  ProfileSetup: '/profile-setup',
+  LanguageSelection: '/language',
+  InterestSelection: '/interests',
+  Home: '/home',
+  Admin: '/admin',
+  CreateContent: '/create',
+  ForgotPassword: '/forgot-password',
+  ResetPassword: '/reset-password',
+};
+
+function pathToScreen(pathname) {
+  const map = {
+    '/': 'GetStarted',
+    '/login': 'Login',
+    '/register': 'Register',
+    '/verify-email': 'EmailVerification',
+    '/phone': 'PhoneNumber',
+    '/profile-setup': 'ProfileSetup',
+    '/language': 'LanguageSelection',
+    '/interests': 'InterestSelection',
+    '/home': 'Home',
+    '/admin': 'Admin',
+    '/create': 'CreateContent',
+    '/forgot-password': 'ForgotPassword',
+    '/reset-password': 'ResetPassword',
+  };
+  // Handle admin sub-paths like /admin/users, /admin/reports
+  if (pathname.startsWith('/admin')) return 'Admin';
+  return map[pathname] || null;
+}
+
+// ── Auth Screens (do NOT require login) ───────────────────
+const AUTH_SCREENS = new Set([
+  'Splash', 'GetStarted', 'Login', 'Register',
+  'ForgotPassword', 'ResetPassword',
+]);
+
+// ── Screens that require authentication ───────────────────
+const PROTECTED_SCREENS = new Set([
+  'Home', 'Admin', 'CreateContent',
+  'EmailVerification', 'PhoneNumber',
+  'ProfileSetup', 'LanguageSelection', 'InterestSelection',
+]);
+
+// ── Admin-only screens ────────────────────────────────────
+const ADMIN_SCREENS = new Set(['Admin']);
+
+function AppContent() {
   const [currentScreen, setCurrentScreen] = useState('Splash');
   const [userEmail, setUserEmail] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // ── Navigate to a screen and sync URL ───────────────────
+  const navigateTo = useCallback((screen) => {
+    setCurrentScreen(screen);
+    const path = SCREEN_TO_PATH[screen];
+    if (path && window.location.pathname !== path) {
+      window.history.pushState({ screen }, '', path);
+    }
+  }, []);
 
   // ── Resolve the current user session ──
   async function checkUserSession() {
@@ -30,15 +96,34 @@ export default function App() {
       const user = await authService.getCurrentUser();
       if (user) {
         setCurrentUser(user);
-        if (user.isAdmin || user.role === 'admin') {
-          setCurrentScreen('Admin');
+
+        // Determine target screen based on URL and role
+        const urlScreen = pathToScreen(window.location.pathname);
+        const userRole = user.role;
+
+        if (urlScreen && ADMIN_SCREENS.has(urlScreen)) {
+          // URL requests admin screen — verify permission
+          if (canAccessAdmin(userRole)) {
+            navigateTo('Admin');
+          } else {
+            navigateTo('Home');
+          }
+        } else if (urlScreen && PROTECTED_SCREENS.has(urlScreen)) {
+          navigateTo(urlScreen);
+        } else if (user.isAdmin || user.role === ROLES.SUPER_ADMIN || user.role === ROLES.ADMIN) {
+          navigateTo('Admin');
         } else {
-          setCurrentScreen('Home');
+          navigateTo('Home');
         }
       } else {
         setCurrentUser(null);
-        // Only reset to Splash/GetStarted if not on auth sub-screens
-        setCurrentScreen(prev => (prev === 'Splash' ? 'GetStarted' : prev));
+        // Parse URL for auth screens
+        const urlScreen = pathToScreen(window.location.pathname);
+        if (urlScreen && AUTH_SCREENS.has(urlScreen)) {
+          navigateTo(urlScreen);
+        } else {
+          setCurrentScreen(prev => (prev === 'Splash' ? 'GetStarted' : prev));
+        }
       }
     } catch (err) {
       setCurrentUser(null);
@@ -64,13 +149,12 @@ export default function App() {
           break;
 
         case 'signInWithRedirect_failure':
-          console.error('OAuth sign-in failed:', payload.data);
           setLoading(false);
-          setCurrentScreen('GetStarted');
+          navigateTo('GetStarted');
           break;
 
         case 'signedOut':
-          setCurrentScreen('GetStarted');
+          navigateTo('GetStarted');
           break;
 
         default:
@@ -78,57 +162,102 @@ export default function App() {
       }
     });
 
-    return unsubscribe;
+    // 3. Listen for browser back/forward navigation
+    const handlePopState = (event) => {
+      const screen = event.state?.screen || pathToScreen(window.location.pathname);
+      if (screen) {
+        // Enforce access control on back/forward
+        if (ADMIN_SCREENS.has(screen) && currentUser && !canAccessAdmin(currentUser.role)) {
+          navigateTo('Home');
+          return;
+        }
+        if (PROTECTED_SCREENS.has(screen) && !currentUser) {
+          navigateTo('Login');
+          return;
+        }
+        setCurrentScreen(screen);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('popstate', handlePopState);
+    };
   }, []);
 
   const handleLogout = async () => {
     try {
       await authService.signOut();
-      setCurrentScreen('GetStarted');
+      setCurrentUser(null);
+      navigateTo('GetStarted');
     } catch (err) {
-      setCurrentScreen('GetStarted');
+      setCurrentUser(null);
+      navigateTo('GetStarted');
     }
   };
 
   const renderScreen = () => {
+    // ── Route guard: protect admin screens ─────────────────
+    if (ADMIN_SCREENS.has(currentScreen)) {
+      if (!currentUser || !canAccessAdmin(currentUser.role)) {
+        // Redirect silently — no admin content rendered
+        setTimeout(() => {
+          if (currentUser) {
+            navigateTo('Home');
+          } else {
+            navigateTo('Login');
+          }
+        }, 0);
+        return null;
+      }
+    }
+
+    // ── Route guard: protect authenticated screens ────────
+    if (PROTECTED_SCREENS.has(currentScreen) && !currentUser) {
+      setTimeout(() => navigateTo('Login'), 0);
+      return null;
+    }
+
     switch (currentScreen) {
       case 'Splash':
-        return <SplashScreen onFinish={() => setCurrentScreen('GetStarted')} />;
+        return <SplashScreen onFinish={() => navigateTo('GetStarted')} />;
       
       case 'GetStarted':
         return (
           <GetStartedScreen
-            onLogin={() => setCurrentScreen('Login')}
-            onRegister={() => setCurrentScreen('Register')}
+            onLogin={() => navigateTo('Login')}
+            onRegister={() => navigateTo('Register')}
           />
         );
       
       case 'Login':
         return (
           <LoginScreen
-            onBack={() => setCurrentScreen('GetStarted')}
+            onBack={() => navigateTo('GetStarted')}
             onLoginSuccess={(user) => {
-              if (user?.isAdmin || user?.role === 'admin') {
-                setCurrentScreen('Admin');
+              setCurrentUser(user);
+              if (user?.isAdmin || user?.role === ROLES.SUPER_ADMIN || user?.role === ROLES.ADMIN) {
+                navigateTo('Admin');
               } else {
-                setCurrentScreen('Home');
+                navigateTo('Home');
               }
             }}
-            onForgotPassword={() => setCurrentScreen('ForgotPassword')}
-            onGoToRegister={() => setCurrentScreen('Register')}
+            onForgotPassword={() => navigateTo('ForgotPassword')}
+            onGoToRegister={() => navigateTo('Register')}
           />
         );
       
       case 'Register':
         return (
           <RegisterScreen
-            onBack={() => setCurrentScreen('GetStarted')}
+            onBack={() => navigateTo('GetStarted')}
             onRegisterSuccess={(email) => {
               setUserEmail(email);
-              setCurrentScreen('EmailVerification');
+              navigateTo('EmailVerification');
             }}
-            onGoToLogin={() => setCurrentScreen('Login')}
-            onGoogleSuccess={() => setCurrentScreen('Home')}
+            onGoToLogin={() => navigateTo('Login')}
+            onGoogleSuccess={() => navigateTo('Home')}
           />
         );
       
@@ -136,40 +265,40 @@ export default function App() {
         return (
           <EmailVerificationScreen
             email={userEmail}
-            onBack={() => setCurrentScreen('Register')}
-            onVerifySuccess={() => setCurrentScreen('PhoneNumber')}
+            onBack={() => navigateTo('Register')}
+            onVerifySuccess={() => navigateTo('PhoneNumber')}
           />
         );
       
       case 'PhoneNumber':
         return (
           <PhoneNumberScreen
-            onBack={() => setCurrentScreen('EmailVerification')}
-            onContinue={() => setCurrentScreen('ProfileSetup')}
+            onBack={() => navigateTo('EmailVerification')}
+            onContinue={() => navigateTo('ProfileSetup')}
           />
         );
       
       case 'ProfileSetup':
         return (
           <ProfileSetupScreen
-            onBack={() => setCurrentScreen('PhoneNumber')}
-            onContinue={() => setCurrentScreen('LanguageSelection')}
+            onBack={() => navigateTo('PhoneNumber')}
+            onContinue={() => navigateTo('LanguageSelection')}
           />
         );
       
       case 'LanguageSelection':
         return (
           <LanguageSelectionScreen
-            onBack={() => setCurrentScreen('ProfileSetup')}
-            onContinue={() => setCurrentScreen('InterestSelection')}
+            onBack={() => navigateTo('ProfileSetup')}
+            onContinue={() => navigateTo('InterestSelection')}
           />
         );
       
       case 'InterestSelection':
         return (
           <InterestSelectionScreen
-            onBack={() => setCurrentScreen('LanguageSelection')}
-            onFinish={() => setCurrentScreen('Home')}
+            onBack={() => navigateTo('LanguageSelection')}
+            onFinish={() => navigateTo('Home')}
           />
         );
       
@@ -177,7 +306,7 @@ export default function App() {
         return (
           <AdminDashboardScreen
             onLogout={handleLogout}
-            onGoToFeed={() => setCurrentScreen('Home')}
+            onGoToFeed={() => navigateTo('Home')}
             currentUser={currentUser}
           />
         );
@@ -186,8 +315,8 @@ export default function App() {
         return (
           <HomeDashboardScreen 
             onLogout={handleLogout} 
-            onCreatePress={() => setCurrentScreen('CreateContent')}
-            onGoToAdmin={() => setCurrentScreen('Admin')}
+            onCreatePress={() => navigateTo('CreateContent')}
+            onGoToAdmin={() => navigateTo('Admin')}
             currentUser={currentUser}
           />
         );
@@ -195,9 +324,9 @@ export default function App() {
       case 'CreateContent':
         return (
           <CreateContentScreen
-            onBack={() => setCurrentScreen('Home')}
+            onBack={() => navigateTo('Home')}
             onPublish={(newPost) => {
-              setCurrentScreen('Home');
+              navigateTo('Home');
             }}
           />
         );
@@ -205,12 +334,12 @@ export default function App() {
       case 'ForgotPassword':
         return (
           <ForgotPasswordScreen
-            onBack={() => setCurrentScreen('Login')}
+            onBack={() => navigateTo('Login')}
             onContinue={(email) => {
               setUserEmail(email);
-              setCurrentScreen('ResetPassword');
+              navigateTo('ResetPassword');
             }}
-            onGoToLogin={() => setCurrentScreen('Login')}
+            onGoToLogin={() => navigateTo('Login')}
           />
         );
       
@@ -218,14 +347,14 @@ export default function App() {
         return (
           <ResetPasswordScreen
             email={userEmail}
-            onBack={() => setCurrentScreen('ForgotPassword')}
-            onResetSuccess={() => setCurrentScreen('Login')}
-            onGoToLogin={() => setCurrentScreen('Login')}
+            onBack={() => navigateTo('ForgotPassword')}
+            onResetSuccess={() => navigateTo('Login')}
+            onGoToLogin={() => navigateTo('Login')}
           />
         );
       
       default:
-        return <GetStartedScreen onLogin={() => setCurrentScreen('Login')} onRegister={() => setCurrentScreen('Register')} />;
+        return <GetStartedScreen onLogin={() => navigateTo('Login')} onRegister={() => navigateTo('Register')} />;
     }
   };
 
@@ -244,5 +373,13 @@ export default function App() {
     <div className="min-h-screen bg-[#F6F7F8] flex flex-col font-sans">
       {renderScreen()}
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

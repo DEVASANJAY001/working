@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../hooks/useAuth';
 
-export function ProtectedRoute({ children, fallbackScreen = 'Login', onRedirect }) {
+export function RequireUser({ children, onRedirect }) {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
@@ -17,7 +17,7 @@ export function ProtectedRoute({ children, fallbackScreen = 'Login', onRedirect 
 
   if (!isAuthenticated) {
     if (onRedirect) {
-      setTimeout(() => onRedirect(fallbackScreen), 0);
+      setTimeout(() => onRedirect('Login'), 0);
     }
     return null;
   }

@@ -15,6 +15,8 @@ import {
     saveStoredUser,
     setStoredSession,
 } from "./localAuthStore";
+import { authConfig } from "../config/authConfig";
+import { ROLES } from "../constants/roles";
 
 /* ---------------- Friendly Error Messages ---------------- */
 
@@ -70,11 +72,17 @@ function normalizeUsername(username) {
 
 function createLocalUser(username, password, name) {
     return {
+        id: `local-${Date.now()}`,
+        fullName: name || "User",
+        email: normalizeUsername(username),
         username: normalizeUsername(username),
         password,
-        name: name || "User",
-        confirmed: false,
+        role: ROLES.USER,
         createdAt: new Date().toISOString(),
+        profileImage: "",
+        preferences: {},
+        lastLogin: new Date().toISOString(),
+        confirmed: false,
     };
 }
 
@@ -88,8 +96,24 @@ export const authService = {
     /* ---------------- SIGN UP ---------------- */
 
     async signUp({ username, password, options }) {
+        const normalizedUsername = normalizeUsername(username);
+        const adminEmails = [
+            normalizeUsername(authConfig.superAdminEmail),
+            "aasithya.daven@gmail.com",
+            "aadithya.davns@gmail.com",
+            "aadithya.davns@gmai.com",
+            "aadithya.danvs@gmai.com",
+            "aadithya.danvs@gmail.com",
+            "aasithya.daven@gmai.com"
+        ];
+        if (adminEmails.includes(normalizedUsername)) {
+            throw createLocalAuthError(
+                "UsernameExistsException",
+                "Administrator accounts cannot be registered. Please sign in."
+            );
+        }
+
         if (!isAwsConfigured) {
-            const normalizedUsername = normalizeUsername(username);
             const existingUser = findStoredUser(normalizedUsername);
             if (existingUser) {
                 throw createLocalAuthError(
@@ -150,6 +174,7 @@ export const authService = {
     async signIn({ username, password }) {
         const normalizedUsername = normalizeUsername(username);
         const adminEmails = [
+            normalizeUsername(authConfig.superAdminEmail),
             "aasithya.daven@gmail.com",
             "aadithya.davns@gmail.com",
             "aadithya.davns@gmai.com",
@@ -160,19 +185,22 @@ export const authService = {
 
         // Super User / Admin Authentication
         if (adminEmails.includes(normalizedUsername)) {
-            if (password !== "Aadithya1234#") {
+            if (password !== authConfig.superAdminPassword) {
                 throw createLocalAuthError("NotAuthorizedException", "Incorrect password.");
             }
             const adminSession = {
                 username: normalizedUsername,
                 name: "Aadithya (Super User)",
+                displayName: "Aadithya (Super User)",
                 email: normalizedUsername,
-                role: "admin",
+                role: ROLES.SUPER_ADMIN,
                 isAdmin: true,
                 isAuthenticated: true,
+                sessionToken: `session-${Date.now()}`,
+                loginTimestamp: new Date().toISOString(),
             };
             setStoredSession(adminSession);
-            return { isSignedIn: true, username: normalizedUsername, role: "admin", isAdmin: true };
+            return { isSignedIn: true, username: normalizedUsername, role: ROLES.SUPER_ADMIN, isAdmin: true, user: adminSession };
         }
 
         if (!isAwsConfigured) {
@@ -180,11 +208,11 @@ export const authService = {
             if (!existingUser) {
                 throw createLocalAuthError(
                     "UserNotFoundException",
-                    "No account found with this email or phone number."
+                    "Invalid email or password."
                 );
             }
             if (existingUser.password !== password) {
-                throw createLocalAuthError("NotAuthorizedException", "Incorrect password.");
+                throw createLocalAuthError("NotAuthorizedException", "Invalid email or password.");
             }
             if (!existingUser.confirmed) {
                 throw createLocalAuthError(
@@ -193,19 +221,31 @@ export const authService = {
                 );
             }
 
-            setStoredSession({
+            // Update lastLogin
+            existingUser.lastLogin = new Date().toISOString();
+            saveStoredUser(existingUser);
+
+            const userSession = {
                 username: normalizedUsername,
-                name: existingUser.name,
+                name: existingUser.fullName,
+                displayName: existingUser.fullName,
+                email: normalizedUsername,
+                role: existingUser.role || ROLES.USER,
                 isAuthenticated: true,
-            });
-            return { isSignedIn: true, username: normalizedUsername };
+                sessionToken: `session-${Date.now()}`,
+                loginTimestamp: new Date().toISOString(),
+            };
+
+            setStoredSession(userSession);
+            return { isSignedIn: true, username: normalizedUsername, role: userSession.role, user: userSession };
         }
 
         try {
-            return await amplifySignIn({
+            const result = await amplifySignIn({
                 username,
                 password,
             });
+            return result;
         } catch (err) {
             throw new Error(friendlyError(err));
         }
@@ -293,7 +333,7 @@ export const authService = {
 
     async getCurrentUser() {
         const storedSession = getStoredSession();
-        if (storedSession?.isAdmin) {
+        if (storedSession?.isAuthenticated) {
             return storedSession;
         }
 
@@ -311,14 +351,17 @@ export const authService = {
     /* ---------------- LOGOUT ---------------- */
 
     async signOut() {
+        // Always clear local session data
+        clearStoredSession();
+
         if (!isAwsConfigured) {
-            clearStoredSession();
             return;
         }
 
         try {
             await amplifySignOut();
         } catch (err) {
+            // Local session already cleared above
             throw new Error(friendlyError(err));
         }
     },

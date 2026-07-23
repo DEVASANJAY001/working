@@ -357,7 +357,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
                   <img src={profileImage} alt="Profile" className="w-6 h-6 rounded-full object-cover" />
                 ) : (
                   <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-600 to-orange-500 flex items-center justify-center text-white font-extrabold text-[10px]">
-                    D
+                    {(currentUser?.displayName || currentUser?.name || 'D').charAt(0).toUpperCase()}
                   </div>
                 )}
                 <ChevronDown className="w-3 h-3 text-gray-500" />
@@ -371,12 +371,12 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
                         <img src={profileImage} alt="" className="w-8 h-8 rounded-full" />
                       ) : (
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-600 to-orange-500 flex items-center justify-center text-white font-extrabold text-xs">
-                          D
+                          {(currentUser?.displayName || currentUser?.name || 'D').charAt(0).toUpperCase()}
                         </div>
                       )}
                       <div>
-                        <p className="text-xs font-bold text-gray-900">Devasanjay</p>
-                        <p className="text-[10px] text-gray-400">u/devasanjay</p>
+                        <p className="text-xs font-bold text-gray-900">{currentUser?.displayName || currentUser?.name || 'Devasanjay'}</p>
+                        <p className="text-[10px] text-gray-400">u/{currentUser?.username || 'devasanjay'}</p>
                       </div>
                     </div>
                   </div>
@@ -392,6 +392,12 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
                         {label}
                       </button>
                     ))}
+                    {(currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'ADMIN' || currentUser?.isAdmin) && (
+                      <button onClick={onGoToAdmin} className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-violet-600 hover:bg-violet-50 transition-colors cursor-pointer border-t border-gray-100 mt-1 pt-1">
+                        <AlertTriangle className="w-4 h-4 text-violet-500" />
+                        Admin Console
+                      </button>
+                    )}
                     <div className="border-t border-gray-100 mt-1 pt-1">
                       <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors cursor-pointer">
                         <LogOut className="w-4 h-4" />
