@@ -26,17 +26,31 @@ export default function DashboardLayout({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[300] bg-black/40"
+        className="fixed inset-0 z-[300] bg-black/40 animate-fade-in"
         onClick={() => setMobileDrawerOpen(false)}
       />
       {/* Slide-in drawer */}
-      <div className="fixed top-0 left-0 h-full z-[301] animate-slide-right bg-white shadow-2xl">
-        <LeftSidebar
-          activeNav={activeNav}
-          setActiveNav={(nav) => { setActiveNav(nav); setMobileDrawerOpen(false); }}
-          isOpen={true}
-          isMobileDrawer={true}
-        />
+      <div className="fixed top-0 left-0 h-full w-[75vw] max-w-[340px] z-[301] animate-slide-right bg-white shadow-2xl rounded-r-3xl flex flex-col overflow-hidden">
+        {/* Drawer Header with Close Arrow */}
+        <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white flex-shrink-0">
+          <span className="text-sm font-black text-gray-800">Navigation</span>
+          <button
+            onClick={() => setMobileDrawerOpen(false)}
+            className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center border border-gray-150 hover:bg-gray-100 transition-colors cursor-pointer text-gray-500 hover:text-gray-800"
+          >
+            ←
+          </button>
+        </div>
+        
+        {/* Sidebar content container */}
+        <div className="flex-1 overflow-y-auto no-scrollbar">
+          <LeftSidebar
+            activeNav={activeNav}
+            setActiveNav={(nav) => { setActiveNav(nav); setMobileDrawerOpen(false); }}
+            isOpen={true}
+            isMobileDrawer={true}
+          />
+        </div>
       </div>
     </>,
     document.body
