@@ -13,7 +13,10 @@ export default function HeaderNavbar({
   onLogout
 }) {
   const [showMenu, setShowMenu] = useState(false);
-  const userInitial = (currentUser?.name || currentUser?.displayName || 'U').charAt(0).toUpperCase();
+  const emailNickname = currentUser?.email ? currentUser.email.split('@')[0] : '';
+  const isNameUUID = /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(currentUser?.name);
+  const displayUserName = (isNameUUID && emailNickname) ? emailNickname : (currentUser?.name || currentUser?.displayName || 'Personal_Ability_537');
+  const userInitial = displayUserName.charAt(0).toUpperCase();
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 h-14 flex items-center justify-between gap-4">

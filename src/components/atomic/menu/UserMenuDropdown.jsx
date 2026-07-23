@@ -8,9 +8,18 @@ import { Avatar } from '../atoms';
 export default function UserMenuDropdown({ currentUser, onGoToAdmin, onLogout }) {
   const [modMode, setModMode] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
-  const userInitial = (currentUser?.name || currentUser?.displayName || 'U').charAt(0).toUpperCase();
-  const userName = currentUser?.name || currentUser?.displayName || 'Personal_Ability_537';
-  const userHandle = currentUser?.username || userName.toLowerCase().replace(/\s+/g, '_');
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentUser?.username);
+  const emailNickname = currentUser?.email ? currentUser.email.split('@')[0] : '';
+  
+  // If the user's name is just the Cognito sub UUID, fall back to email nickname or a default label
+  const isNameUUID = /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(currentUser?.name);
+  const displayUserName = (isNameUUID && emailNickname) ? emailNickname : (currentUser?.name || currentUser?.displayName || 'Personal_Ability_537');
+  
+  // Set clean handle
+  const userHandle = (isUUID && emailNickname) ? emailNickname : (currentUser?.username || displayUserName.toLowerCase().replace(/\s+/g, '_'));
+  
+  // Set clean initial
+  const userInitial = displayUserName.charAt(0).toUpperCase();
 
   const toggleTheme = () => {
     setDarkMode(!darkMode);

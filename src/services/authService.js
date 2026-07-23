@@ -7,6 +7,7 @@ import {
     resetPassword as amplifyResetPassword,
     confirmResetPassword as amplifyConfirmResetPassword,
     signInWithRedirect,
+    fetchUserAttributes,
 } from "aws-amplify/auth";
 import {
     clearStoredSession,
@@ -329,8 +330,6 @@ export const authService = {
         }
     },
 
-    /* ---------------- CURRENT USER ---------------- */
-
     async getCurrentUser() {
         const storedSession = getStoredSession();
         if (storedSession?.isAuthenticated) {
@@ -342,7 +341,17 @@ export const authService = {
         }
 
         try {
-            return await amplifyGetCurrentUser();
+            const authUser = await amplifyGetCurrentUser();
+            if (authUser) {
+                const attributes = await fetchUserAttributes();
+                return {
+                    ...authUser,
+                    name: attributes.name || attributes.given_name || authUser.username,
+                    email: attributes.email,
+                    profileImage: attributes.picture || attributes.profile || "",
+                };
+            }
+            return storedSession || null;
         } catch {
             return storedSession || null;
         }
