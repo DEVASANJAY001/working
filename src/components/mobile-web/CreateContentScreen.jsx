@@ -204,36 +204,40 @@ export default function CreateContentScreen({ onBack, onPublish }) {
           <div className="relative">
             <button 
               onClick={() => setShowCommunityPopup(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg text-xs font-bold text-gray-800 cursor-pointer transition-all shadow-xs"
+              className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg text-xs font-bold text-gray-800 cursor-pointer transition-all shadow-xs focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+              aria-label="Select Community"
             >
               <span>{selectedCommunity ? `${selectedCommunity.icon} ${selectedCommunity.name}` : 'Select Community'}</span>
-              <ChevronDown className="w-4 h-4 text-gray-500" />
+              <ChevronDown className="w-4 h-4 text-gray-500" aria-hidden="true" />
             </button>
 
             {/* Post To / Select Community Popup */}
             {showCommunityPopup && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 animate-fade-in">
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 animate-fade-in" role="dialog" aria-modal="true">
                 <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-slide-up-fade">
                   {/* Popup Header */}
                   <div className="p-4 border-b border-gray-150 flex items-center justify-between bg-white flex-shrink-0">
                     <h3 className="text-sm font-bold text-gray-900">Post to</h3>
                     <button 
                       onClick={() => setShowCommunityPopup(false)}
-                      className="p-1 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
+                      className="p-1 hover:bg-gray-100 rounded-full transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+                      aria-label="Close"
                     >
-                      <X className="w-5 h-5 text-gray-500" />
+                      <X className="w-5 h-5 text-gray-500" aria-hidden="true" />
                     </button>
                   </div>
 
                   {/* Search community input */}
                   <div className="p-3 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2 flex-shrink-0">
-                    <Search className="w-4 h-4 text-gray-400" />
+                    <Search className="w-4 h-4 text-gray-400" aria-hidden="true" />
                     <input 
                       type="text" 
-                      placeholder="Search communities" 
+                      placeholder="Search communities…" 
                       value={searchQuery}
                       onChange={e => setSearchQuery(e.target.value)}
-                      className="w-full bg-transparent text-xs font-semibold focus:outline-none placeholder-gray-400 text-gray-800"
+                      className="w-full bg-transparent text-xs font-semibold focus:outline-none placeholder-gray-400 text-gray-800 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:rounded"
+                      aria-label="Search communities"
+                      autoComplete="off"
                     />
                   </div>
 
@@ -299,7 +303,9 @@ export default function CreateContentScreen({ onBack, onPublish }) {
                   maxLength={300}
                   value={title}
                   onChange={e => setTitle(e.target.value)}
-                  className="w-full py-3 px-4 border border-gray-250 rounded-xl text-xs font-semibold focus:outline-none focus:border-gray-400 bg-gray-50/30"
+                  className="w-full py-3 px-4 border border-gray-250 rounded-xl text-xs font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-transparent bg-gray-50/30"
+                  aria-label="Post Title"
+                  autoComplete="off"
                 />
                 <span className="absolute right-3 bottom-3 text-[10px] font-bold text-gray-400">
                   {title.length}/300
@@ -308,7 +314,7 @@ export default function CreateContentScreen({ onBack, onPublish }) {
 
               {/* Tag placeholder row */}
               <div>
-                <button className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-full text-[10px] font-bold cursor-pointer transition-colors border border-gray-200">
+                <button className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-full text-[10px] font-bold cursor-pointer transition-colors border border-gray-200 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none">
                   + Add tags
                 </button>
               </div>
@@ -325,29 +331,32 @@ export default function CreateContentScreen({ onBack, onPublish }) {
                   </div>
 
                   <textarea
-                    placeholder="Body text (optional)"
+                    placeholder="Body text (optional)…"
                     value={bodyText}
                     onChange={e => setBodyText(e.target.value)}
-                    className="w-full min-h-[160px] p-4 border border-t-0 border-gray-200 rounded-b-xl text-xs font-semibold focus:outline-none resize-none focus:border-gray-300"
+                    className="w-full min-h-[160px] p-4 border border-t-0 border-gray-200 rounded-b-xl text-xs font-semibold focus:outline-none resize-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-transparent"
+                    aria-label="Post Body text"
+                    autoComplete="off"
                   />
                 </div>
               )}
 
               {/* Images & Video upload area */}
               {activeTab === 'Images & Video' && (
-                <div className="border-2 border-dashed border-gray-250 rounded-xl p-8 text-center bg-gray-50/50 hover:bg-gray-50 transition-colors flex flex-col items-center justify-center space-y-3 relative">
+                <div className="border-2 border-dashed border-gray-250 rounded-xl p-8 text-center bg-gray-50/50 hover:bg-gray-50 transition-colors flex flex-col items-center justify-center space-y-3 relative focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none">
                   <input 
                     type="file" 
                     accept="image/*,video/*"
                     onChange={handleFileUpload}
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                    aria-label="Upload files"
                   />
                   <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center shadow-xs">
                     <ImageIcon className="w-6 h-6" />
                   </div>
                   <div>
                     <p className="text-xs font-black text-gray-700">Drag and Drop or upload media</p>
-                    <p className="text-[10px] text-gray-400 font-semibold mt-1">Upload files</p>
+                    <p className="text-[10px] text-gray-400 font-semibold mt-1">Upload files…</p>
                   </div>
                 </div>
               )}
@@ -358,10 +367,12 @@ export default function CreateContentScreen({ onBack, onPublish }) {
                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Link URL *</label>
                   <input 
                     type="url" 
-                    placeholder="https://..."
+                    placeholder="https://…"
                     value={linkUrl}
                     onChange={e => setLinkUrl(e.target.value)}
-                    className="w-full py-3 px-4 border border-gray-250 rounded-xl text-xs font-semibold focus:outline-none focus:bg-white bg-gray-50/30"
+                    className="w-full py-3 px-4 border border-gray-250 rounded-xl text-xs font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-transparent bg-gray-50/30"
+                    aria-label="Link URL"
+                    autoComplete="off"
                   />
                 </div>
               )}
@@ -373,10 +384,12 @@ export default function CreateContentScreen({ onBack, onPublish }) {
                     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Poll Question *</label>
                     <input 
                       type="text" 
-                      placeholder="What is your question?"
+                      placeholder="What is your question?…"
                       value={pollQuestion}
                       onChange={e => setPollQuestion(e.target.value)}
-                      className="w-full py-3 px-4 border border-gray-250 rounded-xl text-xs font-semibold focus:outline-none focus:bg-white bg-gray-50/30"
+                      className="w-full py-3 px-4 border border-gray-250 rounded-xl text-xs font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-transparent bg-gray-50/30"
+                      aria-label="Poll Question"
+                      autoComplete="off"
                     />
                   </div>
 
@@ -386,19 +399,21 @@ export default function CreateContentScreen({ onBack, onPublish }) {
                       <input 
                         key={idx}
                         type="text" 
-                        placeholder={`Option ${idx + 1}`}
+                        placeholder={`Option ${idx + 1}…`}
                         value={opt}
                         onChange={e => {
                           const newOpts = [...pollOptions];
                           newOpts[idx] = e.target.value;
                           setPollOptions(newOpts);
                         }}
-                        className="w-full py-2.5 px-4 border border-gray-250 rounded-xl text-xs font-semibold focus:outline-none focus:bg-white bg-gray-50/30"
+                        className="w-full py-2.5 px-4 border border-gray-250 rounded-xl text-xs font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-transparent bg-gray-50/30 mb-2"
+                        aria-label={`Option ${idx + 1}`}
+                        autoComplete="off"
                       />
                     ))}
                     <button 
                       onClick={() => setPollOptions([...pollOptions, ''])}
-                      className="text-xs font-black text-blue-600 hover:underline cursor-pointer"
+                      className="text-xs font-black text-blue-600 hover:underline cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
                     >
                       + Add Option
                     </button>
