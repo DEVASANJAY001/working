@@ -105,6 +105,35 @@ export default function SettingsScreen({
   const FAKE_SECRET = 'JBSWY3DPEHPK3PXP';
   const BACKUP_CODES = ['4F2A-B31C', '8D7E-1A9F', '3C6B-D42E', '9E1A-F73B', '2B8D-C54A'];
 
+  // ── Profile Tab Modals State ──
+  const [displayNameModal, setDisplayNameModal] = useState(false);
+  const [draftDisplayName, setDraftDisplayName] = useState('');
+  const [aboutModal, setAboutModal] = useState(false);
+  const [draftAbout, setDraftAbout] = useState('');
+  const [bannerModal, setBannerModal] = useState(false);
+  const [bannerFile, setBannerFile] = useState(null);
+  const [bannerDragging, setBannerDragging] = useState(false);
+  const [socialModal, setSocialModal] = useState(false);
+  const [socialSearch, setSocialSearch] = useState('');
+  const [socialLinks, setSocialLinks] = useState([]);
+  const SOCIAL_PLATFORMS = [
+    'Reddit','Instagram','Twitter','TikTok','Twitch','Facebook','Youtube',
+    'Tumblr','Spotify','SoundCloud','Beacons','Linktree','Discord','Venmo',
+    'Cash App','Patreon','Ko-fi','PayPal','Cameo','OnlyFans','Substack',
+    'Kickstarter','Buy Me a Coffee','Shopify','Indiegogo'
+  ];
+  const SOCIAL_ICONS = {
+    Reddit:'🟠', Instagram:'📸', Twitter:'🐦', TikTok:'🎵', Twitch:'🟣',
+    Facebook:'🔵', Youtube:'▶️', Tumblr:'💙', Spotify:'🟢', SoundCloud:'🟠',
+    Beacons:'🔆', Linktree:'🌳', Discord:'🟣', Venmo:'💙', 'Cash App':'💚',
+    Patreon:'🟠', 'Ko-fi':'☕', PayPal:'💙', Cameo:'⭐', OnlyFans:'💙',
+    Substack:'📧', Kickstarter:'🟢', 'Buy Me a Coffee':'☕', Shopify:'🟢', Indiegogo:'🟣'
+  };
+  const [nsfwConfirmModal, setNsfwConfirmModal] = useState(false);
+  const [nsfwChecked, setNsfwChecked] = useState(false);
+  const [contentMode, setContentMode] = useState('Show all');
+  const [contentDropdownOpen, setContentDropdownOpen] = useState(false);
+
   // Tabs list
   const tabsList = ['Account', 'Profile', 'Privacy', 'Preferences', 'Notifications', 'Email'];
 
@@ -601,115 +630,319 @@ export default function SettingsScreen({
   );
 
   const renderProfileTab = () => (
-    <div className="space-y-6 animate-fade-in text-gray-800 text-sm">
-      <div>
-        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">General</h3>
+    <div className="space-y-4 animate-fade-in text-gray-800 text-sm">
+
+      {/* ── Display Name Modal ── */}
+      <Modal isOpen={displayNameModal} onClose={() => setDisplayNameModal(false)} title="Display name" size="sm">
         <div className="space-y-4">
+          <p className="text-xs text-gray-500">Changing your display name won't change your username</p>
           <div className="space-y-1">
-            <label className="font-bold text-gray-800">Display name</label>
-            <p className="text-xs text-gray-500">Changing your display name won’t change your username</p>
-            <input 
-              type="text" 
-              value={displayName}
-              onChange={e => setDisplayName(e.target.value)}
-              className="w-full max-w-md py-2 px-3 border border-gray-200 rounded-xl bg-gray-50 text-xs focus:outline-none focus:bg-white"
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-gray-700">Display name</label>
+              <span className="text-xs text-gray-400">{draftDisplayName.length}/90</span>
+            </div>
+            <input
+              autoFocus
+              type="text" maxLength={90}
+              value={draftDisplayName}
+              onChange={e => setDraftDisplayName(e.target.value)}
+              placeholder={displayName}
+              className="w-full py-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:outline-none focus:border-orange-400"
             />
           </div>
+          <div className="flex justify-end gap-3">
+            <button onClick={() => setDisplayNameModal(false)} className="px-4 py-2 rounded-full border border-gray-300 text-sm font-bold hover:bg-gray-50 cursor-pointer">Cancel</button>
+            <button
+              onClick={() => { if (draftDisplayName.trim()) setDisplayName(draftDisplayName.trim()); setDisplayNameModal(false); }}
+              className="px-5 py-2 bg-gray-900 text-white rounded-full text-sm font-bold cursor-pointer hover:bg-gray-700"
+            >Save</button>
+          </div>
+        </div>
+      </Modal>
 
+      {/* ── About Modal ── */}
+      <Modal isOpen={aboutModal} onClose={() => setAboutModal(false)} title="About description" size="sm">
+        <div className="space-y-4">
+          <p className="text-xs text-gray-500">Give a brief description of yourself</p>
           <div className="space-y-1">
-            <label className="font-bold text-gray-800">About description</label>
-            <textarea 
-              value={aboutBio}
-              onChange={e => setAboutBio(e.target.value)}
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-gray-700">About</label>
+              <span className="text-xs text-gray-400">{draftAbout.length}/200</span>
+            </div>
+            <textarea
+              autoFocus
+              maxLength={200} rows={4}
+              value={draftAbout}
+              onChange={e => setDraftAbout(e.target.value)}
               placeholder="Tell people about yourself..."
-              rows={3}
-              className="w-full max-w-md py-2 px-3 border border-gray-200 rounded-xl bg-gray-50 text-xs resize-none focus:outline-none focus:bg-white"
+              className="w-full py-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:outline-none focus:border-orange-400 resize-none"
             />
           </div>
+          <div className="flex justify-end gap-3">
+            <button onClick={() => setAboutModal(false)} className="px-4 py-2 rounded-full border border-gray-300 text-sm font-bold hover:bg-gray-50 cursor-pointer">Cancel</button>
+            <button
+              onClick={() => { setAboutBio(draftAbout); setAboutModal(false); }}
+              className="px-5 py-2 bg-gray-900 text-white rounded-full text-sm font-bold cursor-pointer hover:bg-gray-700"
+            >Save</button>
+          </div>
+        </div>
+      </Modal>
 
-          <div className="flex items-center justify-between pb-3 border-b border-gray-50">
-            <div>
-              <p className="font-bold text-gray-800">Avatar</p>
-              <p className="text-xs text-gray-500">Edit your avatar or upload an image</p>
+      {/* ── Banner Modal ── */}
+      <Modal isOpen={bannerModal} onClose={() => setBannerModal(false)} title="Banner image" size="md">
+        <div className="space-y-5">
+          <div
+            onDragOver={e => { e.preventDefault(); setBannerDragging(true); }}
+            onDragLeave={() => setBannerDragging(false)}
+            onDrop={e => { e.preventDefault(); setBannerDragging(false); const f = e.dataTransfer.files[0]; if (f) setBannerFile(f); }}
+            className={`border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center gap-3 transition-colors ${
+              bannerDragging ? 'border-orange-400 bg-orange-50' : 'border-gray-300 bg-gray-50'
+            }`}
+          >
+            {bannerFile ? (
+              <>
+                <p className="text-sm font-bold text-green-600">✅ {bannerFile.name}</p>
+                <button onClick={() => setBannerFile(null)} className="text-xs text-red-400 hover:underline cursor-pointer">Remove</button>
+              </>
+            ) : (
+              <>
+                <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center text-2xl">🖼️</div>
+                <p className="text-sm font-bold text-gray-700">Drop file or</p>
+                <label className="px-4 py-2 border border-gray-300 rounded-full text-xs font-bold cursor-pointer hover:bg-gray-100">
+                  browse device
+                  <input
+                    type="file" accept="image/jpeg,image/png" className="hidden"
+                    onChange={e => e.target.files[0] && setBannerFile(e.target.files[0])}
+                  />
+                </label>
+                <p className="text-xs text-gray-400">Formats: JPG, PNG · Max size: 500 KB</p>
+              </>
+            )}
+          </div>
+          <div className="flex justify-end gap-3">
+            <button onClick={() => { setBannerModal(false); setBannerFile(null); }} className="px-4 py-2 rounded-full border border-gray-300 text-sm font-bold hover:bg-gray-50 cursor-pointer">Cancel</button>
+            <button onClick={() => setBannerModal(false)} className="px-5 py-2 bg-gray-900 text-white rounded-full text-sm font-bold cursor-pointer hover:bg-gray-700">Save</button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Social Links Modal ── */}
+      <Modal isOpen={socialModal} onClose={() => setSocialModal(false)} title="Social links" size="md">
+        <div className="space-y-4">
+          <p className="text-xs text-gray-500">Add up to five links to display on your profile.</p>
+          {socialLinks.length > 0 && (
+            <div className="space-y-2">
+              {socialLinks.map((link, i) => (
+                <div key={i} className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2">
+                  <span>{SOCIAL_ICONS[link.platform] || '🔗'}</span>
+                  <span className="text-xs font-bold text-gray-700 flex-1">{link.platform}</span>
+                  <button onClick={() => setSocialLinks(sl => sl.filter((_, j) => j !== i))} className="text-gray-400 hover:text-red-400 cursor-pointer"><X className="w-3.5 h-3.5" /></button>
+                </div>
+              ))}
             </div>
-            <button className="px-4 py-1.5 border border-gray-300 rounded-full text-xs font-black hover:bg-gray-50 cursor-pointer">
-              Update
-            </button>
+          )}
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+            <input
+              value={socialSearch} onChange={e => setSocialSearch(e.target.value)}
+              placeholder="Search platforms..."
+              className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:outline-none focus:border-orange-400"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2 max-h-52 overflow-y-auto no-scrollbar">
+            {SOCIAL_PLATFORMS.filter(p => p.toLowerCase().includes(socialSearch.toLowerCase())).map(platform => {
+              const already = socialLinks.some(l => l.platform === platform);
+              return (
+                <button
+                  key={platform}
+                  disabled={already || socialLinks.length >= 5}
+                  onClick={() => { if (!already && socialLinks.length < 5) setSocialLinks(sl => [...sl, { platform, url: '' }]); }}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold text-left transition-all cursor-pointer ${
+                    already ? 'border-orange-300 bg-orange-50 text-orange-600' : 'border-gray-200 hover:bg-gray-50 text-gray-700 disabled:opacity-40'
+                  }`}
+                >
+                  <span>{SOCIAL_ICONS[platform] || '🔗'}</span>
+                  {platform}
+                  {already && <Check className="w-3 h-3 ml-auto text-orange-500" />}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex justify-end gap-3">
+            <button onClick={() => setSocialModal(false)} className="px-4 py-2 rounded-full border border-gray-300 text-sm font-bold hover:bg-gray-50 cursor-pointer">Cancel</button>
+            <button onClick={() => setSocialModal(false)} className="px-5 py-2 bg-gray-900 text-white rounded-full text-sm font-bold cursor-pointer hover:bg-gray-700">Save</button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── NSFW Confirm Modal ── */}
+      <Modal isOpen={nsfwConfirmModal} onClose={() => { setNsfwConfirmModal(false); setNsfwChecked(false); }} title="Mark as mature (18+)?" size="md">
+        <div className="space-y-5">
+          <p className="text-xs text-gray-650 leading-relaxed font-semibold">Labeling your profile as Not Safe for Work (NSFW) prevents people who don't want to see mature content or who haven't confirmed they're over 18 from seeing your profile. If your account contains mature (18+) content—particularly content that is graphic, sexually-explicit, or offensive—and it's not properly labeled as NSFW, Inspire may take certain actions such as temporarily or permanently banning your account.</p>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input type="checkbox" checked={nsfwChecked} onChange={e => setNsfwChecked(e.target.checked)} className="mt-0.5 w-4 h-4 accent-orange-500 cursor-pointer" />
+            <span className="text-xs text-gray-700 font-semibold">I understand that mature (18+) accounts must be labeled as Not Safe for Work</span>
+          </label>
+          <div className="flex justify-end gap-3">
+            <button onClick={() => { setNsfwConfirmModal(false); setNsfwChecked(false); }} className="px-4 py-2 rounded-full border border-gray-300 text-sm font-bold hover:bg-gray-50 cursor-pointer">Cancel</button>
+            <button
+              disabled={!nsfwChecked}
+              onClick={() => { setNsfwProfile(true); setNsfwConfirmModal(false); setNsfwChecked(false); }}
+              className="px-5 py-2 bg-orange-500 disabled:opacity-40 text-white rounded-full text-sm font-bold cursor-pointer hover:bg-orange-600 transition-colors"
+            >Update account</button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── General section ── */}
+      <div>
+        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">General</h3>
+        <div className="rounded-xl border border-gray-100 overflow-hidden">
+
+          {/* Display name */}
+          <div
+            onClick={() => { setDraftDisplayName(displayName); setDisplayNameModal(true); }}
+            className="flex items-center justify-between p-4 border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors"
+          >
+            <div>
+              <p className="font-bold text-gray-800">Display name</p>
+              <p className="text-xs text-gray-500 mt-0.5">{displayName}</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-gray-400" />
           </div>
 
-          <div className="flex items-center justify-between pb-3 border-b border-gray-50">
+          {/* About */}
+          <div
+            onClick={() => { setDraftAbout(aboutBio); setAboutModal(true); }}
+            className="flex items-center justify-between p-4 border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors"
+          >
             <div>
-              <p className="font-bold text-gray-800">Banner</p>
-              <p className="text-xs text-gray-500">Upload a profile background image</p>
+              <p className="font-bold text-gray-800">About description</p>
+              <p className="text-xs text-gray-505 mt-0.5">{aboutBio || 'Add a description...'}</p>
             </div>
-            <button className="px-4 py-1.5 border border-gray-300 rounded-full text-xs font-black hover:bg-gray-50 cursor-pointer">
-              Update
-            </button>
+            <ChevronRight className="w-4 h-4 text-gray-400" />
           </div>
 
-          <div className="flex items-center justify-between pb-3 border-b border-gray-50">
+          {/* Banner */}
+          <div
+            onClick={() => setBannerModal(true)}
+            className="flex items-center justify-between p-4 border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors"
+          >
+            <div>
+              <p className="font-bold text-gray-800">Banner image</p>
+              <p className="text-xs text-gray-505 mt-0.5">Upload a profile background image</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-gray-400" />
+          </div>
+
+          {/* Social links */}
+          <div
+            onClick={() => setSocialModal(true)}
+            className="flex items-center justify-between p-4 border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors"
+          >
             <div>
               <p className="font-bold text-gray-800">Social links</p>
-              <p className="text-xs text-gray-505">Link external handles on your profile card</p>
+              <p className="text-xs text-gray-550 mt-0.5">{socialLinks.length > 0 ? `${socialLinks.length} link${socialLinks.length > 1 ? 's' : ''} added` : 'Add up to five links'}</p>
             </div>
-            <button className="px-4 py-1.5 border border-gray-300 rounded-full text-xs font-black hover:bg-gray-50 cursor-pointer">
-              Manage
-            </button>
+            <ChevronRight className="w-4 h-4 text-gray-400" />
           </div>
 
-          <div className="flex items-center justify-between pb-3 border-b border-gray-50">
+          {/* NSFW toggle */}
+          <div className="flex items-center justify-between p-4">
             <div>
               <p className="font-bold text-gray-800">Mark as mature (18+)</p>
-              <p className="text-xs text-gray-500">Label your profile as Not Safe for Work (NSFW)</p>
+              <p className="text-xs text-gray-505 mt-0.5">Label your profile as NSFW</p>
             </div>
-            {renderToggle(nsfwProfile, setNsfwProfile)}
+            <button
+              onClick={() => { if (!nsfwProfile) { setNsfwConfirmModal(true); } else { setNsfwProfile(false); } }}
+              className={`relative w-11 h-6 rounded-full border transition-colors focus:outline-none cursor-pointer ${
+                nsfwProfile ? 'border-orange-400' : 'border-gray-200'
+              }`}
+              style={{ backgroundColor: nsfwProfile ? '#FF4500' : '' }}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-4.5 h-4.5 bg-white border border-gray-150 rounded-full transition-transform shadow-xs ${nsfwProfile ? 'translate-x-5' : ''}`} />
+            </button>
           </div>
         </div>
       </div>
 
+      {/* ── Curate your profile ── */}
       <div>
-        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Curate your profile</h3>
-        <p className="text-xs text-gray-505 mb-4 leading-relaxed">Profile curation only applies to your profile and your content stays visible in communities.</p>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-gray-50">
-            <div>
-              <p className="font-bold text-gray-800">Content and activity</p>
-              <p className="text-xs text-gray-505">Posts, comments, and communities you’re active in</p>
+        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Curate your profile</h3>
+        <p className="text-xs text-gray-500 mb-3 leading-relaxed">Manage what content shows on your profile. Profile curation only applies to your profile — your content stays visible in communities.</p>
+        <div className="rounded-xl border border-gray-100 overflow-hidden">
+
+          {/* Content and activity — dropdown */}
+          <div className="p-4 border-b border-gray-50">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <p className="font-bold text-gray-800">Content and activity</p>
+                <p className="text-xs text-gray-550 mt-0.5">Posts, comments, and communities you're active in</p>
+              </div>
+              <div className="relative">
+                <button
+                  onClick={() => setContentDropdownOpen(!contentDropdownOpen)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-full text-xs font-bold text-gray-700 hover:bg-gray-50 cursor-pointer whitespace-nowrap"
+                >
+                  {contentMode}
+                  <ChevronRight className={`w-3.5 h-3.5 transition-transform ${contentDropdownOpen ? 'rotate-90' : ''}`} />
+                </button>
+                {contentDropdownOpen && (
+                  <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-10 overflow-hidden">
+                    {['Show all', 'Customize', 'Hide all'].map(opt => (
+                      <button
+                        key={opt}
+                        onClick={() => { setContentMode(opt); setContentDropdownOpen(false); }}
+                        className={`w-full text-left px-4 py-3 text-xs font-semibold transition-colors cursor-pointer ${
+                          contentMode === opt ? 'bg-orange-50 text-orange-600' : 'hover:bg-gray-50 text-gray-700'
+                        }`}
+                      >
+                        {opt === 'Show all' && '📖 Show all'}
+                        {opt === 'Customize' && '⚙️ Customize'}
+                        {opt === 'Hide all' && '🙈 Hide all'}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-            {renderToggle(showActiveCommunities, setShowActiveCommunities)}
           </div>
 
-          <div className="flex items-center justify-between pb-3 border-b border-gray-50">
+          {/* NSFW posts toggle */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-50">
             <div>
               <p className="font-bold text-gray-800">NSFW</p>
-              <p className="text-xs text-gray-500">Show all NSFW posts and comments</p>
+              <p className="text-xs text-gray-550 mt-0.5">Show all NSFW posts and comments</p>
             </div>
             {renderToggle(nsfwFilter, setNsfwFilter)}
           </div>
 
-          <div className="flex items-center justify-between pb-3 border-b border-gray-50">
+          {/* Followers */}
+          <div className="flex items-center justify-between p-4">
             <div>
               <p className="font-bold text-gray-800">Followers</p>
-              <p className="text-xs text-gray-505">Show your follower count</p>
+              <p className="text-xs text-gray-550 mt-0.5">Show your follower count</p>
             </div>
             {renderToggle(showFollowers, setShowFollowers)}
           </div>
         </div>
       </div>
 
+      {/* ── Advanced ── */}
       <div>
-        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Advanced</h3>
-        <div className="flex items-center justify-between pb-3 border-b border-gray-50">
-          <div>
+        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Advanced</h3>
+        <div className="rounded-xl border border-gray-100 overflow-hidden">
+          <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors">
             <p className="font-bold text-gray-800">Profile moderation</p>
+            <ChevronRight className="w-4 h-4 text-gray-400" />
           </div>
-          <ChevronRight className="w-4 h-4 text-gray-400" />
         </div>
       </div>
 
       {renderFooter()}
     </div>
   );
+
 
   const renderPrivacyTab = () => (
     <div className="space-y-6 animate-fade-in text-gray-800 text-sm">

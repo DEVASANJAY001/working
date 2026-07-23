@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Plus, MessageSquare } from 'lucide-react';
+import { Bell, Plus, MessageSquare, Search } from 'lucide-react';
 import { Avatar, Button } from '../atoms';
 import { SearchBar } from '../molecules';
 import UserMenuDropdown from '../menu/UserMenuDropdown';
@@ -14,78 +14,141 @@ export default function HeaderNavbar({
   onViewProfile,
   sidebarOpen,
   setSidebarOpen,
+  onMobileMenuClick,
 }) {
   const [showMenu, setShowMenu] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+
   const emailNickname = currentUser?.email ? currentUser.email.split('@')[0] : '';
   const isNameUUID = /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(currentUser?.name);
-  const displayUserName = (isNameUUID && emailNickname) ? emailNickname : (currentUser?.name || currentUser?.displayName || 'Personal_Ability_537');
+  const displayUserName = (isNameUUID && emailNickname)
+    ? emailNickname
+    : (currentUser?.name || currentUser?.displayName || 'User');
   const userInitial = displayUserName.charAt(0).toUpperCase();
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 h-14 flex items-center justify-between gap-4">
-      {/* Left: Brand Name "Inspire" & Drawer Toggle */}
-      <div className="flex items-center gap-3 flex-shrink-0">
+    <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-3 lg:px-4 h-14 flex items-center justify-between gap-2 lg:gap-4">
+
+      {/* ── Left: Hamburger + Logo ── */}
+      <div className="flex items-center gap-2 lg:gap-3 flex-shrink-0">
+        {/* Hamburger: mobile triggers drawer, desktop collapses sidebar */}
         <button
-          onClick={() => setSidebarOpen && setSidebarOpen(!sidebarOpen)}
-          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer border border-gray-200"
-          title={sidebarOpen ? 'Close menu' : 'Open menu'}
+          onClick={() => {
+            if (window.innerWidth < 1024) {
+              onMobileMenuClick && onMobileMenuClick();
+            } else {
+              setSidebarOpen && setSidebarOpen(!sidebarOpen);
+            }
+          }}
+          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer border border-gray-200 flex-shrink-0"
+          title="Menu"
         >
           <span className="text-sm font-black text-gray-700">☰</span>
         </button>
 
-        <div className="flex items-center gap-1.5 cursor-pointer select-none">
-          <span className="text-xl font-black tracking-tight text-[#FF4500]">
+        {/* Logo: "Inspire" on md+, "In" on mobile */}
+        <div className="flex items-center cursor-pointer select-none flex-shrink-0">
+          <span className="hidden sm:block text-xl font-black tracking-tight text-[#FF4500]">
             Inspire
           </span>
+          <span className="sm:hidden text-xl font-black tracking-tight text-[#FF4500]">
+            In
+          </span>
         </div>
       </div>
 
-      {/* Center: Search Bar */}
-      <div className="flex-1 max-w-xl mx-auto relative">
-        <SearchBar
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-        />
-      </div>
+      {/* ── Center: Search Bar — hidden on xs when mobile search toggled ── */}
+      {showMobileSearch ? (
+        /* Full-width mobile search */
+        <div className="flex-1 flex items-center gap-2 animate-fade-in">
+          <div className="flex-1">
+            <SearchBar
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <button
+            onClick={() => setShowMobileSearch(false)}
+            className="text-xs font-bold text-gray-500 flex-shrink-0 cursor-pointer"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* Desktop search bar */}
+          <div className="hidden sm:flex flex-1 max-w-xl mx-auto">
+            <SearchBar
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+          </div>
 
-      {/* Right: Header Actions */}
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <button title="Advertise" className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-[11px] font-extrabold border border-gray-700 cursor-pointer">
-          AD
-        </button>
-
-        <button title="Chat" className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-700 cursor-pointer">
-          <MessageSquare className="w-5 h-5" />
-        </button>
-
-        <Button variant="outline" size="sm" onClick={onCreatePress}>
-          <Plus className="w-4 h-4" />
-          Create
-        </Button>
-
-        <button title="Notifications" className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-700 cursor-pointer">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1 right-1 bg-red-600 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">
-            5
-          </span>
-        </button>
-
-        {/* User Profile Avatar */}
-        <div className="relative">
-          <button onClick={() => setShowMenu(!showMenu)} className="cursor-pointer flex items-center">
-            <Avatar src={currentUser?.profileImage} initials={userInitial} isOnline={true} />
+          {/* Mobile search icon */}
+          <button
+            className="sm:hidden w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-700 cursor-pointer flex-shrink-0"
+            onClick={() => setShowMobileSearch(true)}
+          >
+            <Search className="w-5 h-5" />
           </button>
 
-          {showMenu && (
-            <UserMenuDropdown
-              currentUser={currentUser}
-              onGoToAdmin={onGoToAdmin}
-              onLogout={onLogout}
-              onViewProfile={onViewProfile}
-            />
-          )}
-        </div>
-      </div>
+          {/* ── Right: Actions ── */}
+          <div className="flex items-center gap-1 lg:gap-2 flex-shrink-0">
+            {/* AD button: hidden on mobile */}
+            <button
+              title="Advertise"
+              className="hidden md:flex w-8 h-8 rounded-full hover:bg-gray-100 items-center justify-center text-[11px] font-extrabold border border-gray-700 cursor-pointer"
+            >
+              AD
+            </button>
+
+            {/* Chat: hidden on mobile */}
+            <button
+              title="Chat"
+              className="hidden md:flex w-9 h-9 items-center justify-center rounded-full hover:bg-gray-100 text-gray-700 cursor-pointer"
+            >
+              <MessageSquare className="w-5 h-5" />
+            </button>
+
+            {/* Create button: icon-only on mobile */}
+            <button
+              onClick={onCreatePress}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 rounded-full text-xs font-bold hover:bg-gray-50 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden lg:inline">Create</span>
+            </button>
+
+            {/* Notifications */}
+            <button
+              title="Notifications"
+              className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-700 cursor-pointer"
+            >
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-1 right-1 bg-red-600 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">
+                5
+              </span>
+            </button>
+
+            {/* Avatar + dropdown */}
+            <div className="relative">
+              <button onClick={() => setShowMenu(!showMenu)} className="cursor-pointer flex items-center">
+                <Avatar src={currentUser?.profileImage} initials={userInitial} isOnline={true} />
+              </button>
+
+              {showMenu && (
+                <UserMenuDropdown
+                  currentUser={currentUser}
+                  onGoToAdmin={onGoToAdmin}
+                  onLogout={onLogout}
+                  onViewProfile={onViewProfile}
+                />
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </header>
   );
 }
