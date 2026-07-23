@@ -752,7 +752,7 @@ export default function SettingsScreen({
           </div>
 
           {/* Tab Content Rendering */}
-          <div className="max-w-2xl">
+          <div className="max-w-5xl">
             {activeTab === 'Account' && renderAccountTab()}
             {activeTab === 'Profile' && renderProfileTab()}
             {activeTab === 'Privacy' && renderPrivacyTab()}
