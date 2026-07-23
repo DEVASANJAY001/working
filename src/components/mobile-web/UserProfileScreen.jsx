@@ -3,7 +3,7 @@ import {
   ChevronDown, Share2, Award, Plus, Camera, ExternalLink, Trophy, ArrowLeft,
   X, MessageSquare, ArrowBigUp, ArrowBigDown, ShieldAlert, ListFilter
 } from 'lucide-react';
-import { DashboardLayout, Button } from '../atomic';
+import { DashboardLayout, Button, Modal } from '../atomic';
 
 export default function UserProfileScreen({ 
   currentUser, 
@@ -16,6 +16,7 @@ export default function UserProfileScreen({
   const [activeTab, setActiveTab] = useState('Overview');
   const [showAddSocialModal, setShowAddSocialModal] = useState(false);
   const [showActiveInModal, setShowActiveInModal] = useState(false);
+  const [showMobileProfileSummary, setShowMobileProfileSummary] = useState(false);
   const [socialLinks, setSocialLinks] = useState([]);
   const [newPlatform, setNewPlatform] = useState('');
   const [newUrl, setNewUrl] = useState('');
@@ -226,17 +227,27 @@ export default function UserProfileScreen({
             >
               <ArrowLeft className="w-4 h-4 text-gray-700" />
             </button>
-            <div className="flex items-center gap-4">
-              <span 
-                className="w-16 h-16 rounded-full text-white font-black text-2xl flex items-center justify-center border-2 border-white shadow-md"
-                style={{ backgroundImage: "url('/src/assets/image.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}
-              >
-                {userInitial}
-              </span>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 leading-tight">{displayUserName}</h1>
-                <p className="text-sm text-gray-405 font-medium">@{userHandle}</p>
+            <div className="flex items-center justify-between gap-4 w-full">
+              <div className="flex items-center gap-4">
+                <span 
+                  className="w-16 h-16 rounded-full text-white font-black text-2xl flex items-center justify-center border-2 border-white shadow-md"
+                  style={{ backgroundImage: "url('/src/assets/image.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}
+                >
+                  {userInitial}
+                </span>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 leading-tight">{displayUserName}</h1>
+                  <p className="text-sm text-gray-405 font-medium">@{userHandle}</p>
+                </div>
               </div>
+              
+              {/* Account button for mobile sheet slide-in */}
+              <button 
+                onClick={() => setShowMobileProfileSummary(true)}
+                className="xl:hidden px-4 py-2 bg-gray-900 text-white rounded-full text-xs font-black hover:bg-gray-800 cursor-pointer shadow-sm border border-gray-900 hover:scale-95 transition-all"
+              >
+                Account
+              </button>
             </div>
           </div>
 
@@ -521,6 +532,18 @@ export default function UserProfileScreen({
           </form>
         </div>
       )}
+      
+      {/* MOBILE PROFILE SUMMARY MODAL SHEET */}
+      <Modal 
+        isOpen={showMobileProfileSummary} 
+        onClose={() => setShowMobileProfileSummary(false)} 
+        title="Account Summary" 
+        size="md"
+      >
+        <div className="text-gray-800 -mx-5 -my-5">
+          {renderProfileSummaryCard()}
+        </div>
+      </Modal>
     </div>
   );
 }
