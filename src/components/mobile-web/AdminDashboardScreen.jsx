@@ -56,6 +56,10 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
     { id: 'h_2', time: '1 hr ago', action: 'Deleted post & Banned user', target: 'spammer_bot@crypto.org' }
   ]);
   const [modFilterPriority, setModFilterPriority] = useState('all');
+  const [rankingAlgorithm, setRankingAlgorithm] = useState('hot');
+  const [boostedPosts, setBoostedPosts] = useState([]);
+  const [lockedPosts, setLockedPosts] = useState([]);
+  const [selectedTrendingPostId, setSelectedTrendingPostId] = useState(null);
 
   // Form states
   const [annTitle, setAnnTitle] = useState(announcement?.title || '');
@@ -1535,43 +1539,189 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
           })()}
 
           {/* ── TAB 5: POPULAR POSTS ── */}
-          {activeTab === 'trending' && (
-            <div className={`${themeCardBg} rounded-3xl p-6 md:p-8 space-y-6 animate-fade-in`}>
-              <div>
-                <h2 className="text-xl font-black flex items-center gap-2">
-                  <Flame className="w-5 h-5 text-orange-505" /> Popular & High-Engagement Posts
-                </h2>
-                <p className={`text-xs ${themeSubtext} mt-1`}>
-                  View top performing content driving engagement across the platform.
-                </p>
-              </div>
+          {activeTab === 'trending' && (() => {
+            // Define mock hourly timestamps or scores for algorithms
+            const computedTrending = trendingPosts.map((post, idx) => {
+              const isBoosted = boostedPosts.includes(post.id);
+              const isLocked = lockedPosts.includes(post.id);
+              
+              // Calculate dynamic scores based on algorithm
+              let score = post.likes + post.comments * 4 + post.shares * 3;
+              if (rankingAlgorithm === 'hot') {
+                // Hot score: higher likes/comments, decaying slightly by original index order
+                score = Math.round((post.likes + post.comments * 8) / (1 + idx * 0.1));
+              } else if (rankingAlgorithm === 'controversial') {
+                // High comment count relative to upvotes/likes
+                score = Math.round((post.comments * 15) / (post.likes + 1) * 10);
+              } else if (rankingAlgorithm === 'new') {
+                score = 100 - idx * 10; // Simple chronological weight
+              }
 
-              <div className="grid grid-cols-1 gap-4">
-                {trendingPosts.map((post, idx) => (
-                  <div key={post.id} className={`p-5 ${themeSubCardBg} rounded-3xl flex items-center justify-between gap-4 border ${isDarkMode ? 'border-gray-800' : 'border-gray-100'}`}>
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-2xl bg-orange-500/20 text-orange-505 font-black flex items-center justify-center text-lg border border-orange-500/30">
-                        #{idx + 1}
-                      </div>
-                      <div>
-                        <h4 className="font-extrabold text-sm">{post.author}</h4>
-                        <p className={`text-xs ${themeSubtext} line-clamp-1 mt-0.5`}>{post.text}</p>
-                        <div className="flex items-center gap-4 mt-2 text-[11px] text-gray-500 font-semibold">
-                          <span>❤️ {post.likes} Likes</span>
-                          <span>💬 {post.comments} Comments</span>
-                          <span>🔄 {post.shares} Shares</span>
-                        </div>
-                      </div>
+              // Apply 1.5x multiplier if boosted
+              if (isBoosted) score = Math.round(score * 1.5);
+
+              return { ...post, score, isBoosted, isLocked };
+            }).sort((a, b) => b.score - a.score);
+
+            const currentTrendingSelected = computedTrending.find(p => p.id === selectedTrendingPostId) || computedTrending[0];
+
+            const handleToggleBoost = (postId) => {
+              setBoostedPosts(prev =>
+                prev.includes(postId) ? prev.filter(id => id !== postId) : [...prev, postId]
+              );
+            };
+
+            const handleToggleLock = (postId) => {
+              setLockedPosts(prev =>
+                prev.includes(postId) ? prev.filter(id => id !== postId) : [...prev, postId]
+              );
+            };
+
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+                {/* Left Column: List of trending content (2 cols span) */}
+                <div className={`${themeCardBg} rounded-3xl p-6 space-y-4 lg:col-span-2`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h2 className="text-lg font-black flex items-center gap-2">
+                        <Flame className="w-5 h-5 text-orange-500" /> Platform Ranking & Hotness Queue
+                      </h2>
+                      <p className={`text-[11px] ${themeSubtext}`}>
+                        Audit trending community submissions, control feed priority rankings, or lock comment threads.
+                      </p>
                     </div>
 
-                    <span className="px-3 py-1.5 bg-emerald-500/20 text-emerald-500 font-extrabold rounded-xl border border-emerald-500/30 text-xs shrink-0">
-                      {post.engagement} Score
-                    </span>
+                    {/* Ranking Algorithm dropdown */}
+                    <div className="flex gap-2 items-center text-xs">
+                      <span className="font-bold text-gray-400">Sort Algorithm:</span>
+                      <select
+                        value={rankingAlgorithm}
+                        onChange={e => setRankingAlgorithm(e.target.value)}
+                        className={`py-1 px-2 border rounded-lg ${themeInputBg} text-xs focus:outline-none`}
+                      >
+                        <option value="hot">Hot (Reddit Rank Formula)</option>
+                        <option value="best">Best (Overall Engagement)</option>
+                        <option value="controversial">Controversial (High Comment Ratio)</option>
+                        <option value="new">Chronological / Newest</option>
+                      </select>
+                    </div>
                   </div>
-                ))}
+
+                  <div className="space-y-3">
+                    {computedTrending.map((post, idx) => (
+                      <div
+                        key={post.id}
+                        onClick={() => setSelectedTrendingPostId(post.id)}
+                        className={`p-4 ${themeSubCardBg} border transition-all rounded-2xl flex items-center justify-between gap-4 cursor-pointer ${
+                          currentTrendingSelected?.id === post.id
+                            ? 'border-orange-500/50 shadow-md'
+                            : 'border-gray-800/15'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-orange-500/10 text-orange-500 font-black flex items-center justify-center text-sm border border-orange-500/20">
+                            #{idx + 1}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-extrabold text-xs">{post.author}</h4>
+                              {post.isBoosted && (
+                                <span className="px-1.5 py-0.2 bg-gradient-to-r from-violet-600 to-orange-500 text-white text-[8px] rounded-full font-black uppercase flex items-center gap-0.5">
+                                  ⚡ Boosted
+                                </span>
+                              )}
+                              {post.isLocked && (
+                                <span className="px-1.5 py-0.2 bg-red-500/15 text-red-500 text-[8px] rounded-full font-black uppercase flex items-center gap-0.5">
+                                  🔒 Locked
+                                </span>
+                              )}
+                            </div>
+                            <p className={`text-xs ${themeSubtext} line-clamp-1 mt-0.5`}>{post.text}</p>
+                            <div className="flex items-center gap-3 mt-1.5 text-[10px] text-gray-500 font-bold">
+                              <span>❤️ {post.likes}</span>
+                              <span>💬 {post.comments}</span>
+                              <span>🔄 {post.shares}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                          <button
+                            onClick={() => handleToggleBoost(post.id)}
+                            className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all cursor-pointer ${
+                              post.isBoosted
+                                ? 'bg-gradient-to-r from-violet-600 to-orange-500 text-white border-transparent'
+                                : 'bg-gray-100 hover:bg-gray-200 border-gray-300 text-gray-700'
+                            }`}
+                          >
+                            {post.isBoosted ? 'Unboost' : 'Boost Rank'}
+                          </button>
+                          <button
+                            onClick={() => handleToggleLock(post.id)}
+                            className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all cursor-pointer ${
+                              post.isLocked
+                                ? 'bg-red-500/15 hover:bg-red-500/25 text-red-500 border-red-500/25'
+                                : 'bg-gray-100 hover:bg-gray-200 border-gray-300 text-gray-700'
+                            }`}
+                          >
+                            {post.isLocked ? 'Unlock' : 'Lock Comments'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Right Column: Trending Insights & Recommendations */}
+                <div className="space-y-6">
+                  {/* Selected Content Profile */}
+                  <div className={`${themeCardBg} rounded-3xl p-5 space-y-4`}>
+                    <h3 className="text-xs font-black uppercase tracking-wider">Algorithmic Content Details</h3>
+                    {currentTrendingSelected ? (
+                      <div className="space-y-4 text-xs">
+                        <div className={`p-4 rounded-2xl ${themeSubCardBg} space-y-2`}>
+                          <div className="flex items-center justify-between">
+                            <span className="font-extrabold text-xs text-gray-900">Post u/{currentTrendingSelected.author.toLowerCase()}</span>
+                            <span className="text-[10px] text-orange-500 font-black">Score: {currentTrendingSelected.score}</span>
+                          </div>
+                          <p className="text-gray-500 text-xs italic">"{currentTrendingSelected.text}"</p>
+                        </div>
+
+                        {/* Engagement stats */}
+                        <div className="space-y-2">
+                          <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Real-time CTR & Velocity</div>
+                          <div className="grid grid-cols-2 gap-2 text-center text-[10px]">
+                            <div className={`p-2.5 rounded-xl ${themeSubCardBg}`}>
+                              <div className="font-black text-xs text-violet-600">6.8k/hr</div>
+                              <div className="text-gray-400 mt-0.5">Impression Velocity</div>
+                            </div>
+                            <div className={`p-2.5 rounded-xl ${themeSubCardBg}`}>
+                              <div className="font-black text-xs text-emerald-500">4.82%</div>
+                              <div className="text-gray-400 mt-0.5">Click-Through Rate</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Automated Recommendation Insight */}
+                        <div className={`p-3 rounded-xl border border-violet-500/20 bg-violet-500/10 text-violet-600`}>
+                          <div className="font-black uppercase text-[9px] tracking-wider mb-1">🤖 AI Recommendation Insight</div>
+                          <p className="text-[10px] leading-relaxed">
+                            {currentTrendingSelected.likes > 600
+                              ? "High engagement velocity. Recommendation: Feature on platform home screen banner."
+                              : "Standard engagement velocity. Maintain standard feeds placement."}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className={`text-xs ${themeSubtext} italic text-center p-4`}>
+                        No trending item selected.
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* ── TAB 6: ADVERTISEMENT MANAGEMENT ── */}
           {activeTab === 'ads' && (
