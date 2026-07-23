@@ -69,7 +69,7 @@ export default function UserProfileScreen({
               {userInitial}
             </span>
           </div>
-          <button className="flex items-center gap-1.5 px-4 py-2 hover:bg-gray-50 text-xs font-bold text-gray-700 border border-gray-200 rounded-full cursor-pointer">
+          <button className="flex items-center gap-1.5 px-4 py-2 hover:bg-gray-50 text-xs font-bold text-gray-700 border border-gray-200 rounded-full cursor-pointer transform translate-y-2">
             <Share2 className="w-3.5 h-3.5" />
             <span>Share</span>
           </button>
