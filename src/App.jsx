@@ -23,6 +23,7 @@ import CreateContentScreen from './components/mobile-web/CreateContentScreen';
 import AdminDashboardScreen from './components/mobile-web/AdminDashboardScreen';
 import UserProfileScreen from './components/mobile-web/UserProfileScreen';
 import SettingsScreen from './components/mobile-web/SettingsScreen';
+import NotificationsScreen from './components/mobile-web/NotificationsScreen';
 
 // ── URL ↔ Screen mapping ──────────────────────────────────
 const SCREEN_TO_PATH = {
@@ -41,6 +42,7 @@ const SCREEN_TO_PATH = {
   ResetPassword: '/reset-password',
   Profile: '/profile',
   Settings: '/settings',
+  Notifications: '/notifications',
 };
 
 function pathToScreen(pathname) {
@@ -60,6 +62,7 @@ function pathToScreen(pathname) {
     '/reset-password': 'ResetPassword',
     '/profile': 'Profile',
     '/settings': 'Settings',
+    '/notifications': 'Notifications',
   };
   // Handle admin sub-paths like /admin/users, /admin/reports
   if (pathname.startsWith('/admin')) return 'Admin';
@@ -74,7 +77,7 @@ const AUTH_SCREENS = new Set([
 
 // ── Screens that require authentication ───────────────────
 const PROTECTED_SCREENS = new Set([
-  'Home', 'Admin', 'CreateContent', 'Profile', 'Settings',
+  'Home', 'Admin', 'CreateContent', 'Profile', 'Settings', 'Notifications',
   'EmailVerification', 'PhoneNumber',
   'ProfileSetup', 'LanguageSelection', 'InterestSelection',
 ]);
@@ -371,6 +374,18 @@ function AppContent() {
             onGoToAdmin={() => navigateTo('Admin')}
             onGoToFeed={() => navigateTo('Home')}
             initialTab={settingsTab}
+          />
+        );
+
+      case 'Notifications':
+        return (
+          <NotificationsScreen
+            currentUser={currentUser}
+            onLogout={handleLogout}
+            onCreatePress={() => navigateTo('CreateContent')}
+            onGoToAdmin={() => navigateTo('Admin')}
+            onGoToFeed={() => navigateTo('Home')}
+            onViewProfile={() => navigateTo('Profile')}
           />
         );
 

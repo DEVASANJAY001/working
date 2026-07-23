@@ -86,6 +86,10 @@ export default function HeaderNavbar({
 
             {/* Notifications */}
             <button
+              onClick={() => {
+                window.history.pushState({ screen: 'Notifications' }, '', '/notifications');
+                window.dispatchEvent(new PopStateEvent('popstate', { state: { screen: 'Notifications' } }));
+              }}
               title="Notifications"
               className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-700 cursor-pointer"
             >
