@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   Home, Compass, Newspaper, Layers, Plus, Gamepad2, Skull, Grid,
   Crosshair, ShieldCheck, Wrench, Clock, Users, BookOpen, HelpCircle,
-  Briefcase, MessageSquare, Info, ShieldAlert, FileText, Scale
+  Briefcase, MessageSquare, Info, ShieldAlert, FileText, Scale, Megaphone
 } from 'lucide-react';
 import { GameBannerCard } from '../molecules';
 import LeftSidebarItem from './LeftSidebarItem';
