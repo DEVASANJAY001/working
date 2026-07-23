@@ -3,6 +3,7 @@ import { Bell, Plus, MessageSquare, Search } from 'lucide-react';
 import { Avatar, Button } from '../atoms';
 import { SearchBar } from '../molecules';
 import UserMenuDropdown from '../menu/UserMenuDropdown';
+import MobileProfileDrawer from '../menu/MobileProfileDrawer';
 
 export default function HeaderNavbar({
   searchQuery,
@@ -16,6 +17,7 @@ export default function HeaderNavbar({
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
 
   const emailNickname = currentUser?.email ? currentUser.email.split('@')[0] : '';
   const isNameUUID = /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(currentUser?.name);
@@ -123,9 +125,18 @@ export default function HeaderNavbar({
               </span>
             </button>
 
-            {/* Avatar + dropdown */}
+            {/* Avatar + dropdown/drawer */}
             <div className="relative">
-              <button onClick={() => setShowMenu(!showMenu)} className="cursor-pointer flex items-center">
+              <button 
+                onClick={() => {
+                  if (window.innerWidth < 1024) {
+                    setMobileProfileOpen(true);
+                  } else {
+                    setShowMenu(!showMenu);
+                  }
+                }} 
+                className="cursor-pointer flex items-center"
+              >
                 <Avatar src={currentUser?.profileImage} initials={userInitial} isOnline={true} />
               </button>
 
@@ -137,6 +148,14 @@ export default function HeaderNavbar({
                   onViewProfile={onViewProfile}
                 />
               )}
+
+              <MobileProfileDrawer
+                isOpen={mobileProfileOpen}
+                onClose={() => setMobileProfileOpen(false)}
+                currentUser={currentUser}
+                onGoToSettings={onGoToAdmin}
+                onLogout={onLogout}
+              />
             </div>
           </div>
         </>
