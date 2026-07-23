@@ -156,10 +156,10 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
     setDeletedPostIds(adminStore.getDeletedPostIds());
 
     // Sync registered users from localAuthStore
-    const registered = getStoredUsers().map(u => ({
-      id: u.id,
-      name: u.fullName,
-      email: u.email,
+    const registered = (getStoredUsers() || []).filter(Boolean).map(u => ({
+      id: u.id || `usr_${Date.now()}`,
+      name: u.fullName || 'User',
+      email: u.email || '',
       role: u.role || 'User',
       joined: new Date(u.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       posts: 0,
@@ -174,7 +174,7 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
     ];
     const mergedUsers = [...registered];
     defaultSamples.forEach(sample => {
-      if (!mergedUsers.some(u => u.email.toLowerCase() === sample.email.toLowerCase())) {
+      if (sample.email && !mergedUsers.some(u => u.email && u.email.toLowerCase() === sample.email.toLowerCase())) {
         mergedUsers.push(sample);
       }
     });
@@ -624,9 +624,21 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                       <line x1="0" y1="100" x2="300" y2="100" stroke="#E5E7EB" />
                       
                       {/* Dynamic Bars based on actual community database */}
-                      {comms.slice(0, 4).map((c, i) => {
-                        const maxMembers = Math.max(...comms.map(x => x.members || 1), 1);
-                        const height = Math.round(((c.members || 1) / maxMembers) * 90);
+                      {(comms || []).slice(0, 4).map((c, i) => {
+                        if (!c) return null;
+                        const parseMembers = (val) => {
+                          if (typeof val === 'number') return val;
+                          if (typeof val === 'string') {
+                            if (val.toLowerCase().endsWith('k')) {
+                              return parseFloat(val) * 1000 || 1;
+                            }
+                            return parseInt(val) || 1;
+                          }
+                          return 1;
+                        };
+                        const maxMembers = Math.max(...(comms || []).map(x => parseMembers(x?.members)), 1);
+                        const cMembers = parseMembers(c.members);
+                        const height = Math.round((cMembers / maxMembers) * 90);
                         const xPos = 25 + i * 70;
                         const colors = ["#8B5CF6", "#EC4899", "#F97316", "#10B981"];
                         const barColor = colors[i % colors.length];
@@ -651,9 +663,11 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                   </div>
                   {(() => {
                     const reasonCounts = {};
-                    reportedPosts.forEach(r => {
+                    (reportedPosts || []).forEach(r => {
+                      if (!r) return;
                       const reason = r.reportReason || 'Other';
-                      reasonCounts[reason] = (reasonCounts[reason] || 0) + r.reportsCount;
+                      const count = typeof r.reportsCount === 'number' ? r.reportsCount : parseInt(r.reportsCount) || 1;
+                      reasonCounts[reason] = (reasonCounts[reason] || 0) + count;
                     });
                     const totalReports = Object.values(reasonCounts).reduce((a, b) => a + b, 0) || 1;
                     const sortedReasons = Object.entries(reasonCounts)
