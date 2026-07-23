@@ -19,9 +19,7 @@ export default function DashboardLayout({
   hideRightSidebar = false,
   children
 }) {
-  // Desktop: sidebar expand/collapse
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  // Mobile: overlay drawer
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   const mobileDrawer = mobileDrawerOpen ? ReactDOM.createPortal(
@@ -37,7 +35,6 @@ export default function DashboardLayout({
           activeNav={activeNav}
           setActiveNav={(nav) => { setActiveNav(nav); setMobileDrawerOpen(false); }}
           isOpen={true}
-          isMobileDrawer={true}
         />
       </div>
     </>,
@@ -46,7 +43,7 @@ export default function DashboardLayout({
 
   return (
     <div className="h-screen w-screen bg-white text-gray-900 font-sans flex flex-col overflow-hidden">
-      {/* Mobile overlay drawer via portal */}
+      {/* Mobile drawer */}
       {mobileDrawer}
 
       {/* Top Navbar */}
@@ -58,19 +55,31 @@ export default function DashboardLayout({
         onGoToAdmin={onGoToAdmin}
         onLogout={onLogout}
         onViewProfile={onViewProfile}
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
         onMobileMenuClick={() => setMobileDrawerOpen(true)}
       />
 
       {/* Main Body Grid */}
-      <div className="flex flex-1 w-full max-w-[1600px] mx-auto overflow-hidden">
-        {/* Desktop Left Sidebar */}
-        <LeftSidebar
-          activeNav={activeNav}
-          setActiveNav={setActiveNav}
-          isOpen={sidebarOpen}
-        />
+      <div className="flex flex-1 w-full max-w-[1600px] mx-auto overflow-hidden relative">
+        
+        {/* Desktop Collapsible Left Sidebar Container */}
+        <div className="relative hidden lg:block h-full flex-shrink-0">
+          <LeftSidebar
+            activeNav={activeNav}
+            setActiveNav={setActiveNav}
+            isOpen={sidebarOpen}
+          />
+          
+          {/* Floating Border Toggle Button (Centered on separation border line) */}
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="absolute top-4 -right-4 w-8 h-8 rounded-full bg-white border border-gray-250 shadow-sm flex items-center justify-center cursor-pointer hover:bg-gray-50 hover:shadow transition-all z-20"
+            title={sidebarOpen ? "Collapse menu" : "Expand menu"}
+          >
+            <span className="text-gray-600 font-bold text-xs select-none">
+              {sidebarOpen ? '☰' : '☰'}
+            </span>
+          </button>
+        </div>
 
         {/* Center Feed */}
         <main className={`flex-1 h-full overflow-y-auto no-scrollbar p-4 lg:p-6 min-w-0 ${hideRightSidebar ? 'max-w-[1200px] mx-auto' : 'max-w-3xl mx-auto'}`}>

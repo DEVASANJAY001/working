@@ -12,8 +12,6 @@ export default function HeaderNavbar({
   onGoToAdmin,
   onLogout,
   onViewProfile,
-  sidebarOpen,
-  setSidebarOpen,
   onMobileMenuClick,
 }) {
   const [showMenu, setShowMenu] = useState(false);
@@ -29,24 +27,18 @@ export default function HeaderNavbar({
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-3 lg:px-4 h-14 flex items-center justify-between gap-2 lg:gap-4">
 
-      {/* ── Left: Hamburger + Logo ── */}
+      {/* ── Left: Hamburger (mobile only) + Logo ── */}
       <div className="flex items-center gap-2 lg:gap-3 flex-shrink-0">
-        {/* Hamburger: mobile triggers drawer, desktop collapses sidebar */}
+        {/* Hamburger: visible on mobile screen only (< lg) */}
         <button
-          onClick={() => {
-            if (window.innerWidth < 1024) {
-              onMobileMenuClick && onMobileMenuClick();
-            } else {
-              setSidebarOpen && setSidebarOpen(!sidebarOpen);
-            }
-          }}
-          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer border border-gray-200 flex-shrink-0"
+          onClick={onMobileMenuClick}
+          className="lg:hidden w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer border border-gray-200 flex-shrink-0"
           title="Menu"
         >
           <span className="text-sm font-black text-gray-700">☰</span>
         </button>
 
-        {/* Logo: "Inspire" on md+, "In" on mobile */}
+        {/* Logo: "Inspire" on sm+, "In" on mobile */}
         <div className="flex items-center cursor-pointer select-none flex-shrink-0">
           <span className="hidden sm:block text-xl font-black tracking-tight text-[#FF4500]">
             Inspire
@@ -57,7 +49,7 @@ export default function HeaderNavbar({
         </div>
       </div>
 
-      {/* ── Center: Search Bar — hidden on xs when mobile search toggled ── */}
+      {/* ── Center: Search Bar ── */}
       {showMobileSearch ? (
         /* Full-width mobile search */
         <div className="flex-1 flex items-center gap-2 animate-fade-in">
@@ -111,7 +103,7 @@ export default function HeaderNavbar({
               <MessageSquare className="w-5 h-5" />
             </button>
 
-            {/* Create button: icon-only on mobile */}
+            {/* Create button */}
             <button
               onClick={onCreatePress}
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 rounded-full text-xs font-bold hover:bg-gray-50 cursor-pointer"
