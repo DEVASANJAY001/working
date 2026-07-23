@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import HeaderNavbar from './HeaderNavbar';
 import LeftSidebar from '../menu/LeftSidebar';
 import RightSidebar from '../recent/RightSidebar';
@@ -18,6 +18,8 @@ export default function DashboardLayout({
   hideRightSidebar = false,
   children
 }) {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
   return (
     <div className="h-screen w-screen bg-white text-gray-900 font-sans flex flex-col overflow-hidden">
       {/* Top Navbar: fixed size */}
@@ -29,14 +31,17 @@ export default function DashboardLayout({
         onGoToAdmin={onGoToAdmin}
         onLogout={onLogout}
         onViewProfile={onViewProfile}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
       />
 
       {/* Main Body Grid: locked to viewport height */}
       <div className="flex flex-1 w-full max-w-[1600px] mx-auto overflow-hidden">
-        {/* Left Sidebar: independently scrollable */}
+        {/* Left Sidebar: collapsible via hamburger */}
         <LeftSidebar
           activeNav={activeNav}
           setActiveNav={setActiveNav}
+          isOpen={sidebarOpen}
         />
 
         {/* Center Feed: independently scrollable */}

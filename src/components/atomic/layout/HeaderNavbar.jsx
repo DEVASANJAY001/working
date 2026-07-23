@@ -11,7 +11,9 @@ export default function HeaderNavbar({
   onCreatePress,
   onGoToAdmin,
   onLogout,
-  onViewProfile
+  onViewProfile,
+  sidebarOpen,
+  setSidebarOpen,
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const emailNickname = currentUser?.email ? currentUser.email.split('@')[0] : '';
@@ -23,7 +25,11 @@ export default function HeaderNavbar({
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 h-14 flex items-center justify-between gap-4">
       {/* Left: Brand Name "Inspire" & Drawer Toggle */}
       <div className="flex items-center gap-3 flex-shrink-0">
-        <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer border border-gray-200">
+        <button
+          onClick={() => setSidebarOpen && setSidebarOpen(!sidebarOpen)}
+          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer border border-gray-200"
+          title={sidebarOpen ? 'Close menu' : 'Open menu'}
+        >
           <span className="text-sm font-black text-gray-700">☰</span>
         </button>
 

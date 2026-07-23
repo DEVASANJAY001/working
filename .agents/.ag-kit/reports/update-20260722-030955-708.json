@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "runId": "20260722-030955-708",
+  "strategy": "merge",
+  "toolkitVersion": "2026.7.18",
+  "createdAt": "2026-07-22T03:09:56.097Z",
+  "backupDir": "C:\\projects\\com\\.ag-kit-backups\\20260722-030955-708",
+  "summary": {
+    "actions": 0,
+    "conflicts": 0,
+    "preserved": 0,
+    "unchanged": 209
+  },
+  "actions": [],
+  "conflicts": [],
+  "preserved": []
+}
