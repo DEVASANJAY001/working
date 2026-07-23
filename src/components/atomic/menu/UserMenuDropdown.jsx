@@ -31,7 +31,7 @@ export default function UserMenuDropdown({ currentUser, onGoToAdmin, onLogout, o
   };
 
   return (
-    <div className="absolute right-0 top-12 w-64 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 py-2.5 animate-fade-in text-gray-800">
+    <div className="absolute right-0 top-12 w-64 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 py-2.5 animate-slide-down-fade text-gray-800">
       {/* User Header Profile Link */}
       <div 
         onClick={onViewProfile}

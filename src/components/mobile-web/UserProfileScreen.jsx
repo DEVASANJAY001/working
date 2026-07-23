@@ -66,7 +66,7 @@ export default function UserProfileScreen({
 
         <div>
           <h2 className="text-xl font-bold text-gray-900 leading-tight">{displayUserName}</h2>
-          <p className="text-xs text-gray-400 font-medium">u/{userHandle}</p>
+          <p className="text-xs text-gray-400 font-medium">@{userHandle}</p>
           <p className="text-xs font-bold text-gray-400 mt-2">0 followers</p>
         </div>
 
@@ -220,7 +220,7 @@ export default function UserProfileScreen({
               </span>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 leading-tight">{displayUserName}</h1>
-                <p className="text-sm text-gray-405 font-medium">u/{userHandle}</p>
+                <p className="text-sm text-gray-405 font-medium">@{userHandle}</p>
               </div>
             </div>
           </div>

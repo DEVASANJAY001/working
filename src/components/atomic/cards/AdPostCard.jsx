@@ -13,7 +13,7 @@ export default function AdPostCard({ ad }) {
             Ad
           </div>
           <span className="font-extrabold text-gray-900">
-            u/{ad.sponsor || 'sponsor'}
+            {ad.sponsor || 'sponsor'}
           </span>
           <span className="text-gray-300">•</span>
           <span className="text-gray-400 font-bold">Promoted</span>
