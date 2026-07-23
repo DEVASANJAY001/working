@@ -3,7 +3,6 @@ import { Bell, Plus, MessageSquare, Search } from 'lucide-react';
 import { Avatar, Button } from '../atoms';
 import { SearchBar } from '../molecules';
 import UserMenuDropdown from '../menu/UserMenuDropdown';
-import MobileProfileDrawer from '../menu/MobileProfileDrawer';
 
 export default function HeaderNavbar({
   searchQuery,
@@ -17,7 +16,6 @@ export default function HeaderNavbar({
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
-  const [mobileProfileOpen, setMobileProfileOpen] = useState(false);
 
   const emailNickname = currentUser?.email ? currentUser.email.split('@')[0] : '';
   const isNameUUID = /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(currentUser?.name);
@@ -51,41 +49,13 @@ export default function HeaderNavbar({
         </div>
       </div>
 
-      {/* ── Center: Search Bar ── */}
-      {showMobileSearch ? (
-        /* Full-width mobile search */
-        <div className="flex-1 flex items-center gap-2 animate-fade-in">
-          <div className="flex-1">
-            <SearchBar
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              autoFocus
-            />
-          </div>
-          <button
-            onClick={() => setShowMobileSearch(false)}
-            className="text-xs font-bold text-gray-500 flex-shrink-0 cursor-pointer"
-          >
-            Cancel
-          </button>
-        </div>
-      ) : (
-        <>
-          {/* Desktop search bar */}
-          <div className="hidden sm:flex flex-1 max-w-xl mx-auto">
-            <SearchBar
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          {/* Mobile search icon */}
-          <button
-            className="sm:hidden w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-700 cursor-pointer flex-shrink-0"
-            onClick={() => setShowMobileSearch(true)}
-          >
-            <Search className="w-5 h-5" />
-          </button>
+      {/* ── Center: Search Bar (Visible on all screen sizes) ── */}
+      <div className="flex-1 max-w-xl mx-auto px-1 sm:px-0">
+        <SearchBar
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+        />
+      </div>
 
           {/* ── Right: Actions ── */}
           <div className="flex items-center gap-1 lg:gap-2 flex-shrink-0">
@@ -125,18 +95,9 @@ export default function HeaderNavbar({
               </span>
             </button>
 
-            {/* Avatar + dropdown/drawer */}
+            {/* Avatar + dropdown */}
             <div className="relative">
-              <button 
-                onClick={() => {
-                  if (window.innerWidth < 1024) {
-                    setMobileProfileOpen(true);
-                  } else {
-                    setShowMenu(!showMenu);
-                  }
-                }} 
-                className="cursor-pointer flex items-center"
-              >
+              <button onClick={() => setShowMenu(!showMenu)} className="cursor-pointer flex items-center">
                 <Avatar src={currentUser?.profileImage} initials={userInitial} isOnline={true} />
               </button>
 
@@ -148,18 +109,8 @@ export default function HeaderNavbar({
                   onViewProfile={onViewProfile}
                 />
               )}
-
-              <MobileProfileDrawer
-                isOpen={mobileProfileOpen}
-                onClose={() => setMobileProfileOpen(false)}
-                currentUser={currentUser}
-                onGoToSettings={onGoToAdmin}
-                onLogout={onLogout}
-              />
             </div>
           </div>
-        </>
-      )}
     </header>
   );
 }
