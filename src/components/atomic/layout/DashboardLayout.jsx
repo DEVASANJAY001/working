@@ -45,7 +45,7 @@ export default function DashboardLayout({
 
         {/* Right Sidebar: independently scrollable */}
         {rightColumnOverride ? (
-          <aside className="w-80 border-l border-gray-200 hidden xl:block h-full overflow-y-auto no-scrollbar flex-shrink-0">
+          <aside className="w-80 border-l border-gray-250 hidden xl:block h-full overflow-y-auto no-scrollbar flex-shrink-0 pt-4 px-4 pb-4">
             {rightColumnOverride}
           </aside>
         ) : (
