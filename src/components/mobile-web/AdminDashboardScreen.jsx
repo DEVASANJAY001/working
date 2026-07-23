@@ -30,6 +30,7 @@ import {
 import { adminStore } from '../../services/adminStore';
 import { getStoredUsers } from '../../services/localAuthStore';
 import { communityService } from '../../services/communityService';
+import { eventBus } from '../../utils/eventBus';
 
 export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser }) {
   const [isDarkMode, setIsDarkMode] = useState(false);
