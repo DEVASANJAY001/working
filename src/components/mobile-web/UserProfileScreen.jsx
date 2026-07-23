@@ -48,7 +48,8 @@ export default function UserProfileScreen({
 
   // Render the Right Profile Details summary card
   const renderProfileSummaryCard = () => (
-    <div className="w-full bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-xs space-y-4">
+    <div className="space-y-4 w-full">
+      <div className="w-full bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-xs">
       {/* Header Banner */}
       <div className="h-32 bg-black relative p-3 flex justify-end items-start">
         <button title="Change Banner" className="w-8 h-8 rounded-full bg-black/60 hover:bg-black text-white flex items-center justify-center border border-white/20 cursor-pointer">
@@ -144,12 +145,6 @@ export default function UserProfileScreen({
           ))}
         </div>
 
-        {/* Community Card (r/cjppartyy) */}
-        <div className="space-y-2 pt-2">
-          <div className="text-xs font-black text-gray-500 uppercase tracking-wider">CREATOR COMMUNITY</div>
-          <CommunityCard name="cjppartyy" visitors={1} contributions={1} />
-        </div>
-
         {/* Social Links List */}
         <div className="space-y-2 pt-2">
           <div className="text-xs font-black text-gray-500 uppercase tracking-wider">SOCIAL LINKS</div>
@@ -206,6 +201,10 @@ export default function UserProfileScreen({
           </div>
         </div>
       </div>
+      </div>
+
+      {/* Standalone Community Card (r/cjppartyy) */}
+      <CommunityCard name="cjppartyy" visitors={1} contributions={1} />
     </div>
   );
 
