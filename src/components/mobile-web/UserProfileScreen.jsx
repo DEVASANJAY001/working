@@ -144,6 +144,12 @@ export default function UserProfileScreen({
           ))}
         </div>
 
+        {/* Community Card (r/cjppartyy) */}
+        <div className="space-y-2 pt-2">
+          <div className="text-xs font-black text-gray-500 uppercase tracking-wider">CREATOR COMMUNITY</div>
+          <CommunityCard name="cjppartyy" visitors={1} contributions={1} />
+        </div>
+
         {/* Social Links List */}
         <div className="space-y-2 pt-2">
           <div className="text-xs font-black text-gray-500 uppercase tracking-wider">SOCIAL LINKS</div>
