@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import {
   Home, Compass, Newspaper, Layers, Plus, Gamepad2, Skull, Grid,
-  Crosshair, ShieldCheck, Wrench
+  Crosshair, ShieldCheck, Wrench, Clock, Users, BookOpen, HelpCircle,
+  Briefcase, MessageSquare, Info, ShieldAlert, FileText, Scale
 } from 'lucide-react';
 import { GameBannerCard } from '../molecules';
 import LeftSidebarItem from './LeftSidebarItem';
@@ -10,6 +11,9 @@ export default function LeftSidebar({ activeNav, setActiveNav }) {
   const [gamesOpen, setGamesOpen] = useState(false);
   const [modOpen, setModOpen] = useState(true);
   const [customFeedsOpen, setCustomFeedsOpen] = useState(true);
+  const [recentOpen, setRecentOpen] = useState(true);
+  const [communitiesOpen, setCommunitiesOpen] = useState(true);
+  const [resourcesOpen, setResourcesOpen] = useState(true);
 
   return (
     <aside className="w-64 border-r border-gray-200 p-3 hidden lg:block h-full overflow-y-auto no-scrollbar space-y-4 flex-shrink-0">
@@ -34,6 +38,32 @@ export default function LeftSidebar({ activeNav, setActiveNav }) {
           label="Start a community"
           icon={Plus}
         />
+      </div>
+
+      <hr className="border-gray-200" />
+
+      {/* RECENT */}
+      <div>
+        <button
+          onClick={() => setRecentOpen(!recentOpen)}
+          className="w-full flex items-center justify-between text-xs font-black text-gray-500 tracking-wider uppercase px-2 mb-2 cursor-pointer"
+        >
+          <span>RECENT</span>
+          <span className={`transform transition-transform ${recentOpen ? 'rotate-180' : ''}`}>^</span>
+        </button>
+
+        {recentOpen && (
+          <div className="space-y-1">
+            <LeftSidebarItem
+              label="ipl"
+              imageIcon="🏏"
+            />
+            <LeftSidebarItem
+              label="CarsIndia"
+              imageIcon="🚗"
+            />
+          </div>
+        )}
       </div>
 
       <hr className="border-gray-200" />
@@ -68,6 +98,70 @@ export default function LeftSidebar({ activeNav, setActiveNav }) {
                 icon={game.icon}
               />
             ))}
+          </div>
+        )}
+      </div>
+
+      <hr className="border-gray-200" />
+
+      {/* CUSTOM FEEDS */}
+      <div>
+        <button
+          onClick={() => setCustomFeedsOpen(!customFeedsOpen)}
+          className="w-full flex items-center justify-between text-xs font-black text-gray-500 tracking-wider uppercase px-2 mb-2 cursor-pointer"
+        >
+          <span>CUSTOM FEEDS</span>
+          <span className={`transform transition-transform ${customFeedsOpen ? 'rotate-180' : ''}`}>^</span>
+        </button>
+
+        {customFeedsOpen && (
+          <div className="space-y-1">
+            <LeftSidebarItem
+              label="Create Custom Feed"
+              icon={Plus}
+            />
+            <LeftSidebarItem
+              label="Nenn"
+              imageIcon="🔥"
+              hasStarAction={true}
+              starred={true}
+            />
+          </div>
+        )}
+      </div>
+
+      <hr className="border-gray-200" />
+
+      {/* COMMUNITIES */}
+      <div>
+        <button
+          onClick={() => setCommunitiesOpen(!communitiesOpen)}
+          className="w-full flex items-center justify-between text-xs font-black text-gray-500 tracking-wider uppercase px-2 mb-2 cursor-pointer"
+        >
+          <span>COMMUNITIES</span>
+          <span className={`transform transition-transform ${communitiesOpen ? 'rotate-180' : ''}`}>^</span>
+        </button>
+
+        {communitiesOpen && (
+          <div className="space-y-1">
+            <LeftSidebarItem
+              label="CarsIndia"
+              imageIcon="🚗"
+              hasStarAction={true}
+              starred={true}
+            />
+            <LeftSidebarItem
+              label="ipl"
+              imageIcon="🏏"
+              hasStarAction={true}
+              starred={true}
+            />
+            <LeftSidebarItem
+              label="AI_Agents"
+              imageIcon="🤖"
+              hasStarAction={true}
+              starred={true}
+            />
           </div>
         )}
       </div>
@@ -121,28 +215,39 @@ export default function LeftSidebar({ activeNav, setActiveNav }) {
 
       <hr className="border-gray-200" />
 
-      {/* CUSTOM FEEDS */}
+      {/* RESOURCES */}
       <div>
         <button
-          onClick={() => setCustomFeedsOpen(!customFeedsOpen)}
+          onClick={() => setResourcesOpen(!resourcesOpen)}
           className="w-full flex items-center justify-between text-xs font-black text-gray-500 tracking-wider uppercase px-2 mb-2 cursor-pointer"
         >
-          <span>CUSTOM FEEDS</span>
-          <span className={`transform transition-transform ${customFeedsOpen ? 'rotate-180' : ''}`}>^</span>
+          <span>RESOURCES</span>
+          <span className={`transform transition-transform ${resourcesOpen ? 'rotate-180' : ''}`}>^</span>
         </button>
 
-        {customFeedsOpen && (
+        {resourcesOpen && (
           <div className="space-y-1">
-            <LeftSidebarItem
-              label="Create Custom Feed"
-              icon={Plus}
-            />
-            <LeftSidebarItem
-              label="Nenn"
-              imageIcon="🔥"
-              hasStarAction={true}
-              starred={true}
-            />
+            {[
+              { name: 'About Reddit', icon: Info },
+              { name: 'Advertise', icon: Megaphone },
+              { name: 'Developer Platform', icon: BookOpen },
+              { name: 'Reddit Pro BETA', icon: ShieldCheck },
+              { name: 'Help', icon: HelpCircle },
+              { name: 'Blog', icon: MessageSquare },
+              { name: 'Careers', icon: Briefcase },
+              { name: 'Press', icon: Newspaper },
+              { name: 'Best of Reddit', icon: Compass },
+              { name: 'Reddit Rules', icon: ShieldAlert },
+              { name: 'Privacy Policy', icon: FileText },
+              { name: 'User Agreement', icon: Scale },
+              { name: 'Accessibility', icon: Info }
+            ].map(resource => (
+              <LeftSidebarItem
+                key={resource.name}
+                label={resource.name}
+                icon={resource.icon}
+              />
+            ))}
           </div>
         )}
       </div>
