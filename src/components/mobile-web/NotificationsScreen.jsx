@@ -124,16 +124,17 @@ export default function NotificationsScreen({
         setActiveNav={onGoToFeed}
         recentPostsList={[]}
         onViewProfile={onViewProfile}
+        hideRightSidebar={true}
       >
-        <div className="max-w-3xl mx-auto py-6 px-4 space-y-6">
+        <div className="max-w-2xl mx-auto py-6 px-4 space-y-6">
           {/* Header Title & Actions */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-4">
-            <h1 className="text-2xl font-black text-gray-900">Notifications</h1>
+          <div className="flex items-center justify-between gap-4 border-b border-gray-150 pb-4">
+            <h1 className="text-xl sm:text-2xl font-black text-gray-900">Notifications</h1>
             
             <div className="flex items-center gap-3 text-xs font-bold text-gray-500">
               <button 
                 onClick={handleMarkAllRead}
-                className="hover:text-gray-800 transition-colors cursor-pointer"
+                className="hover:text-blue-600 hover:underline transition-colors cursor-pointer"
               >
                 Mark all as read
               </button>
@@ -141,13 +142,13 @@ export default function NotificationsScreen({
               <button 
                 onClick={handleClearAll}
                 title="Clear all"
-                className="p-1.5 hover:bg-gray-150 hover:text-red-600 rounded-full transition-colors cursor-pointer"
+                className="p-1.5 hover:bg-red-50 hover:text-red-600 rounded-full transition-colors cursor-pointer"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
               <button 
                 title="Settings"
-                className="p-1.5 hover:bg-gray-150 hover:text-gray-800 rounded-full transition-colors cursor-pointer"
+                className="p-1.5 hover:bg-gray-100 hover:text-gray-800 rounded-full transition-colors cursor-pointer"
               >
                 <Settings className="w-4 h-4" />
               </button>
@@ -156,35 +157,35 @@ export default function NotificationsScreen({
 
           {/* Notifications List */}
           {notifications.length > 0 ? (
-            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden divide-y divide-gray-100 shadow-xs">
+            <div className="bg-white border border-gray-250 rounded-2xl overflow-hidden divide-y divide-gray-100 shadow-xs">
               {notifications.map(notif => (
                 <div 
                   key={notif.id}
-                  className={`flex items-start gap-4 p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
-                    notif.unread ? 'bg-blue-50/20 border-l-4 border-blue-500 pl-3' : ''
+                  className={`flex items-start gap-4 p-4 hover:bg-gray-50/80 transition-colors cursor-pointer ${
+                    notif.unread ? 'bg-[#F2F8FD] border-l-4 border-[#0079D3] pl-3' : ''
                   }`}
                 >
-                  {/* Notification Icon */}
-                  <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 shadow-xs border border-gray-200">
+                  {/* Notification Icon / Avatar */}
+                  <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 shadow-sm border border-gray-205 overflow-hidden">
                     {notif.icon}
                   </div>
 
                   {/* Text Contents */}
                   <div className="flex-1 min-w-0">
-                    <p className={`text-xs text-gray-900 ${notif.unread ? 'font-black' : 'font-bold'}`}>
+                    <p className={`text-xs text-gray-950 leading-snug ${notif.unread ? 'font-black' : 'font-medium'}`}>
                       {notif.title}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                    <p className="text-xs text-gray-600 mt-1 leading-relaxed">
                       {notif.desc}
                     </p>
-                    <span className="text-[10px] text-gray-400 font-semibold mt-2 inline-block">
+                    <span className="text-[10px] text-gray-400 font-bold mt-1.5 inline-block">
                       {notif.time}
                     </span>
                   </div>
 
                   {/* Unread dot indicator */}
                   {notif.unread && (
-                    <span className="w-2.5 h-2.5 rounded-full bg-blue-500 self-center flex-shrink-0" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#0079D3] self-center flex-shrink-0" />
                   )}
                 </div>
               ))}
