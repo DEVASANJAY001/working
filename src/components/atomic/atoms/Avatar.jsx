@@ -23,7 +23,10 @@ export default function Avatar({
           className={`${sizes[size]} rounded-full object-cover shadow-xs`}
         />
       ) : (
-        <div className={`${sizes[size]} rounded-full bg-emerald-500 text-white font-extrabold flex items-center justify-center shadow-xs select-none`}>
+        <div 
+          className={`${sizes[size]} rounded-full text-white font-extrabold flex items-center justify-center shadow-xs select-none`}
+          style={{ backgroundImage: "url('/src/assets/image.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}
+        >
           {initials}
         </div>
       )}

@@ -17,8 +17,11 @@ export default function UserProfileScreen({
   const [newPlatform, setNewPlatform] = useState('');
   const [newUrl, setNewUrl] = useState('');
 
-  const displayUserName = currentUser?.name || 'Devasanjay';
-  const userHandle = currentUser?.username || 'Personal_Ability_537';
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentUser?.username);
+  const emailNickname = currentUser?.email ? currentUser.email.split('@')[0] : '';
+  const isNameUUID = /^[0-9a-f]{8}-[0-9a-f]{4}/i.test(currentUser?.name);
+  const displayUserName = (isNameUUID && emailNickname) ? emailNickname : (currentUser?.name || currentUser?.displayName || 'Devasanjay');
+  const userHandle = (isUUID && emailNickname) ? emailNickname : (currentUser?.username || displayUserName.toLowerCase().replace(/\s+/g, '_'));
   const userInitial = displayUserName.charAt(0).toUpperCase();
 
   // Tabs list
@@ -48,7 +51,10 @@ export default function UserProfileScreen({
         {/* Avatar Overlap Container */}
         <div className="relative -mt-16 mb-2 flex items-end justify-between">
           <div className="w-24 h-24 rounded-full bg-white p-1 shadow-md relative">
-            <span className="w-full h-full rounded-full bg-gradient-to-tr from-[#00FFFF] to-[#FF007F] text-white font-black text-3xl flex items-center justify-center">
+            <span 
+              className="w-full h-full rounded-full text-white font-black text-3xl flex items-center justify-center"
+              style={{ backgroundImage: "url('/src/assets/image.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}
+            >
               {userInitial}
             </span>
           </div>
@@ -196,7 +202,7 @@ export default function UserProfileScreen({
         recentPostsList={[]}
         rightColumnOverride={renderProfileSummaryCard()}
       >
-        <div className="w-full space-y-6">
+        <div className="w-full space-y-6 pl-6 pr-4">
           {/* Header Back & Logo Banner with custom margins */}
           <div className="flex items-center gap-4 pb-4 border-b border-gray-150">
             <button 
@@ -206,12 +212,15 @@ export default function UserProfileScreen({
               <ArrowLeft className="w-4 h-4 text-gray-700" />
             </button>
             <div className="flex items-center gap-4">
-              <span className="w-16 h-16 rounded-full bg-gradient-to-tr from-[#00FFFF] to-[#FF007F] text-white font-black text-2xl flex items-center justify-center border-2 border-white shadow-md">
+              <span 
+                className="w-16 h-16 rounded-full text-white font-black text-2xl flex items-center justify-center border-2 border-white shadow-md"
+                style={{ backgroundImage: "url('/src/assets/image.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}
+              >
                 {userInitial}
               </span>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 leading-tight">{displayUserName}</h1>
-                <p className="text-sm text-gray-400 font-medium">u/{userHandle}</p>
+                <p className="text-sm text-gray-405 font-medium">u/{userHandle}</p>
               </div>
             </div>
           </div>
