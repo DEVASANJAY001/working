@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Search, Image as ImageIcon, Link as LinkIcon, BarChart2, FileText, Sparkles, HelpCircle, ChevronDown } from 'lucide-react';
+import { X, Search, Image as ImageIcon, Link as LinkIcon, BarChart2, FileText, ChevronDown, Bold, Italic, Strikethrough, Superscript, Heading, Smile, List, ListOrdered, Quote, Code, Table, ShieldAlert } from 'lucide-react';
 import { DashboardLayout, Button, Avatar } from '../atomic';
 
 export default function CreateContentScreen({ onBack, onPublish }) {
@@ -124,10 +124,7 @@ export default function CreateContentScreen({ onBack, onPublish }) {
 
   const handlePostSubmit = (e) => {
     if (e) e.preventDefault();
-    if (!title.trim()) {
-      alert('Please enter a title');
-      return;
-    }
+    if (!title.trim()) return;
     if (!selectedCommunity) {
       alert('Please select a community first');
       return;
@@ -151,10 +148,7 @@ export default function CreateContentScreen({ onBack, onPublish }) {
   };
 
   const handleSaveDraft = () => {
-    if (!title.trim()) {
-      alert('Enter a title to save a draft');
-      return;
-    }
+    if (!title.trim()) return;
     const newDraft = {
       id: `draft_${Date.now()}`,
       title,
@@ -163,7 +157,6 @@ export default function CreateContentScreen({ onBack, onPublish }) {
       community: selectedCommunity ? selectedCommunity.name : 'Draft'
     };
     setDrafts([...drafts, newDraft]);
-    alert('Draft saved successfully!');
   };
 
   const handleFileUpload = (e) => {
@@ -175,7 +168,7 @@ export default function CreateContentScreen({ onBack, onPublish }) {
   };
 
   return (
-    <div className="h-screen w-screen bg-white text-gray-900 font-sans flex flex-col overflow-hidden">
+    <div className="h-screen w-screen bg-[#DAE0E6] text-gray-900 font-sans flex flex-col overflow-hidden">
       <DashboardLayout
         searchQuery=""
         setSearchQuery={() => {}}
@@ -188,13 +181,13 @@ export default function CreateContentScreen({ onBack, onPublish }) {
         recentPostsList={[]}
         hideRightSidebar={true}
       >
-        <div className="max-w-3xl mx-auto py-6 px-4 space-y-6 text-left">
+        <div className="max-w-3xl mx-auto py-6 px-4 space-y-4 text-left">
           {/* Header row */}
-          <div className="flex items-center justify-between border-b border-gray-200 pb-3">
+          <div className="flex items-center justify-between border-b border-gray-300 pb-3 bg-transparent">
             <h1 className="text-xl font-bold text-gray-900">Create post</h1>
             <button 
               onClick={() => alert(`Drafts count: ${drafts.length}`)}
-              className="text-xs font-bold text-gray-700 hover:text-gray-900 px-3 py-1.5 rounded-full transition-colors cursor-pointer"
+              className="text-sm font-bold text-gray-700 hover:text-gray-900 transition-colors cursor-pointer"
             >
               Drafts
             </button>
@@ -204,11 +197,11 @@ export default function CreateContentScreen({ onBack, onPublish }) {
           <div className="relative">
             <button 
               onClick={() => setShowCommunityPopup(true)}
-              className="flex items-center gap-3 px-4 py-1.5 bg-white hover:bg-gray-50 border border-gray-350 rounded-full text-xs font-black text-gray-750 cursor-pointer transition-all shadow-sm focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+              className="flex items-center gap-3 px-4 py-1.5 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg text-xs font-bold text-gray-800 cursor-pointer transition-all shadow-xs focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
               aria-label="Select Community"
             >
               <span>{selectedCommunity ? `${selectedCommunity.icon} ${selectedCommunity.name}` : 'Select Community'}</span>
-              <span className="text-gray-400 font-bold select-none">↕</span>
+              <span className="text-gray-400 font-bold select-none text-[10px]">↕</span>
             </button>
 
             {/* Post To / Select Community Popup */}
@@ -250,7 +243,7 @@ export default function CreateContentScreen({ onBack, onPublish }) {
                           setSelectedCommunity(c);
                           setShowCommunityPopup(false);
                         }}
-                        className="w-full flex items-start gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer text-left"
+                        className="w-full flex items-start gap-3 p-3 hover:bg-gray-55 rounded-xl transition-colors cursor-pointer text-left"
                       >
                         <span className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-lg flex-shrink-0 shadow-sm">
                           {c.icon}
@@ -269,7 +262,7 @@ export default function CreateContentScreen({ onBack, onPublish }) {
           </div>
 
           {/* Form and Tabs Card */}
-          <div className="bg-white border border-gray-300 rounded-xl overflow-hidden shadow-xs">
+          <div className="bg-white border border-gray-300 rounded-md overflow-hidden shadow-xs">
             {/* Tabs bar */}
             <div className="flex border-b border-gray-200">
               {[
@@ -281,9 +274,9 @@ export default function CreateContentScreen({ onBack, onPublish }) {
                 <button
                   key={tab.name}
                   onClick={() => setActiveTab(tab.name)}
-                  className={`flex-1 py-3.5 flex items-center justify-center gap-2 text-xs font-black border-b-2 transition-all cursor-pointer ${
+                  className={`flex-1 py-3 flex items-center justify-center gap-2 text-xs font-bold border-b-2 transition-all cursor-pointer ${
                     activeTab === tab.name 
-                      ? 'border-blue-600 text-blue-600' 
+                      ? 'border-blue-600 text-blue-650 font-black' 
                       : 'border-transparent text-gray-500 hover:bg-gray-50/80'
                   }`}
                 >
@@ -303,7 +296,7 @@ export default function CreateContentScreen({ onBack, onPublish }) {
                   maxLength={300}
                   value={title}
                   onChange={e => setTitle(e.target.value)}
-                  className="w-full py-3 px-4 border border-gray-250 rounded-xl text-xs font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-transparent bg-gray-50/30"
+                  className="w-full py-3 px-4 border border-gray-300 rounded-md text-xs font-semibold focus:outline-none focus-visible:ring-1 focus-visible:ring-gray-400 bg-white"
                   aria-label="Post Title"
                   autoComplete="off"
                 />
@@ -314,27 +307,41 @@ export default function CreateContentScreen({ onBack, onPublish }) {
 
               {/* Tag placeholder row */}
               <div>
-                <button className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-full text-[10px] font-bold cursor-pointer transition-colors border border-gray-200 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none">
+                <button className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-full text-[10px] font-bold cursor-pointer transition-colors border border-transparent focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none">
                   + Add tags
                 </button>
               </div>
 
               {/* Text Tab editor */}
               {activeTab === 'Text' && (
-                <div className="space-y-3">
+                <div className="space-y-0 border border-gray-300 rounded-md overflow-hidden">
                   {/* Rich Text Editor formatting options mock bar */}
-                  <div className="flex flex-wrap items-center gap-1 bg-gray-50 border border-gray-200 rounded-t-xl p-1.5 text-xs text-gray-500 font-bold select-none">
-                    {['Bold', 'Italic', 'Strikethrough', 'Superscript', 'Heading', 'Link', 'Image', 'Video', 'Bullet List', 'Number List', 'Spoiler', 'Quote Block', 'Code', 'Code Block', 'Table'].map(tool => (
-                      <span key={tool} className="px-2 py-1 hover:bg-gray-200 rounded cursor-pointer transition-colors text-[10px]">{tool}</span>
-                    ))}
-                    <span className="ml-auto text-[10px] text-blue-600 cursor-pointer hover:underline">Switch to Markdown</span>
+                  <div className="flex flex-wrap items-center gap-1.5 bg-gray-50 border-b border-gray-200 p-2 text-gray-550 font-bold select-none text-[11px]">
+                    <span title="Bold" className="w-6 h-6 hover:bg-gray-200 rounded flex items-center justify-center cursor-pointer"><Bold className="w-3.5 h-3.5" /></span>
+                    <span title="Italic" className="w-6 h-6 hover:bg-gray-200 rounded flex items-center justify-center cursor-pointer"><Italic className="w-3.5 h-3.5" /></span>
+                    <span title="Strikethrough" className="w-6 h-6 hover:bg-gray-200 rounded flex items-center justify-center cursor-pointer"><Strikethrough className="w-3.5 h-3.5" /></span>
+                    <span title="Superscript" className="w-6 h-6 hover:bg-gray-200 rounded flex items-center justify-center cursor-pointer"><Superscript className="w-3.5 h-3.5" /></span>
+                    <span title="Heading" className="w-6 h-6 hover:bg-gray-200 rounded flex items-center justify-center cursor-pointer"><Heading className="w-3.5 h-3.5" /></span>
+                    <span className="h-4 w-px bg-gray-300 mx-1" />
+                    <span title="Link" className="w-6 h-6 hover:bg-gray-200 rounded flex items-center justify-center cursor-pointer"><LinkIcon className="w-3.5 h-3.5" /></span>
+                    <span title="Image" className="w-6 h-6 hover:bg-gray-200 rounded flex items-center justify-center cursor-pointer"><ImageIcon className="w-3.5 h-3.5" /></span>
+                    <span title="Smiley" className="w-6 h-6 hover:bg-gray-200 rounded flex items-center justify-center cursor-pointer"><Smile className="w-3.5 h-3.5" /></span>
+                    <span className="h-4 w-px bg-gray-300 mx-1" />
+                    <span title="Bullet List" className="w-6 h-6 hover:bg-gray-200 rounded flex items-center justify-center cursor-pointer"><List className="w-3.5 h-3.5" /></span>
+                    <span title="Numbered List" className="w-6 h-6 hover:bg-gray-200 rounded flex items-center justify-center cursor-pointer"><ListOrdered className="w-3.5 h-3.5" /></span>
+                    <span className="h-4 w-px bg-gray-300 mx-1" />
+                    <span title="Quote Block" className="w-6 h-6 hover:bg-gray-200 rounded flex items-center justify-center cursor-pointer"><Quote className="w-3.5 h-3.5" /></span>
+                    <span title="Code" className="w-6 h-6 hover:bg-gray-200 rounded flex items-center justify-center cursor-pointer"><Code className="w-3.5 h-3.5" /></span>
+                    <span title="Table" className="w-6 h-6 hover:bg-gray-200 rounded flex items-center justify-center cursor-pointer"><Table className="w-3.5 h-3.5" /></span>
+                    
+                    <span className="ml-auto text-[10px] text-gray-700 cursor-pointer hover:underline font-black">Switch to Markdown</span>
                   </div>
 
                   <textarea
-                    placeholder="Body text (optional)…"
+                    placeholder="Body text (optional)"
                     value={bodyText}
                     onChange={e => setBodyText(e.target.value)}
-                    className="w-full min-h-[160px] p-4 border border-t-0 border-gray-200 rounded-b-xl text-xs font-semibold focus:outline-none resize-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-transparent"
+                    className="w-full min-h-[160px] p-4 bg-white text-xs font-semibold focus:outline-none resize-none"
                     aria-label="Post Body text"
                     autoComplete="off"
                   />
@@ -343,7 +350,7 @@ export default function CreateContentScreen({ onBack, onPublish }) {
 
               {/* Images & Video upload area */}
               {activeTab === 'Images & Video' && (
-                <div className="border-2 border-dashed border-gray-250 rounded-xl p-8 text-center bg-gray-50/50 hover:bg-gray-50 transition-colors flex flex-col items-center justify-center space-y-3 relative focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none">
+                <div className="border border-gray-300 rounded-md p-10 text-center bg-white hover:bg-gray-50/50 transition-colors flex flex-col items-center justify-center space-y-3 relative focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none">
                   <input 
                     type="file" 
                     accept="image/*,video/*"
@@ -355,8 +362,8 @@ export default function CreateContentScreen({ onBack, onPublish }) {
                     <ImageIcon className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="text-xs font-black text-gray-700">Drag and Drop or upload media</p>
-                    <p className="text-[10px] text-gray-400 font-semibold mt-1">Upload files…</p>
+                    <p className="text-xs font-black text-gray-750">Drag and Drop or upload media</p>
+                    <p className="text-[10px] text-gray-400 font-semibold mt-1">Upload files</p>
                   </div>
                 </div>
               )}
@@ -367,10 +374,10 @@ export default function CreateContentScreen({ onBack, onPublish }) {
                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Link URL *</label>
                   <input 
                     type="url" 
-                    placeholder="https://…"
+                    placeholder="Link URL *"
                     value={linkUrl}
                     onChange={e => setLinkUrl(e.target.value)}
-                    className="w-full py-3 px-4 border border-gray-250 rounded-xl text-xs font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-transparent bg-gray-50/30"
+                    className="w-full py-3 px-4 border border-gray-300 rounded-md text-xs font-semibold focus:outline-none focus-visible:ring-1 focus-visible:ring-gray-400 bg-white"
                     aria-label="Link URL"
                     autoComplete="off"
                   />
@@ -387,7 +394,7 @@ export default function CreateContentScreen({ onBack, onPublish }) {
                       placeholder="What is your question?…"
                       value={pollQuestion}
                       onChange={e => setPollQuestion(e.target.value)}
-                      className="w-full py-3 px-4 border border-gray-250 rounded-xl text-xs font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-transparent bg-gray-50/30"
+                      className="w-full py-3 px-4 border border-gray-300 rounded-md text-xs font-semibold focus:outline-none focus-visible:ring-1 focus-visible:ring-gray-400 bg-white"
                       aria-label="Poll Question"
                       autoComplete="off"
                     />
@@ -399,14 +406,14 @@ export default function CreateContentScreen({ onBack, onPublish }) {
                       <input 
                         key={idx}
                         type="text" 
-                        placeholder={`Option ${idx + 1}…`}
+                        placeholder={`Option ${idx + 1}`}
                         value={opt}
                         onChange={e => {
                           const newOpts = [...pollOptions];
                           newOpts[idx] = e.target.value;
                           setPollOptions(newOpts);
                         }}
-                        className="w-full py-2.5 px-4 border border-gray-250 rounded-xl text-xs font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-transparent bg-gray-50/30 mb-2"
+                        className="w-full py-2 px-4 border border-gray-300 rounded-md text-xs font-semibold focus:outline-none focus-visible:ring-1 focus-visible:ring-gray-400 bg-white mb-2"
                         aria-label={`Option ${idx + 1}`}
                         autoComplete="off"
                       />
@@ -423,18 +430,28 @@ export default function CreateContentScreen({ onBack, onPublish }) {
 
               {/* Action buttons (Post, Save Draft) */}
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-150">
-                <Button
+                <button
                   onClick={handleSaveDraft}
-                  variant="outline"
+                  disabled={!title.trim()}
+                  className={`px-5 py-2 rounded-full text-xs font-black transition-colors cursor-pointer border border-transparent ${
+                    title.trim() 
+                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' 
+                      : 'bg-[#F6F7F8] text-gray-400 cursor-not-allowed'
+                  }`}
                 >
                   Save Draft
-                </Button>
-                <Button
+                </button>
+                <button
                   onClick={handlePostSubmit}
-                  variant="default"
+                  disabled={!title.trim() || !selectedCommunity}
+                  className={`px-6 py-2 rounded-full text-xs font-black transition-all shadow-xs cursor-pointer ${
+                    title.trim() && selectedCommunity
+                      ? 'bg-[#0079D3] hover:bg-[#0079D3]/90 text-white' 
+                      : 'bg-[#F6F7F8] text-gray-400 cursor-not-allowed'
+                  }`}
                 >
                   Post
-                </Button>
+                </button>
               </div>
             </div>
           </div>
