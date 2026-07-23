@@ -40,6 +40,14 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
   const [reportedPosts, setReportedPosts] = useState(adminStore.getReportedPosts());
   const [deletedPostIds, setDeletedPostIds] = useState(adminStore.getDeletedPostIds());
   const [liveUsers, setLiveUsers] = useState(148);
+  const [selectedUserEmails, setSelectedUserEmails] = useState([]);
+  const [activeModUser, setActiveModUser] = useState(null);
+  const [userFilterStatus, setUserFilterStatus] = useState('all');
+  const [userFilterRole, setUserFilterRole] = useState('all');
+  const [userWarnings, setUserWarnings] = useState({
+    'spammer_bot@crypto.org': 4,
+    'contact@algartech.io': 1
+  });
 
   // Form states
   const [annTitle, setAnnTitle] = useState(announcement?.title || '');
@@ -939,91 +947,336 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
 
 
           {/* ── TAB 3: USER MANAGEMENT & SAFETY ── */}
-          {activeTab === 'users' && (
-            <div className={`${themeCardBg} rounded-3xl p-6 md:p-8 space-y-6 animate-fade-in`}>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-black flex items-center gap-2">
-                    <Users className="w-5 h-5 text-violet-505" /> User Management & Platform Safety
-                  </h2>
-                  <p className={`text-xs ${themeSubtext} mt-1`}>
-                    Super User authority to remove or ban users who exploit or violate platform rules.
-                  </p>
-                </div>
+          {activeTab === 'users' && (() => {
+            // Apply search & status/role filters dynamically
+            const filteredAndSearchUsers = allUsers.filter(user => {
+              const matchesSearch = user.name.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+                user.email.toLowerCase().includes(userSearchQuery.toLowerCase());
+              
+              const isBanned = bannedUsers.includes(user.email.toLowerCase());
+              const matchesStatus = userFilterStatus === 'all' ||
+                (userFilterStatus === 'banned' && isBanned) ||
+                (userFilterStatus === 'active' && !isBanned);
+                
+              const matchesRole = userFilterRole === 'all' || user.role === userFilterRole;
+              
+              return matchesSearch && matchesStatus && matchesRole;
+            });
 
-                <div className="relative w-full sm:w-64">
-                  <Search className="w-4 h-4 text-gray-500 absolute left-3.5 top-3" />
-                  <input
-                    type="text"
-                    placeholder="Search users..."
-                    value={userSearchQuery}
-                    onChange={e => setUserSearchQuery(e.target.value)}
-                    className={`w-full py-2 pl-9 pr-4 border rounded-xl ${themeInputBg} text-xs focus:outline-none focus:ring-2 focus:ring-violet-500`}
-                  />
-                </div>
-              </div>
+            // Default activeModUser if not set
+            const currentSelectedUser = activeModUser || filteredAndSearchUsers[0];
 
-              {/* Users Table */}
-              <div className={`overflow-x-auto rounded-2xl border ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`}>
-                <table className="w-full text-left text-xs">
-                  <thead className={`${themeTableHeader} font-bold uppercase tracking-wider border-b`}>
-                    <tr>
-                      <th className="p-4">User</th>
-                      <th className="p-4">Role</th>
-                      <th className="p-4">Joined</th>
-                      <th className="p-4">Status</th>
-                      <th className="p-4 text-right">Super User Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-800/10 text-inherit">
-                    {filteredUsers.map((user) => {
-                      const isBanned = bannedUsers.includes(user.email.toLowerCase());
-                      return (
-                        <tr key={user.id} className={`${isDarkMode ? 'hover:bg-white/5' : 'hover:bg-gray-50'} transition-colors`}>
-                          <td className="p-4">
-                            <div className="font-bold">{user.name}</div>
-                            <div className={`${themeSubtext} text-[11px]`}>{user.email}</div>
-                          </td>
-                          <td className="p-4">
-                            <span className={`px-2.5 py-1 rounded-lg ${isDarkMode ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-gray-100 border-gray-200 text-gray-700'} border font-semibold`}>
-                              {user.role}
-                            </span>
-                          </td>
-                          <td className={`p-4 ${themeSubtext}`}>{user.joined}</td>
-                          <td className="p-4">
-                            {isBanned ? (
-                              <span className="px-2.5 py-1 rounded-lg bg-red-500/20 text-red-500 border border-red-500/30 font-bold">
-                                🚫 Banned
-                              </span>
-                            ) : (
-                              <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 font-bold">
-                                ✅ Active
-                              </span>
-                            )}
-                          </td>
-                          <td className="p-4 text-right">
-                            <button
-                              onClick={() => handleToggleBanUser(user.email)}
-                              className={`px-3 py-1.5 rounded-xl font-bold transition-all border cursor-pointer ${isBanned
-                                  ? 'bg-emerald-500/20 text-emerald-555 border-emerald-500/30 hover:bg-emerald-500/30'
-                                  : 'bg-red-500/20 text-red-500 border-red-500/30 hover:bg-red-500/30'
-                                }`}
-                            >
-                              {isBanned ? (
-                                <span className="flex items-center gap-1"><UserCheck className="w-3.5 h-3.5" /> Unban User</span>
-                              ) : (
-                                <span className="flex items-center gap-1"><UserX className="w-3.5 h-3.5" /> Ban User</span>
-                              )}
-                            </button>
-                          </td>
+            // Bulk action handlers
+            const handleSelectAll = (e) => {
+              if (e.target.checked) {
+                setSelectedUserEmails(filteredAndSearchUsers.map(u => u.email));
+              } else {
+                setSelectedUserEmails([]);
+              }
+            };
+
+            const handleSelectRow = (email) => {
+              setSelectedUserEmails(prev =>
+                prev.includes(email) ? prev.filter(e => e !== email) : [...prev, email]
+              );
+            };
+
+            const handleBulkBan = () => {
+              if (selectedUserEmails.length === 0) return;
+              selectedUserEmails.forEach(email => adminStore.banUser(email));
+              setBannedUsers(adminStore.getBannedUsers());
+              setSelectedUserEmails([]);
+              setAnnSuccessMsg(`🚫 Successfully banned ${selectedUserEmails.length} users in bulk.`);
+              setTimeout(() => setAnnSuccessMsg(''), 4000);
+            };
+
+            const handleBulkWarn = () => {
+              if (selectedUserEmails.length === 0) return;
+              setUserWarnings(prev => {
+                const next = { ...prev };
+                selectedUserEmails.forEach(email => {
+                  next[email] = (next[email] || 0) + 1;
+                });
+                return next;
+              });
+              setSelectedUserEmails([]);
+              setAnnSuccessMsg(`⚠️ Issued warnings to ${selectedUserEmails.length} users in bulk.`);
+              setTimeout(() => setAnnSuccessMsg(''), 4000);
+            };
+
+            const handleWarnUser = (email) => {
+              setUserWarnings(prev => ({
+                ...prev,
+                [email]: (prev[email] || 0) + 1
+              }));
+            };
+
+            const handlePromoteUser = (userId, newRole) => {
+              setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+            };
+
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+                {/* Left Column: Moderation list table (2 cols span) */}
+                <div className={`${themeCardBg} rounded-3xl p-6 space-y-4 lg:col-span-2`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h2 className="text-lg font-black flex items-center gap-2">
+                        <Users className="w-5 h-5 text-violet-500" /> Trust & Safety Console
+                      </h2>
+                      <p className={`text-[11px] ${themeSubtext}`}>
+                        Review registered user permissions, issue warning counts, suspend login access, or adjust authorization roles.
+                      </p>
+                    </div>
+
+                    <div className="relative w-full sm:w-60">
+                      <Search className="w-4 h-4 text-gray-500 absolute left-3 top-2.5" />
+                      <input
+                        type="text"
+                        placeholder="Search users..."
+                        value={userSearchQuery}
+                        onChange={e => setUserSearchQuery(e.target.value)}
+                        className={`w-full py-2 pl-9 pr-4 border rounded-xl ${themeInputBg} text-xs focus:outline-none focus:ring-2 focus:ring-violet-500`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Filters Bar & Bulk Actions */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-gray-100">
+                    <div className="flex gap-2 items-center text-xs">
+                      <span className="font-bold text-gray-400">Filters:</span>
+                      <select
+                        value={userFilterStatus}
+                        onChange={e => setUserFilterStatus(e.target.value)}
+                        className={`py-1 px-2 border rounded-lg ${themeInputBg} text-xs focus:outline-none`}
+                      >
+                        <option value="all">All Statuses</option>
+                        <option value="active">Active Only</option>
+                        <option value="banned">Banned Only</option>
+                      </select>
+                      <select
+                        value={userFilterRole}
+                        onChange={e => setUserFilterRole(e.target.value)}
+                        className={`py-1 px-2 border rounded-lg ${themeInputBg} text-xs focus:outline-none`}
+                      >
+                        <option value="all">All Roles</option>
+                        <option value="User">User</option>
+                        <option value="Developer">Developer</option>
+                        <option value="Verified NGO">Verified NGO</option>
+                      </select>
+                    </div>
+
+                    {selectedUserEmails.length > 0 && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleBulkBan}
+                          className="px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 text-[10px] font-black uppercase tracking-wider cursor-pointer"
+                        >
+                          Bulk Ban ({selectedUserEmails.length})
+                        </button>
+                        <button
+                          onClick={handleBulkWarn}
+                          className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 text-[10px] font-black uppercase tracking-wider cursor-pointer"
+                        >
+                          Bulk Warn
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Table */}
+                  <div className={`overflow-x-auto rounded-2xl border ${isDarkMode ? 'border-gray-800' : 'border-gray-200'}`}>
+                    <table className="w-full text-left text-[11px]">
+                      <thead className={`${themeTableHeader} font-bold uppercase tracking-wider border-b`}>
+                        <tr>
+                          <th className="p-3 w-8">
+                            <input
+                              type="checkbox"
+                              checked={selectedUserEmails.length === filteredAndSearchUsers.length && filteredAndSearchUsers.length > 0}
+                              onChange={handleSelectAll}
+                              className="rounded text-violet-600 focus:ring-violet-500 cursor-pointer"
+                            />
+                          </th>
+                          <th className="p-3">User info</th>
+                          <th className="p-3">Role settings</th>
+                          <th className="p-3">Status</th>
+                          <th className="p-3 text-right">Moderation Controls</th>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      </thead>
+                      <tbody className="divide-y divide-gray-800/10 text-inherit">
+                        {filteredAndSearchUsers.map((user) => {
+                          const isBanned = bannedUsers.includes(user.email.toLowerCase());
+                          const isSelected = selectedUserEmails.includes(user.email);
+                          const warnings = userWarnings[user.email] || 0;
+
+                          return (
+                            <tr
+                              key={user.id}
+                              onClick={() => setActiveModUser(user)}
+                              className={`transition-colors cursor-pointer ${
+                                currentSelectedUser?.id === user.id
+                                  ? (isDarkMode ? 'bg-white/5' : 'bg-gray-100')
+                                  : (isDarkMode ? 'hover:bg-white/5' : 'hover:bg-gray-50')
+                              }`}
+                            >
+                              <td className="p-3" onClick={e => e.stopPropagation()}>
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => handleSelectRow(user.email)}
+                                  className="rounded text-violet-600 focus:ring-violet-500 cursor-pointer"
+                                />
+                              </td>
+                              <td className="p-3">
+                                <div className="font-bold flex items-center gap-1">
+                                  {user.name}
+                                  {warnings >= 3 && (
+                                    <span className="px-1.5 py-0.2 bg-red-500/10 text-red-500 text-[9px] rounded-full font-black uppercase">
+                                      ⚠️ {warnings} warnings
+                                    </span>
+                                  )}
+                                </div>
+                                <div className={`${themeSubtext} text-[10px]`}>{user.email}</div>
+                              </td>
+                              <td className="p-3" onClick={e => e.stopPropagation()}>
+                                <select
+                                  value={user.role}
+                                  onChange={e => handlePromoteUser(user.id, e.target.value)}
+                                  className={`py-1 px-1.5 border rounded-lg ${themeInputBg} text-[10px] focus:outline-none font-semibold`}
+                                >
+                                  <option value="User">User</option>
+                                  <option value="Developer">Developer</option>
+                                  <option value="Verified NGO">Verified NGO</option>
+                                  <option value="Admin">Admin</option>
+                                </select>
+                              </td>
+                              <td className="p-3">
+                                {isBanned ? (
+                                  <span className="px-2 py-0.5 rounded-lg bg-red-500/20 text-red-500 border border-red-500/30 font-extrabold text-[10px]">
+                                    Banned
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 font-extrabold text-[10px]">
+                                    Active
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-3 text-right space-x-1.5" onClick={e => e.stopPropagation()}>
+                                <button
+                                  onClick={() => handleWarnUser(user.email)}
+                                  className="px-2 py-1 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-500 text-[10px] font-bold border border-amber-500/20 cursor-pointer"
+                                >
+                                  Warn
+                                </button>
+                                <button
+                                  onClick={() => handleToggleBanUser(user.email)}
+                                  className={`px-2 py-1 rounded-xl text-[10px] font-bold border cursor-pointer ${
+                                    isBanned
+                                      ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-500 border-emerald-500/20'
+                                      : 'bg-red-500/15 hover:bg-red-500/25 text-red-500 border-red-500/20'
+                                  }`}
+                                >
+                                  {isBanned ? 'Unban' : 'Ban'}
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Right Column: User details & Safety History Timeline */}
+                <div className={`${themeCardBg} rounded-3xl p-5 space-y-4`}>
+                  <h3 className="text-xs font-black uppercase tracking-wider">User Security Profile</h3>
+                  {currentSelectedUser ? (
+                    <div className="space-y-4 text-xs">
+                      {/* Summary card */}
+                      <div className={`p-4 rounded-2xl ${themeSubCardBg} space-y-2`}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-violet-600 to-orange-500 flex items-center justify-center text-white font-extrabold text-sm shadow">
+                            {currentSelectedUser.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="font-extrabold text-sm text-gray-900">{currentSelectedUser.name}</div>
+                            <div className="text-[10px] text-gray-400">u/{currentSelectedUser.email.split('@')[0]}</div>
+                          </div>
+                        </div>
+                        <div className="flex justify-between pt-2 border-t border-gray-800/10 text-[10px]">
+                          <div>
+                            <div className="text-gray-400 font-bold uppercase">Role</div>
+                            <div className="font-black text-gray-800 mt-0.5">{currentSelectedUser.role}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-400 font-bold uppercase">Warnings</div>
+                            <div className="font-black text-amber-500 mt-0.5">{userWarnings[currentSelectedUser.email] || 0}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-400 font-bold uppercase">Account Status</div>
+                            <div className={`font-black mt-0.5 ${bannedUsers.includes(currentSelectedUser.email.toLowerCase()) ? 'text-red-500' : 'text-emerald-500'}`}>
+                              {bannedUsers.includes(currentSelectedUser.email.toLowerCase()) ? 'Restricted' : 'Active'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Mock User activity statistics */}
+                      <div className="space-y-2">
+                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Platform Activity</div>
+                        <div className="grid grid-cols-2 gap-2 text-center text-[10px]">
+                          <div className={`p-2.5 rounded-xl ${themeSubCardBg}`}>
+                            <div className="font-black text-sm text-violet-600">{currentSelectedUser.posts || 14}</div>
+                            <div className="text-gray-400">Total Posts</div>
+                          </div>
+                          <div className={`p-2.5 rounded-xl ${themeSubCardBg}`}>
+                            <div className="font-black text-sm text-pink-500">42</div>
+                            <div className="text-gray-400">Comments</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Timeline */}
+                      <div className="space-y-3">
+                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Safety Log Timeline</div>
+                        <div className="space-y-3 relative pl-3.5 border-l border-violet-500/30 text-[11px]">
+                          <div className="relative">
+                            <span className="absolute -left-[19.5px] top-1 w-2.5 h-2.5 bg-violet-600 rounded-full border-2 border-white shadow"></span>
+                            <div className="font-bold text-gray-800">Account Created</div>
+                            <div className="text-[10px] text-gray-400">{currentSelectedUser.joined}</div>
+                          </div>
+                          <div className="relative">
+                            <span className="absolute -left-[19.5px] top-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white shadow"></span>
+                            <div className="font-bold text-gray-800">Phone & Email Verified</div>
+                            <div className="text-[10px] text-gray-400">Auto-completed on registration</div>
+                          </div>
+                          {userWarnings[currentSelectedUser.email] > 0 && (
+                            <div className="relative">
+                              <span className="absolute -left-[19.5px] top-1 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-white shadow"></span>
+                              <div className="font-bold text-amber-500">Official Warning Issued</div>
+                              <div className="text-[10px] text-gray-400">System warnings count: {userWarnings[currentSelectedUser.email]}</div>
+                            </div>
+                          )}
+                          {bannedUsers.includes(currentSelectedUser.email.toLowerCase()) && (
+                            <div className="relative">
+                              <span className="absolute -left-[19.5px] top-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white shadow"></span>
+                              <div className="font-bold text-red-500">Access Revoked (Banned)</div>
+                              <div className="text-[10px] text-gray-400">Reason: Repeated platform policy violations</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className={`text-xs ${themeSubtext} italic text-center p-6`}>
+                      No user selected. Click any row in the safety console list to audit.
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
+
 
           {/* ── TAB 4: CONTENT MODERATION & REPORTED POSTS ── */}
           {activeTab === 'moderation' && (
