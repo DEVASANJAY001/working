@@ -39,6 +39,7 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
   const [bannedUsers, setBannedUsers] = useState(adminStore.getBannedUsers());
   const [reportedPosts, setReportedPosts] = useState(adminStore.getReportedPosts());
   const [deletedPostIds, setDeletedPostIds] = useState(adminStore.getDeletedPostIds());
+  const [liveUsers, setLiveUsers] = useState(148);
 
   // Form states
   const [annTitle, setAnnTitle] = useState(announcement?.title || '');
@@ -113,12 +114,22 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
     const unsubRep = adminStore.subscribeReports(reps => setReportedPosts(reps));
     const unsubDel = adminStore.subscribeDeletedPosts(ids => setDeletedPostIds(ids));
 
+    // Fluctuate live users randomly
+    const interval = setInterval(() => {
+      setLiveUsers(prev => {
+        const change = Math.floor(Math.random() * 5) - 2; // -2 to +2
+        const next = prev + change;
+        return next < 120 ? 120 : next > 180 ? 180 : next;
+      });
+    }, 3000);
+
     return () => {
       unsubAnn();
       unsubAds();
       unsubBan();
       unsubRep();
       unsubDel();
+      clearInterval(interval);
     };
   }, []);
 
@@ -355,77 +366,199 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
           {/* ── TAB 1: OVERVIEW DASHBOARD ── */}
           {activeTab === 'overview' && (
             <div className="space-y-6 animate-fade-in">
-              <div className="bg-gradient-to-r from-violet-600/25 via-pink-500/10 to-orange-500/5 border border-violet-500/30 rounded-3xl p-6 relative overflow-hidden">
-                <div className="relative z-10 max-w-xl">
+              {/* Header Status Bar */}
+              <div className="bg-gradient-to-r from-violet-600/25 via-pink-500/10 to-orange-500/5 border border-violet-500/30 rounded-3xl p-6 relative overflow-hidden flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="relative z-10">
                   <h2 className="text-2xl font-black">Welcome back, Super User Aadithya 👋</h2>
                   <p className={`text-xs mt-2 leading-relaxed ${themeSubtext}`}>
                     You have total administration rights over the Inspire community web app. Monitor community health, handle reported posts, manage users, and post featured ads or pinned announcements.
                   </p>
                 </div>
+                {/* Live pulsing online widget */}
+                <div className={`shrink-0 flex items-center gap-3 px-4 py-2.5 rounded-2xl ${themeSubCardBg} border border-emerald-500/20`}>
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                  </span>
+                  <div>
+                    <div className="text-sm font-black">{liveUsers} Online</div>
+                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Live Platform Session</div>
+                  </div>
+                </div>
               </div>
 
-              {/* Stats Grid */}
+              {/* Core KPIs Stats Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className={`${themeCardBg} rounded-3xl p-5 hover:border-violet-500/40 transition-all`}>
-                  <div className={`flex items-center justify-between ${themeSubtext} mb-3`}>
-                    <span className="text-xs font-bold uppercase tracking-wider">Total Users</span>
-                    <div className="p-2 bg-violet-500/10 rounded-xl text-violet-500">
-                      <Users className="w-5 h-5" />
+                <div className={`${themeCardBg} rounded-3xl p-5 hover:border-violet-500/40 transition-all flex flex-col justify-between`}>
+                  <div>
+                    <div className={`flex items-center justify-between ${themeSubtext} mb-3`}>
+                      <span className="text-[10px] font-black uppercase tracking-wider">Total Registrations</span>
+                      <div className="p-2 bg-violet-500/10 rounded-xl text-violet-500">
+                        <Users className="w-4 h-4" />
+                      </div>
                     </div>
+                    <div className="text-3xl font-black">{allUsers.length}</div>
                   </div>
-                  <div className="text-3xl font-black">{allUsers.length}</div>
-                  <div className="text-[11px] text-emerald-500 mt-1 flex items-center gap-1 font-semibold">
-                    <TrendingUp className="w-3.5 h-3.5" /> +24% this week
+                  <div className="text-[10px] text-emerald-500 mt-3 flex items-center gap-1 font-bold">
+                    <TrendingUp className="w-3.5 h-3.5" /> +24% Growth MoM
                   </div>
                 </div>
 
-                <div className={`${themeCardBg} rounded-3xl p-5 hover:border-violet-500/40 transition-all`}>
-                  <div className={`flex items-center justify-between ${themeSubtext} mb-3`}>
-                    <span className="text-xs font-bold uppercase tracking-wider">Reported Content</span>
-                    <div className="p-2 bg-amber-500/10 rounded-xl text-amber-500">
-                      <AlertTriangle className="w-5 h-5" />
+                <div className={`${themeCardBg} rounded-3xl p-5 hover:border-violet-500/40 transition-all flex flex-col justify-between`}>
+                  <div>
+                    <div className={`flex items-center justify-between ${themeSubtext} mb-3`}>
+                      <span className="text-[10px] font-black uppercase tracking-wider">Pending Moderation</span>
+                      <div className="p-2 bg-amber-500/10 rounded-xl text-amber-500">
+                        <AlertTriangle className="w-4 h-4" />
+                      </div>
                     </div>
+                    <div className="text-3xl font-black text-amber-500">{reportedPosts.length}</div>
                   </div>
-                  <div className="text-3xl font-black text-amber-500">{reportedPosts.length}</div>
-                  <div className="text-[11px] text-amber-500 mt-1 font-semibold">
-                    Requires admin action
+                  <div className="text-[10px] text-amber-500 mt-3 font-bold">
+                    {reportedPosts.length > 0 ? "⚠️ Requires immediate review" : "✓ Content clean"}
                   </div>
                 </div>
 
-                <div className={`${themeCardBg} rounded-3xl p-5 hover:border-violet-500/40 transition-all`}>
-                  <div className={`flex items-center justify-between ${themeSubtext} mb-3`}>
-                    <span className="text-xs font-bold uppercase tracking-wider">Banned Users</span>
-                    <div className="p-2 bg-red-500/10 rounded-xl text-red-500">
-                      <UserX className="w-5 h-5" />
+                <div className={`${themeCardBg} rounded-3xl p-5 hover:border-violet-500/40 transition-all flex flex-col justify-between`}>
+                  <div>
+                    <div className={`flex items-center justify-between ${themeSubtext} mb-3`}>
+                      <span className="text-[10px] font-black uppercase tracking-wider">Banned Exploiters</span>
+                      <div className="p-2 bg-red-500/10 rounded-xl text-red-500">
+                        <UserX className="w-4 h-4" />
+                      </div>
                     </div>
+                    <div className="text-3xl font-black text-red-500">{bannedUsers.length}</div>
                   </div>
-                  <div className="text-3xl font-black text-red-500">{bannedUsers.length}</div>
-                  <div className="text-[11px] text-red-500 mt-1 font-semibold">
-                    Exploiters restricted
+                  <div className="text-[10px] text-red-500 mt-3 font-bold">
+                    Restrictive policies active
                   </div>
                 </div>
 
-                <div className={`${themeCardBg} rounded-3xl p-5 hover:border-violet-500/40 transition-all`}>
-                  <div className={`flex items-center justify-between ${themeSubtext} mb-3`}>
-                    <span className="text-xs font-bold uppercase tracking-wider">Active Ads</span>
-                    <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-500">
-                      <Megaphone className="w-5 h-5" />
+                <div className={`${themeCardBg} rounded-3xl p-5 hover:border-violet-500/40 transition-all flex flex-col justify-between`}>
+                  <div>
+                    <div className={`flex items-center justify-between ${themeSubtext} mb-3`}>
+                      <span className="text-[10px] font-black uppercase tracking-wider">Active Campaigns</span>
+                      <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-500">
+                        <Megaphone className="w-4 h-4" />
+                      </div>
                     </div>
+                    <div className="text-3xl font-black text-emerald-500">{ads.filter(a => a.active).length}</div>
                   </div>
-                  <div className="text-3xl font-black text-emerald-500">{ads.filter(a => a.active).length}</div>
-                  <div className="text-[11px] text-emerald-500 mt-1 font-semibold">
-                    Live banner campaigns
+                  <div className="text-[10px] text-emerald-500 mt-3 font-bold">
+                    Sponsored impressions active
                   </div>
                 </div>
               </div>
 
-              {/* Quick Actions Grid */}
+              {/* Analytics Graphs Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Line Chart: Engagement Trends */}
+                <div className={`${themeCardBg} rounded-3xl p-5 space-y-4`}>
+                  <div>
+                    <h3 className="font-extrabold text-xs uppercase tracking-wider">Platform Daily Engagement</h3>
+                    <p className={`text-[10px] ${themeSubtext}`}>Submissions & reactions trend (7d)</p>
+                  </div>
+                  <div className="h-32 flex items-end">
+                    <svg viewBox="0 0 300 120" className="w-full h-full overflow-visible">
+                      <defs>
+                        <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.3" />
+                          <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.0" />
+                        </linearGradient>
+                      </defs>
+                      {/* Grid lines */}
+                      <line x1="0" y1="30" x2="300" y2="30" stroke="#E5E7EB" strokeDasharray="3 3" />
+                      <line x1="0" y1="70" x2="300" y2="70" stroke="#E5E7EB" strokeDasharray="3 3" />
+                      <line x1="0" y1="100" x2="300" y2="100" stroke="#E5E7EB" />
+                      
+                      {/* Gradient Fill under Path */}
+                      <path
+                        d="M 10 90 Q 60 70 110 50 T 210 20 T 290 10 L 290 100 L 10 100 Z"
+                        fill="url(#lineGrad)"
+                      />
+                      {/* Line Path */}
+                      <path
+                        d="M 10 90 Q 60 70 110 50 T 210 20 T 290 10"
+                        fill="none"
+                        stroke="#8B5CF6"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                      />
+                      {/* Spark dots */}
+                      <circle cx="290" cy="10" r="4" fill="#8B5CF6" stroke="#FFFFFF" strokeWidth="2.5" />
+                    </svg>
+                  </div>
+                  <div className="flex justify-between text-[10px] text-gray-400 font-bold uppercase tracking-wider px-1">
+                    <span>Mon</span>
+                    <span>Wed</span>
+                    <span>Fri</span>
+                    <span>Today</span>
+                  </div>
+                </div>
+
+                {/* Bar Chart: Community Health */}
+                <div className={`${themeCardBg} rounded-3xl p-5 space-y-4`}>
+                  <div>
+                    <h3 className="font-extrabold text-xs uppercase tracking-wider">Top Communities Activity</h3>
+                    <p className={`text-[10px] ${themeSubtext}`}>Posts & active members index</p>
+                  </div>
+                  <div className="h-32 flex items-end">
+                    <svg viewBox="0 0 300 120" className="w-full h-full">
+                      {/* Grid lines */}
+                      <line x1="0" y1="30" x2="300" y2="30" stroke="#E5E7EB" strokeDasharray="3 3" />
+                      <line x1="0" y1="70" x2="300" y2="70" stroke="#E5E7EB" strokeDasharray="3 3" />
+                      <line x1="0" y1="100" x2="300" y2="100" stroke="#E5E7EB" />
+                      
+                      {/* Bars */}
+                      <rect x="25" y="20" width="22" height="80" rx="3" fill="#8B5CF6" />
+                      <rect x="95" y="45" width="22" height="55" rx="3" fill="#EC4899" />
+                      <rect x="165" y="10" width="22" height="90" rx="3" fill="#F97316" />
+                      <rect x="235" y="60" width="22" height="40" rx="3" fill="#10B981" />
+                    </svg>
+                  </div>
+                  <div className="flex justify-between text-[9px] text-gray-400 font-extrabold uppercase tracking-wider px-1">
+                    <span className="truncate max-w-[50px]">CarsIndia</span>
+                    <span className="truncate max-w-[50px]">ipl</span>
+                    <span className="truncate max-w-[50px]">AI_Agents</span>
+                    <span className="truncate max-w-[50px]">SideProj</span>
+                  </div>
+                </div>
+
+                {/* Donut Chart: Report Categories */}
+                <div className={`${themeCardBg} rounded-3xl p-5 space-y-4`}>
+                  <div>
+                    <h3 className="font-extrabold text-xs uppercase tracking-wider">Report Frequency Breakdown</h3>
+                    <p className={`text-[10px] ${themeSubtext}`}>Common violation segments</p>
+                  </div>
+                  <div className="flex items-center justify-around h-32">
+                    <svg viewBox="0 0 100 100" className="w-24 h-24 transform -rotate-90">
+                      <circle cx="50" cy="50" r="35" fill="transparent" stroke="#F3F4F6" strokeWidth="12" />
+                      {/* Spam: 45% (dasharray: 2 * pi * 35 = 220. => 45% = 99) */}
+                      <circle cx="50" cy="50" r="35" fill="transparent" stroke="#8B5CF6" strokeWidth="12"
+                              strokeDasharray="99 121" strokeDashoffset="0" />
+                      {/* Scams: 30% (= 66) */}
+                      <circle cx="50" cy="50" r="35" fill="transparent" stroke="#F97316" strokeWidth="12"
+                              strokeDasharray="66 154" strokeDashoffset="-99" />
+                      {/* Harassment: 25% (= 55) */}
+                      <circle cx="50" cy="50" r="35" fill="transparent" stroke="#EF4444" strokeWidth="12"
+                              strokeDasharray="55 165" strokeDashoffset="-165" />
+                    </svg>
+                    <div className="space-y-1.5 text-[9px] font-bold uppercase tracking-wider">
+                      <div className="flex items-center gap-1.5"><span className="w-2 h-2 bg-[#8B5CF6] rounded-full shrink-0"></span><span>Spam (45%)</span></div>
+                      <div className="flex items-center gap-1.5"><span className="w-2 h-2 bg-[#F97316] rounded-full shrink-0"></span><span>Scams (30%)</span></div>
+                      <div className="flex items-center gap-1.5"><span className="w-2 h-2 bg-[#EF4444] rounded-full shrink-0"></span><span>Abuse (25%)</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Actions & Moderation Summaries */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Active Super User Announcement Card */}
+                {/* Active Announcement Status */}
                 <div className={`${themeCardBg} rounded-3xl p-6 space-y-4`}>
                   <div className="flex items-center justify-between">
                     <h3 className="font-extrabold text-sm flex items-center gap-2">
-                      <Pin className="w-4 h-4 text-violet-500" /> Active Pinned Super User Post
+                      <Pin className="w-4 h-4 text-violet-500" /> Active Platform Pinned Announcement
                     </h3>
                     <button
                       onClick={() => setActiveTab('announcement')}
@@ -440,7 +573,7 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                       <div className="flex items-center gap-2 text-xs font-bold text-violet-500">
                         <Sparkles className="w-3.5 h-3.5" /> Pinned at top of user feed
                       </div>
-                      <h4 className="font-bold text-base">{announcement.title}</h4>
+                      <h4 className="font-bold text-sm">{announcement.title}</h4>
                       <p className={`text-xs ${themeSubtext} line-clamp-2`}>{announcement.text}</p>
                     </div>
                   ) : (
@@ -452,7 +585,7 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                 <div className={`${themeCardBg} rounded-3xl p-6 space-y-4`}>
                   <div className="flex items-center justify-between">
                     <h3 className="font-extrabold text-sm flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 text-amber-500" /> Pending Moderation Reports
+                      <AlertTriangle className="w-4 h-4 text-amber-500" /> High-Priority Content Reports
                     </h3>
                     <button
                       onClick={() => setActiveTab('moderation')}
@@ -484,6 +617,21 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                       No pending reports! Community content is clean.
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* Operational Alerts Center */}
+              <div className={`${themeCardBg} rounded-3xl p-5 space-y-3`}>
+                <h3 className="text-xs font-black uppercase tracking-wider">System & Operational Alerts</h3>
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600">
+                    <span className="mt-0.5 font-bold shrink-0">⚠️ SYSTEM:</span>
+                    <span>High spam threshold reached in <strong>r/ipl</strong>. Rate limiting rules triggered automatically.</span>
+                  </div>
+                  <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-violet-500/10 border border-violet-500/20 text-xs text-violet-600">
+                    <span className="mt-0.5 font-bold shrink-0">⚡ CAMPAIGN:</span>
+                    <span>Sponsored campaign <strong>"Boost Your Creative Workflow with Inspire Pro"</strong> reached 1,000+ clicks today.</span>
+                  </div>
                 </div>
               </div>
             </div>
