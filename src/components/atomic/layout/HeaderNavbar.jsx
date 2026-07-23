@@ -62,8 +62,8 @@ export default function HeaderNavbar({
 
         {/* User Profile Avatar */}
         <div className="relative">
-          <button onClick={() => setShowMenu(!showMenu)} className="cursor-pointer">
-            <Avatar initials={userInitial} isOnline={true} />
+          <button onClick={() => setShowMenu(!showMenu)} className="cursor-pointer flex items-center">
+            <Avatar src={currentUser?.profileImage} initials={userInitial} isOnline={true} />
           </button>
 
           {showMenu && (

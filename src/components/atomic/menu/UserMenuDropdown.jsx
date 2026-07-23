@@ -25,10 +25,10 @@ export default function UserMenuDropdown({ currentUser, onGoToAdmin, onLogout })
     <div className="absolute right-0 top-12 w-64 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 py-2.5 animate-fade-in text-gray-800">
       {/* User Header Profile Link */}
       <div className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100">
-        <Avatar initials={userInitial} isOnline={true} size="md" />
+        <Avatar src={currentUser?.profileImage} initials={userInitial} isOnline={true} size="md" />
         <div className="min-w-0 flex-1">
           <p className="text-xs text-gray-500 font-medium">View Profile</p>
-          <p className="text-xs font-black text-gray-900 truncate">u/{userHandle}</p>
+          <p className="text-xs font-black text-gray-900 truncate">@{userHandle}</p>
         </div>
       </div>
 
