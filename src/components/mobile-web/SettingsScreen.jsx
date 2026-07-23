@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { 
-  ChevronRight, ExternalLink, Check, X, Shield, Link,
-  Smartphone, QrCode, Copy, Mail, Search, MapPin, UserCheck,
-  LogOut as LogOutIcon, Trash2, ChevronDown, Eye, EyeOff
+  ChevronRight, ExternalLink, Check, X, Shield, ArrowLeft,
+  Smartphone, QrCode, Copy, Search,
+  Trash2, Eye, EyeOff
 } from 'lucide-react';
 import { DashboardLayout, Button, Modal } from '../atomic';
 
