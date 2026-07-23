@@ -3,11 +3,11 @@ import { ChevronDown, AlertTriangle, LogOut } from 'lucide-react';
 import { adminStore } from '../../services/adminStore';
 import { DashboardLayout, SpoilerPostCard, Button } from '../atomic';
 
-// ── Mock data matching reference screenshot ────────────────
+// ── Mock data with no r/ prefix ──────────────────────────
 const initialPosts = [
   {
     id: 'post_cars',
-    community: 'r/CarsIndia',
+    community: 'CarsIndia',
     communityIcon: '🚗',
     isVerified: true,
     authorName: 'carsindia_mod',
@@ -26,7 +26,7 @@ const initialPosts = [
   },
   {
     id: 'post_ipl',
-    community: 'r/ipl',
+    community: 'ipl',
     communityIcon: '🏏',
     isVerified: false,
     authorName: 'cricket_fan',
@@ -45,7 +45,7 @@ const initialPosts = [
   },
   {
     id: 'post_ai',
-    community: 'r/AI_Agents',
+    community: 'AI_Agents',
     communityIcon: '🤖',
     isVerified: false,
     authorName: 'agent_architect',
@@ -67,7 +67,7 @@ const initialPosts = [
 const recentPostsList = [
   {
     id: 'rec_ipl',
-    community: 'r/ipl',
+    community: 'ipl',
     communityIcon: '🏏',
     time: '6d ago',
     title: 'How come this man becomes Bradman in MLC?',
@@ -77,7 +77,7 @@ const recentPostsList = [
   },
   {
     id: 'rec_ai',
-    community: 'r/AI_Agents',
+    community: 'AI_Agents',
     communityIcon: '🤖',
     time: '2mo ago',
     title: 'How would you build an AI agent from zero as a beginner?',
@@ -86,7 +86,7 @@ const recentPostsList = [
   },
   {
     id: 'rec_side',
-    community: 'r/SideProject',
+    community: 'SideProject',
     communityIcon: '🚀',
     time: '2mo ago',
     title: 'I built a platform where people post their problems and founders find what to...',
@@ -95,7 +95,7 @@ const recentPostsList = [
   },
   {
     id: 'rec_apps1',
-    community: 'r/apps',
+    community: 'apps',
     communityIcon: '📱',
     time: '2mo ago',
     title: 'We built a Splitwise alternative - split group costs by just scanning receipts',
@@ -104,7 +104,7 @@ const recentPostsList = [
   },
   {
     id: 'rec_apps2',
-    community: 'r/apps',
+    community: 'apps',
     communityIcon: '📱',
     time: '2mo ago',
     title: 'Recently launched our first Android app — Split 🚀 It...',
@@ -173,7 +173,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
         </div>
       </div>
 
-      {/* Posts List using Atomic Organism */}
+      {/* Posts List */}
       <div className="space-y-4">
         {posts.map(post => (
           <SpoilerPostCard

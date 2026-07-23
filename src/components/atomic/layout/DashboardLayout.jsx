@@ -16,8 +16,8 @@ export default function DashboardLayout({
   children
 }) {
   return (
-    <div className="min-h-screen bg-white text-gray-900 font-sans flex flex-col">
-      {/* Top Navigation Header */}
+    <div className="h-screen w-screen bg-white text-gray-900 font-sans flex flex-col overflow-hidden">
+      {/* Top Navbar: fixed size */}
       <HeaderNavbar
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -27,20 +27,20 @@ export default function DashboardLayout({
         onLogout={onLogout}
       />
 
-      {/* Main Body Grid Layout */}
-      <div className="flex flex-1 w-full max-w-[1600px] mx-auto">
-        {/* Left Navigation Sidebar */}
+      {/* Main Body Grid: locked to viewport height */}
+      <div className="flex flex-1 w-full max-w-[1600px] mx-auto overflow-hidden">
+        {/* Left Sidebar: independently scrollable */}
         <LeftSidebar
           activeNav={activeNav}
           setActiveNav={setActiveNav}
         />
 
-        {/* Center Main Slot */}
-        <main className="flex-1 p-4 max-w-3xl mx-auto min-w-0">
+        {/* Center Feed: independently scrollable */}
+        <main className="flex-1 h-full overflow-y-auto no-scrollbar p-4 max-w-3xl mx-auto min-w-0">
           {children}
         </main>
 
-        {/* Right Sidebar */}
+        {/* Right Sidebar: independently scrollable */}
         <RightSidebar
           recentPostsList={recentPostsList}
         />

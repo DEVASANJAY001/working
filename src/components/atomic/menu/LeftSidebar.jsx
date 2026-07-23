@@ -7,12 +7,12 @@ import { GameBannerCard } from '../molecules';
 import LeftSidebarItem from './LeftSidebarItem';
 
 export default function LeftSidebar({ activeNav, setActiveNav }) {
-  const [gamesOpen, setGamesOpen] = useState(false); // default collapsed as in latest screenshot
+  const [gamesOpen, setGamesOpen] = useState(false);
   const [modOpen, setModOpen] = useState(true);
   const [customFeedsOpen, setCustomFeedsOpen] = useState(true);
 
   return (
-    <aside className="w-64 border-r border-gray-200 p-3 hidden lg:block space-y-4 sticky top-14 self-start h-[calc(100vh-3.5rem)] overflow-y-auto no-scrollbar">
+    <aside className="w-64 border-r border-gray-200 p-3 hidden lg:block h-full overflow-y-auto no-scrollbar space-y-4 flex-shrink-0">
       {/* Main Navigation Links */}
       <div className="space-y-1">
         {[
@@ -89,7 +89,7 @@ export default function LeftSidebar({ activeNav, setActiveNav }) {
             {[
               { name: 'Mod Queue', icon: ShieldCheck },
               { name: 'Mod Mail', icon: ShieldCheck },
-              { name: 'r/Mod', icon: ShieldCheck }
+              { name: 'Mod Forum', icon: ShieldCheck }
             ].map(item => (
               <LeftSidebarItem
                 key={item.name}
@@ -103,15 +103,14 @@ export default function LeftSidebar({ activeNav, setActiveNav }) {
               icon={Wrench}
             />
 
-            {/* Starred moderation subreddits */}
             <LeftSidebarItem
-              label="r/cjppartyy"
+              label="cjppartyy"
               imageIcon="👑"
               hasStarAction={true}
               starred={true}
             />
             <LeftSidebarItem
-              label="r/hfsnrndijd"
+              label="hfsnrndijd"
               imageIcon="💬"
               hasStarAction={true}
               starred={true}
