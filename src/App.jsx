@@ -22,6 +22,7 @@ import ResetPasswordScreen from './components/mobile-web/ResetPasswordScreen';
 import CreateContentScreen from './components/mobile-web/CreateContentScreen';
 import AdminDashboardScreen from './components/mobile-web/AdminDashboardScreen';
 import UserProfileScreen from './components/mobile-web/UserProfileScreen';
+import SettingsScreen from './components/mobile-web/SettingsScreen';
 
 // ── URL ↔ Screen mapping ──────────────────────────────────
 const SCREEN_TO_PATH = {
@@ -39,6 +40,7 @@ const SCREEN_TO_PATH = {
   ForgotPassword: '/forgot-password',
   ResetPassword: '/reset-password',
   Profile: '/profile',
+  Settings: '/settings',
 };
 
 function pathToScreen(pathname) {
@@ -57,6 +59,7 @@ function pathToScreen(pathname) {
     '/forgot-password': 'ForgotPassword',
     '/reset-password': 'ResetPassword',
     '/profile': 'Profile',
+    '/settings': 'Settings',
   };
   // Handle admin sub-paths like /admin/users, /admin/reports
   if (pathname.startsWith('/admin')) return 'Admin';
@@ -71,7 +74,7 @@ const AUTH_SCREENS = new Set([
 
 // ── Screens that require authentication ───────────────────
 const PROTECTED_SCREENS = new Set([
-  'Home', 'Admin', 'CreateContent', 'Profile',
+  'Home', 'Admin', 'CreateContent', 'Profile', 'Settings',
   'EmailVerification', 'PhoneNumber',
   'ProfileSetup', 'LanguageSelection', 'InterestSelection',
 ]);
@@ -84,6 +87,7 @@ function AppContent() {
   const [userEmail, setUserEmail] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [settingsTab, setSettingsTab] = useState('Account');
 
   // ── Navigate to a screen and sync URL ───────────────────
   const navigateTo = useCallback((screen) => {
@@ -351,6 +355,22 @@ function AppContent() {
             onCreatePress={() => navigateTo('CreateContent')}
             onGoToAdmin={() => navigateTo('Admin')}
             onGoToFeed={() => navigateTo('Home')}
+            onGoToSettings={(tab) => {
+              setSettingsTab(tab);
+              navigateTo('Settings');
+            }}
+          />
+        );
+
+      case 'Settings':
+        return (
+          <SettingsScreen
+            currentUser={currentUser}
+            onLogout={handleLogout}
+            onCreatePress={() => navigateTo('CreateContent')}
+            onGoToAdmin={() => navigateTo('Admin')}
+            onGoToFeed={() => navigateTo('Home')}
+            initialTab={settingsTab}
           />
         );
 

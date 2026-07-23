@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { 
-  ChevronDown, Share2, Award, Plus, Camera, ExternalLink, Trophy, ArrowLeft
+  ChevronDown, Share2, Award, Plus, Camera, ExternalLink, Trophy, ArrowLeft,
+  X, MessageSquare, ArrowBigUp, ArrowBigDown, ShieldAlert, ListFilter
 } from 'lucide-react';
 import { DashboardLayout, Button } from '../atomic';
 
@@ -9,13 +10,21 @@ export default function UserProfileScreen({
   onLogout, 
   onCreatePress, 
   onGoToAdmin, 
-  onGoToFeed 
+  onGoToFeed,
+  onGoToSettings
 }) {
   const [activeTab, setActiveTab] = useState('Overview');
   const [showAddSocialModal, setShowAddSocialModal] = useState(false);
+  const [showActiveInModal, setShowActiveInModal] = useState(false);
   const [socialLinks, setSocialLinks] = useState([]);
   const [newPlatform, setNewPlatform] = useState('');
   const [newUrl, setNewUrl] = useState('');
+
+  // Dropdown states for Feed Filters
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [showViewDropdown, setShowViewDropdown] = useState(false);
+  const [sortOption, setSortOption] = useState('New');
+  const [viewOption, setViewOption] = useState('Card');
 
   const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentUser?.username);
   const emailNickname = currentUser?.email ? currentUser.email.split('@')[0] : '';
@@ -52,7 +61,7 @@ export default function UserProfileScreen({
         <div className="relative -mt-16 mb-2 flex items-end justify-between">
           <div className="w-24 h-24 rounded-full bg-white p-1 shadow-md relative">
             <span 
-              className="w-full h-full rounded-full text-white font-black text-3xl flex items-center justify-center"
+              className="w-full h-full rounded-full text-white font-black text-3xl flex items-center justify-center animate-fade-in"
               style={{ backgroundImage: "url('/src/assets/image.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}
             >
               {userInitial}
@@ -78,17 +87,20 @@ export default function UserProfileScreen({
           </div>
           <div>
             <p className="text-sm font-black">0</p>
-            <p className="text-[10px] text-gray-405 font-medium">Contributions</p>
+            <p className="text-[10px] text-gray-455 font-medium">Contributions</p>
           </div>
           <div>
             <p className="text-sm font-black">2 y</p>
             <p className="text-[10px] text-gray-405 font-medium">Reddit Age</p>
           </div>
           <div>
-            <p className="text-blue-600 flex items-center gap-0.5 cursor-pointer hover:underline text-xs font-bold mt-1">
+            <div 
+              onClick={() => setShowActiveInModal(true)}
+              className="text-blue-600 flex items-center gap-0.5 cursor-pointer hover:underline text-xs font-bold mt-1"
+            >
               <span>1</span>
               <span>Active in &gt;</span>
-            </p>
+            </div>
           </div>
         </div>
 
@@ -111,17 +123,20 @@ export default function UserProfileScreen({
         <div className="space-y-3 pt-2">
           <div className="text-xs font-black text-gray-500 uppercase tracking-wider">SETTINGS</div>
           {[
-            { title: 'Profile', desc: 'Customize your profile' },
-            { title: 'Curate your profile', desc: 'Manage what people see' },
-            { title: 'Avatar', desc: 'Style your avatar' },
-            { title: 'Mod Tools', desc: 'Moderate your profile' }
+            { title: 'Profile', desc: 'Customize your profile', tab: 'Profile' },
+            { title: 'Curate your profile', desc: 'Manage what people see', tab: 'Profile' },
+            { title: 'Avatar', desc: 'Style your avatar', tab: 'Profile' },
+            { title: 'Mod Tools', desc: 'Moderate your profile', tab: 'Profile' }
           ].map((item, idx) => (
             <div key={idx} className="flex items-center justify-between gap-2 border-b border-gray-50 pb-2">
               <div className="min-w-0">
                 <p className="text-xs font-bold text-gray-800">{item.title}</p>
-                <p className="text-[10px] text-gray-400 truncate">{item.desc}</p>
+                <p className="text-[10px] text-gray-405 truncate">{item.desc}</p>
               </div>
-              <button className="px-3 py-1 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-full cursor-pointer">
+              <button 
+                onClick={() => onGoToSettings && onGoToSettings(item.tab)}
+                className="px-3 py-1 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-full cursor-pointer"
+              >
                 Update
               </button>
             </div>
@@ -138,15 +153,15 @@ export default function UserProfileScreen({
                 href={link.url} 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="flex items-center gap-2 p-2 bg-gray-50 rounded-xl hover:bg-gray-100 text-xs font-semibold text-gray-700 transition-colors"
+                className="flex items-center gap-2 p-2 bg-gray-55/10 rounded-xl hover:bg-gray-100 text-xs font-semibold text-gray-700 transition-colors"
               >
-                <ExternalLink className="w-3.5 h-3.5 text-gray-400" />
+                <ExternalLink className="w-3.5 h-3.5 text-gray-405" />
                 <span>{link.platform}</span>
               </a>
             ))}
             <button 
               onClick={() => setShowAddSocialModal(true)}
-              className="w-full py-2 border border-dashed border-gray-300 rounded-xl text-xs font-bold text-gray-650 hover:border-gray-500 hover:text-gray-800 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full py-2 border border-dashed border-gray-300 rounded-xl text-xs font-bold text-gray-650 hover:border-gray-550 hover:text-gray-800 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add Social Link</span>
@@ -242,29 +257,139 @@ export default function UserProfileScreen({
             ))}
           </div>
 
-          {/* Filtering Info Bar */}
-          <div className="flex items-center justify-between text-xs font-bold text-gray-450 py-1">
-            <button className="flex items-center gap-1 hover:bg-gray-100 px-3 py-1.5 rounded-full cursor-pointer">
-              <span>Showing all content</span>
-              <ChevronDown className="w-3.5 h-3.5" />
-            </button>
+          {/* Filtering Info Bar with custom Feed Options */}
+          <div className="flex items-center justify-between text-xs font-bold text-gray-500 py-1 relative">
+            <div className="flex items-center gap-4">
+              {/* Showing all content selector */}
+              <button className="flex items-center gap-1 hover:bg-gray-100 px-3 py-1.5 rounded-full cursor-pointer">
+                <span>Showing all content</span>
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+
+              {/* Feed Option Sort: Hot, New, Top */}
+              <div className="relative">
+                <button 
+                  onClick={() => setShowSortDropdown(!showSortDropdown)}
+                  className="flex items-center gap-1 hover:bg-gray-100 px-3 py-1.5 rounded-full cursor-pointer text-gray-700"
+                >
+                  <span>{sortOption}</span>
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+                {showSortDropdown && (
+                  <div className="absolute left-0 mt-1.5 w-24 bg-white border border-gray-200 rounded-xl shadow-lg z-30 p-1 animate-slide-down-fade">
+                    {['Hot', 'New', 'Top'].map(opt => (
+                      <button
+                        key={opt}
+                        onClick={() => { setSortOption(opt); setShowSortDropdown(false); }}
+                        className="w-full text-left px-3 py-1.5 text-xs font-bold text-gray-750 hover:bg-gray-55/10 rounded-lg cursor-pointer"
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* View Option: Card, Compact */}
+              <div className="relative">
+                <button 
+                  onClick={() => setShowViewDropdown(!showViewDropdown)}
+                  className="flex items-center gap-1 hover:bg-gray-100 px-3 py-1.5 rounded-full cursor-pointer text-gray-750"
+                >
+                  <span>{viewOption}</span>
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+                {showViewDropdown && (
+                  <div className="absolute left-0 mt-1.5 w-28 bg-white border border-gray-200 rounded-xl shadow-lg z-30 p-1 animate-slide-down-fade">
+                    {['Card', 'Compact'].map(opt => (
+                      <button
+                        key={opt}
+                        onClick={() => { setViewOption(opt); setShowViewDropdown(false); }}
+                        className="w-full text-left px-3 py-1.5 text-xs font-bold text-gray-750 hover:bg-gray-55/10 rounded-lg cursor-pointer"
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Content Slot based on active tab */}
           <div className="space-y-4">
-            {/* Overview / Posts */}
+            
+            {/* Overview / Posts: Render high-fidelity Post from apps subreddit */}
             {(activeTab === 'Overview' || activeTab === 'Posts') && (
-              <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-violet-50 flex items-center justify-center mx-auto text-violet-600">
-                  <Plus className="w-8 h-8" />
+              <div className="space-y-4">
+                
+                {/* Create Post Banner row matching the screenshot */}
+                <div className="flex items-center gap-2 pb-2">
+                  <button 
+                    onClick={onCreatePress}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-xs font-black rounded-full cursor-pointer border border-gray-200"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Create Post</span>
+                  </button>
+                  <button className="p-2 hover:bg-gray-100 rounded-full border border-gray-200 cursor-pointer">
+                    <ListFilter className="w-4 h-4 text-gray-600" />
+                  </button>
                 </div>
-                <div>
-                  <h3 className="text-base font-black text-gray-900">Create your first post</h3>
-                  <p className="text-xs text-gray-500 mt-1 max-w-xs mx-auto">Share your thoughts, videos, or questions with communities around the globe!</p>
+
+                {/* Subreddit apps Mock Post Card */}
+                <div className="bg-white border border-gray-200 rounded-2xl p-4 md:p-5 shadow-xs space-y-4 animate-fade-in">
+                  
+                  {/* Post Header info */}
+                  <div className="flex items-center gap-2 text-xs text-gray-450">
+                    <span className="w-6 h-6 rounded-full bg-blue-600 text-white font-black flex items-center justify-center">A</span>
+                    <span className="font-extrabold text-gray-900">apps</span>
+                    <span>•</span>
+                    <span>2 mo. ago</span>
+                  </div>
+
+                  {/* Post Title & Description */}
+                  <div className="space-y-2">
+                    <h2 className="text-base font-black text-gray-900 leading-snug">
+                      Built a small Android app called Split for tracking shared expenses with friends and trips. Spent the last few months working on keeping it simple and lightweight. Still improving the UI and adding features. Would genuinely appreciate feedback from Android users on what makes an expense-sharing ap
+                    </h2>
+                    <p className="text-xs text-blue-600 hover:underline cursor-pointer">https://split.davns.com</p>
+                  </div>
+
+                  {/* Warning Warning alert bar */}
+                  <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs text-gray-505 font-bold">
+                    <ShieldAlert className="w-4 h-4 text-red-500" />
+                    <span>Sorry, this post has been removed by the moderators of apps.</span>
+                  </div>
+
+                  {/* Repost Actions button */}
+                  <button 
+                    onClick={onCreatePress}
+                    className="w-full py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <span>Repost to another community</span>
+                    <span>&gt;</span>
+                  </button>
+
+                  {/* Likes / Comments footer pills */}
+                  <div className="flex items-center gap-3 pt-2 text-xs font-bold text-gray-500">
+                    <div className="flex items-center gap-1 bg-gray-100 px-3 py-1.5 rounded-full">
+                      <ArrowBigUp className="w-4 h-4 text-orange-500" />
+                      <span>1</span>
+                      <ArrowBigDown className="w-4 h-4" />
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-gray-100 px-3 py-1.5 rounded-full cursor-pointer hover:bg-gray-200">
+                      <MessageSquare className="w-4 h-4" />
+                      <span>0</span>
+                    </div>
+                    <button className="flex items-center gap-1.5 bg-gray-100 px-3 py-1.5 rounded-full cursor-pointer hover:bg-gray-200 ml-auto">
+                      <Share2 className="w-4 h-4" />
+                      <span>Share</span>
+                    </button>
+                  </div>
+
                 </div>
-                <Button variant="default" size="sm" onClick={onCreatePress}>
-                  Create Post
-                </Button>
+
               </div>
             )}
 
@@ -278,7 +403,10 @@ export default function UserProfileScreen({
                   <h3 className="text-base font-black text-gray-900">You don't have any comments yet</h3>
                   <p className="text-xs text-gray-550 mt-1 max-w-sm mx-auto">Once you comment in a community, it'll show up here. If you'd rather hide your comments, update your settings.</p>
                 </div>
-                <button className="px-4 py-2 bg-gray-900 text-white rounded-full text-xs font-black hover:bg-gray-800 cursor-pointer">
+                <button 
+                  onClick={() => onGoToSettings && onGoToSettings('Profile')}
+                  className="px-4 py-2 bg-gray-900 text-white rounded-full text-xs font-black hover:bg-gray-800 cursor-pointer"
+                >
                   Update Settings
                 </button>
               </div>
@@ -299,13 +427,58 @@ export default function UserProfileScreen({
 
             {/* Other Tabs fallback */}
             {!['Overview', 'Posts', 'Comments', 'Saved'].includes(activeTab) && (
-              <div className="bg-white border border-gray-200 rounded-2xl p-10 text-center text-xs text-gray-500">
+              <div className="bg-white border border-gray-200 rounded-2xl p-10 text-center text-xs text-gray-550">
                 Looks like there is no activity in this section yet.
               </div>
             )}
           </div>
         </div>
       </DashboardLayout>
+
+      {/* ACTIVE IN MODAL OVERLAY */}
+      {showActiveInModal && (
+        <div className="fixed inset-0 bg-black/40 z-55 flex items-center justify-center p-4 animate-fade-in">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden text-gray-800 text-sm">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              <h3 className="text-base font-black text-gray-900">Active in</h3>
+              <button 
+                onClick={() => setShowActiveInModal(false)}
+                className="p-1 hover:bg-gray-150 rounded-full transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 space-y-4">
+              <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer">
+                <span className="font-bold text-gray-700">Showing all content</span>
+                <span>&gt;</span>
+              </div>
+
+              <p className="text-xs text-gray-450 font-semibold leading-relaxed">Some communities may be hidden due to their private status.</p>
+
+              {/* Subreddit details row */}
+              <div className="flex items-start gap-3 p-3 border border-gray-200 rounded-xl bg-white shadow-xs">
+                <span className="w-10 h-10 rounded-full bg-blue-600 text-white font-extrabold text-lg flex items-center justify-center flex-shrink-0">A</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-black text-gray-900">apps</p>
+                      <p className="text-[10px] text-gray-400 font-bold">116K members</p>
+                    </div>
+                    <button className="px-4 py-1.5 border border-gray-300 rounded-full text-xs font-black hover:bg-gray-50 cursor-pointer">
+                      Joined
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2 leading-relaxed">The universal subreddit for anything application related.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ADD SOCIAL LINK MODAL */}
       {showAddSocialModal && (
