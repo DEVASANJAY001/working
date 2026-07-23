@@ -1,4 +1,5 @@
 // Admin Data Store - Manages Super User Announcements, Ads, User Banning, and Post Moderation
+import { eventBus } from "../utils/eventBus";
 
 const ADMIN_ANNOUNCEMENT_KEY = "portal_admin_announcement";
 const ADMIN_ADS_KEY = "portal_admin_ads";
@@ -63,6 +64,7 @@ function setItem(key, val) {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(key, JSON.stringify(val));
+    eventBus.publish(key, val);
   } catch (e) {
     console.error("Error writing to localStorage", e);
   }
@@ -209,5 +211,22 @@ export const adminStore = {
     const reports = this.getReportedPosts().filter(r => r.id !== reportId);
     setItem(ADMIN_REPORTS_KEY, reports);
     return reports;
+  },
+
+  // ── Subscriptions ──
+  subscribeAnnouncement(callback) {
+    return eventBus.subscribe(ADMIN_ANNOUNCEMENT_KEY, callback);
+  },
+  subscribeAds(callback) {
+    return eventBus.subscribe(ADMIN_ADS_KEY, callback);
+  },
+  subscribeBannedUsers(callback) {
+    return eventBus.subscribe(ADMIN_BANNED_USERS_KEY, callback);
+  },
+  subscribeDeletedPosts(callback) {
+    return eventBus.subscribe(ADMIN_DELETED_POSTS_KEY, callback);
+  },
+  subscribeReports(callback) {
+    return eventBus.subscribe(ADMIN_REPORTS_KEY, callback);
   }
 };

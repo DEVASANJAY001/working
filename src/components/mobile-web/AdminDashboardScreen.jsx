@@ -105,6 +105,21 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
 
   useEffect(() => {
     refreshData();
+
+    // Subscribe to real-time events
+    const unsubAnn = adminStore.subscribeAnnouncement(ann => setAnnouncement(ann));
+    const unsubAds = adminStore.subscribeAds(updatedAds => setAds(updatedAds));
+    const unsubBan = adminStore.subscribeBannedUsers(banned => setBannedUsers(banned));
+    const unsubRep = adminStore.subscribeReports(reps => setReportedPosts(reps));
+    const unsubDel = adminStore.subscribeDeletedPosts(ids => setDeletedPostIds(ids));
+
+    return () => {
+      unsubAnn();
+      unsubAds();
+      unsubBan();
+      unsubRep();
+      unsubDel();
+    };
   }, []);
 
   // Handlers for Announcement

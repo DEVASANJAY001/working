@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { ChevronDown, AlertTriangle, LogOut } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronDown, AlertTriangle, LogOut, Pin } from 'lucide-react';
 import { adminStore } from '../../services/adminStore';
-import { DashboardLayout, SpoilerPostCard, Button } from '../atomic';
+import { DashboardLayout, SpoilerPostCard, AdPostCard, Button } from '../atomic';
 
 // ── Mock data with no r/ prefix ──────────────────────────
 const initialPosts = [
@@ -123,6 +123,29 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
   const [activeReportPostId, setActiveReportPostId] = useState(null);
   const [toastMsg, setToastMsg] = useState('');
 
+  // Real-time states
+  const [pinnedAnnouncement, setPinnedAnnouncement] = useState(adminStore.getAnnouncement());
+  const [ads, setAds] = useState(adminStore.getAds());
+  const [deletedPostIds, setDeletedPostIds] = useState(adminStore.getDeletedPostIds());
+
+  useEffect(() => {
+    // Initial fetch
+    setPinnedAnnouncement(adminStore.getAnnouncement());
+    setAds(adminStore.getAds());
+    setDeletedPostIds(adminStore.getDeletedPostIds());
+
+    // Subscribe to updates in real time
+    const unsubAnn = adminStore.subscribeAnnouncement(ann => setPinnedAnnouncement(ann));
+    const unsubAds = adminStore.subscribeAds(updatedAds => setAds(updatedAds));
+    const unsubDel = adminStore.subscribeDeletedPosts(ids => setDeletedPostIds(ids));
+
+    return () => {
+      unsubAnn();
+      unsubAds();
+      unsubDel();
+    };
+  }, []);
+
   const handleLike = (postId) => {
     setPosts(prev => prev.map(p => p.id === postId
       ? { ...p, isLiked: !p.isLiked, isDisliked: false, likes: p.isLiked ? p.likes - 1 : p.likes + 1 }
@@ -145,6 +168,79 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
   const confirmLogout = () => {
     setShowLogoutConfirm(false);
     if (onLogout) onLogout();
+  };
+
+  // Filter posts that are deleted in real-time
+  const visiblePosts = posts.filter(post => !deletedPostIds.includes(post.id));
+  const activeAds = ads.filter(ad => ad.active);
+
+  // Intersperse ads: render an ad after every 2 posts
+  const renderFeedItems = () => {
+    const feed = [];
+
+    // Render Pinned Announcement at the top
+    if (pinnedAnnouncement && pinnedAnnouncement.isPinned) {
+      const annPost = {
+        id: pinnedAnnouncement.id,
+        community: 'announcements',
+        communityIcon: '📢',
+        isVerified: true,
+        authorName: pinnedAnnouncement.authorName || 'Super User',
+        time: 'Pinned',
+        recommendationReason: 'Official Platform Pinned Post',
+        title: pinnedAnnouncement.title,
+        bodyText: pinnedAnnouncement.text,
+        image: pinnedAnnouncement.image,
+        likes: pinnedAnnouncement.likes || 0,
+        commentsCount: pinnedAnnouncement.commentsCount || 0,
+        shares: pinnedAnnouncement.shares || 0,
+        isPinnedAnnouncement: true
+      };
+      
+      feed.push(
+        <div key={annPost.id} className="border-2 border-violet-500/80 rounded-2xl overflow-hidden relative">
+          <div className="bg-violet-500 text-white text-[10px] font-black px-3 py-1 flex items-center gap-1 uppercase tracking-wider">
+            <Pin className="w-3 h-3" /> Pinned Announcement
+          </div>
+          <SpoilerPostCard
+            post={annPost}
+            onLike={() => {}}
+            onDislike={() => {}}
+            onReport={() => {}}
+            activeReportPostId={null}
+            setActiveReportPostId={() => {}}
+          />
+        </div>
+      );
+    }
+
+    visiblePosts.forEach((post, index) => {
+      feed.push(
+        <SpoilerPostCard
+          key={post.id}
+          post={post}
+          onLike={handleLike}
+          onDislike={handleDislike}
+          onReport={handleReportPost}
+          activeReportPostId={activeReportPostId}
+          setActiveReportPostId={setActiveReportPostId}
+        />
+      );
+
+      // Intersperse ad
+      if (activeAds.length > 0 && (index + 1) % 2 === 0) {
+        const adIndex = Math.floor(index / 2) % activeAds.length;
+        const ad = activeAds[adIndex];
+        feed.push(<AdPostCard key={ad.id} ad={ad} />);
+      }
+    });
+
+    // If there are remaining active ads, show at least one at the end if the list is short
+    if (visiblePosts.length < 2 && activeAds.length > 0 && feed.length === (pinnedAnnouncement ? 1 : 0)) {
+      feed.push(<AdPostCard key={activeAds[0].id} ad={activeAds[0]} />);
+    }
+
+    return feed;
   };
 
   return (
@@ -173,19 +269,9 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
         </div>
       </div>
 
-      {/* Posts List */}
+      {/* Feed Items Container */}
       <div className="space-y-4">
-        {posts.map(post => (
-          <SpoilerPostCard
-            key={post.id}
-            post={post}
-            onLike={handleLike}
-            onDislike={handleDislike}
-            onReport={handleReportPost}
-            activeReportPostId={activeReportPostId}
-            setActiveReportPostId={setActiveReportPostId}
-          />
-        ))}
+        {renderFeedItems()}
       </div>
 
       {/* TOAST NOTIFICATION OVERLAY */}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Hub } from 'aws-amplify/utils';
 import { authService } from './services/authService';
+import { adminStore } from './services/adminStore';
 import { AuthProvider } from './auth/AuthProvider';
 import { ROLES } from './constants/roles';
 import { canAccessAdmin } from './utils/permissions';
@@ -185,6 +186,23 @@ function AppContent() {
       window.removeEventListener('popstate', handlePopState);
     };
   }, []);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const checkBanStatus = () => {
+      if (currentUser?.email && adminStore.isUserBanned(currentUser.email)) {
+        handleLogout();
+      }
+    };
+
+    checkBanStatus();
+    const unsubBan = adminStore.subscribeBannedUsers(() => {
+      checkBanStatus();
+    });
+
+    return () => unsubBan();
+  }, [currentUser]);
 
   const handleLogout = async () => {
     try {
