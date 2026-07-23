@@ -1,12 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, AlertTriangle, LogOut } from 'lucide-react';
 import { adminStore } from '../../services/adminStore';
-import {
-  HeaderNavbar,
-  LeftSidebar,
-  SpoilerPostCard,
-  RightSidebar
-} from './dashboard';
+import { DashboardLayout, SpoilerPostCard, Button } from '../atomic';
 
 // ── Mock data matching reference screenshot ────────────────
 const initialPosts = [
@@ -153,64 +148,44 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 font-sans flex flex-col">
+    <DashboardLayout
+      searchQuery={searchQuery}
+      setSearchQuery={setSearchQuery}
+      currentUser={currentUser}
+      onCreatePress={onCreatePress}
+      onGoToAdmin={onGoToAdmin}
+      onLogout={() => setShowLogoutConfirm(true)}
+      activeNav={activeNav}
+      setActiveNav={setActiveNav}
+      recentPostsList={recentPostsList}
+    >
+      {/* Top Sort Controls */}
+      <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
+        <div className="flex items-center gap-3 text-xs font-bold text-gray-700">
+          <button className="flex items-center gap-1 hover:bg-gray-100 px-3 py-1.5 rounded-full cursor-pointer">
+            <span>{sortFilter}</span>
+            <ChevronDown className="w-3.5 h-3.5" />
+          </button>
+          <button className="flex items-center gap-1 hover:bg-gray-100 px-2 py-1.5 rounded-full cursor-pointer">
+            <span>[ = ]</span>
+            <ChevronDown className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
 
-      {/* ── TOP HEADER NAVBAR ── */}
-      <HeaderNavbar
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        currentUser={currentUser}
-        onCreatePress={onCreatePress}
-        onGoToAdmin={onGoToAdmin}
-        onLogout={() => setShowLogoutConfirm(true)}
-      />
-
-      {/* ── MAIN BODY CONTAINER ── */}
-      <div className="flex flex-1 w-full max-w-[1600px] mx-auto">
-
-        {/* ── LEFT NAVIGATION SIDEBAR ── */}
-        <LeftSidebar
-          activeNav={activeNav}
-          setActiveNav={setActiveNav}
-        />
-
-        {/* ── CENTER MAIN FEED ── */}
-        <main className="flex-1 p-4 max-w-3xl mx-auto min-w-0">
-          {/* Top Sort Controls */}
-          <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
-            <div className="flex items-center gap-3 text-xs font-bold text-gray-700">
-              <button className="flex items-center gap-1 hover:bg-gray-100 px-3 py-1.5 rounded-full cursor-pointer">
-                <span>{sortFilter}</span>
-                <ChevronDown className="w-3.5 h-3.5" />
-              </button>
-              <button className="flex items-center gap-1 hover:bg-gray-100 px-2 py-1.5 rounded-full cursor-pointer">
-                <span>[ = ]</span>
-                <ChevronDown className="w-3 h-3" />
-              </button>
-            </div>
-          </div>
-
-          {/* Posts List */}
-          <div className="space-y-4">
-            {posts.map(post => (
-              <SpoilerPostCard
-                key={post.id}
-                post={post}
-                onLike={handleLike}
-                onDislike={handleDislike}
-                onReport={handleReportPost}
-                activeReportPostId={activeReportPostId}
-                setActiveReportPostId={setActiveReportPostId}
-              />
-            ))}
-          </div>
-        </main>
-
-        {/* ── RIGHT SIDEBAR ── */}
-        <RightSidebar
-          recentPostsList={recentPostsList}
-        />
-
+      {/* Posts List using Atomic Organism */}
+      <div className="space-y-4">
+        {posts.map(post => (
+          <SpoilerPostCard
+            key={post.id}
+            post={post}
+            onLike={handleLike}
+            onDislike={handleDislike}
+            onReport={handleReportPost}
+            activeReportPostId={activeReportPostId}
+            setActiveReportPostId={setActiveReportPostId}
+          />
+        ))}
       </div>
 
       {/* TOAST NOTIFICATION OVERLAY */}
@@ -233,13 +208,12 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
               <p className="text-xs text-gray-500 mt-1">You'll need to sign in again to access your feed.</p>
             </div>
             <div className="flex gap-3 pt-1">
-              <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl text-xs hover:bg-gray-200 cursor-pointer">Cancel</button>
-              <button onClick={confirmLogout} className="flex-1 py-2.5 bg-red-500 text-white font-bold rounded-xl text-xs hover:bg-red-600 cursor-pointer shadow-md">Log Out</button>
+              <Button variant="pill" className="flex-1" onClick={() => setShowLogoutConfirm(false)}>Cancel</Button>
+              <Button variant="default" className="flex-1 bg-red-500 hover:bg-red-600" onClick={confirmLogout}>Log Out</Button>
             </div>
           </div>
         </div>
       )}
-
-    </div>
+    </DashboardLayout>
   );
 }
