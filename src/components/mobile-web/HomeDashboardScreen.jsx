@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Search, Bell, Home, Compass, Plus, MessageSquare, User, MoreHorizontal,
   LogOut, MapPin, ChevronDown, TrendingUp, Award, ArrowUp, ArrowDown,
@@ -6,32 +6,49 @@ import {
   CloudRain, Camera, Cpu, ChevronRight, Train, Trophy, AlertTriangle,
   Share2, Bookmark, MessageCircle, Gift, Send, Smile, Copy, Smartphone,
   Flame, Clock, Flag, Pin, Radio, Sparkles, Repeat, RotateCcw, Volume2,
-  VolumeX, Maximize2, Settings, Newspaper, Gamepad2, Layers, ShieldCheck
+  VolumeX, Maximize2, Settings, Newspaper, Gamepad2, Layers, ShieldCheck,
+  Eye, Skull, Grid, Crosshair, Wrench
 } from 'lucide-react';
 import { adminStore } from '../../services/adminStore';
 
-// ── Mock data for Reddit-style feed ───────────────────────
+// ── Mock data matching reference screenshot ────────────────
 const initialPosts = [
   {
-    id: 'post_vit',
-    community: 'r/vitchennai',
-    communityIcon: '🎓',
+    id: 'post_cars',
+    community: 'r/CarsIndia',
+    communityIcon: '🚗',
     isVerified: true,
-    authorName: 'vitchennai_mod',
-    time: '17 hr. ago',
+    authorName: 'carsindia_mod',
+    time: '13 hr. ago',
     recommendationReason: "Because you've shown interest in this community",
-    title: 'meme',
-    subtitle: 'How E block students be moving to reach AB1 at crisp 8am',
-    type: 'video',
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-group-of-friends-running-together-in-the-sunset-40292-large.mp4',
-    videoPoster: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=1000&auto=format&fit=crop&q=80',
-    duration: '0:06',
-    likes: 162,
-    commentsCount: 15,
-    shares: 4,
+    hasSpoiler: true,
+    title: 'Thoughts on this build',
+    image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1000&auto=format&fit=crop&q=80',
+    likes: 144,
+    commentsCount: 7,
+    shares: 2,
     isLiked: false,
     isDisliked: false,
     isJoined: false,
+    isSaved: false,
+  },
+  {
+    id: 'post_ipl',
+    community: 'r/ipl',
+    communityIcon: '🏏',
+    isVerified: false,
+    authorName: 'cricket_fan',
+    time: '6d ago',
+    recommendationReason: 'Popular in Sports',
+    hasSpoiler: false,
+    title: 'How come this man becomes Bradman in MLC?',
+    image: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=1000&auto=format&fit=crop&q=80',
+    likes: 176,
+    commentsCount: 20,
+    shares: 12,
+    isLiked: false,
+    isDisliked: false,
+    isJoined: true,
     isSaved: false,
   },
   {
@@ -40,11 +57,11 @@ const initialPosts = [
     communityIcon: '🤖',
     isVerified: false,
     authorName: 'agent_architect',
-    time: '2h ago',
+    time: '2mo ago',
     recommendationReason: 'Trending in Technology',
+    hasSpoiler: false,
     title: 'How would you build an AI agent from zero as a beginner?',
-    type: 'text',
-    bodyText: 'I want to build an autonomous agent using LLMs and tools. What frameworks (LangChain, LlamaIndex, AutoGen, or raw API) do you recommend for starting out?',
+    bodyText: 'I want to build an autonomous agent using LLMs and tools. What frameworks do you recommend for starting out?',
     likes: 149,
     commentsCount: 122,
     shares: 28,
@@ -53,30 +70,21 @@ const initialPosts = [
     isJoined: true,
     isSaved: false,
   },
-  {
-    id: 'post_sideproject',
-    community: 'r/SideProject',
-    communityIcon: '🚀',
-    isVerified: false,
-    authorName: 'founder_guy',
-    time: '5h ago',
-    recommendationReason: 'Popular in Startups',
-    title: 'I built a platform where people post their problems and founders find what to build next.',
-    type: 'image',
-    image: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1000&auto=format&fit=crop&q=80',
-    likes: 312,
-    commentsCount: 45,
-    shares: 19,
-    isLiked: false,
-    isDisliked: false,
-    isJoined: false,
-    isSaved: false,
-  },
 ];
 
 const recentPostsList = [
   {
-    id: 'rec_1',
+    id: 'rec_ipl',
+    community: 'r/ipl',
+    communityIcon: '🏏',
+    time: '6d ago',
+    title: 'How come this man becomes Bradman in MLC?',
+    upvotes: '1/6 upvotes',
+    comments: '20 comments',
+    thumbnail: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=200&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'rec_ai',
     community: 'r/AI_Agents',
     communityIcon: '🤖',
     time: '2mo ago',
@@ -85,7 +93,7 @@ const recentPostsList = [
     comments: '122 comments',
   },
   {
-    id: 'rec_2',
+    id: 'rec_side',
     community: 'r/SideProject',
     communityIcon: '🚀',
     time: '2mo ago',
@@ -94,117 +102,42 @@ const recentPostsList = [
     comments: '10 comments',
   },
   {
-    id: 'rec_3',
+    id: 'rec_apps1',
     community: 'r/apps',
     communityIcon: '📱',
     time: '2mo ago',
-    title: 'The universal subreddit for anything application related.',
-    upvotes: '54K Weekly visitors',
-    comments: '878 Weekly contributions',
-    isFeaturedCard: true,
+    title: 'We built a Splitwise alternative - split group costs by just scanning receipts',
+    upvotes: '1 upvote',
+    comments: '16 comments',
   },
   {
-    id: 'rec_4',
-    community: 'r/PathOfBaa',
-    communityIcon: '⚔️',
+    id: 'rec_apps2',
+    community: 'r/apps',
+    communityIcon: '📱',
     time: '2mo ago',
-    title: 'Help me build this Inn',
-    upvotes: '12 upvotes',
-    comments: '10 comments',
+    title: 'Recently launched our first Android app — Split 🚀 It...',
+    upvotes: '1 upvote',
+    comments: '',
+    thumbnail: 'https://images.unsplash.com/photo-1551650975-87deedd944c3?w=200&auto=format&fit=crop&q=80',
   },
 ];
 
-const gamesList = [
-  { id: 'g1', name: 'Slingblade', tag: 'NEW', desc: 'Reach the top!', color: 'bg-gradient-to-r from-blue-600 to-indigo-600' },
-  { id: 'g2', name: 'Bonyard', icon: TargetIcon },
-  { id: 'g3', name: '4 Pics 1 Word', icon: Layers },
-  { id: 'g4', name: 'Sword & Supper', icon: Trophy },
-  { id: 'g5', name: 'Discover More', icon: Gamepad2 },
-];
-
-function TargetIcon(props) {
-  return <Cpu {...props} />;
-}
-
-// ── Reddit Video Player Component ─────────────────────────
-function RedditVideoPlayer({ poster, subtitle, videoUrl }) {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
-
-  return (
-    <div className="relative bg-black rounded-2xl overflow-hidden group shadow-lg my-3 w-full flex flex-col items-center justify-center min-h-[380px] max-h-[560px]">
-      {/* Meme Subtitle Header inside video frame */}
-      <div className="absolute top-4 inset-x-4 z-20 text-center">
-        <span className="bg-black/80 text-white font-black text-sm md:text-base px-4 py-2 rounded-xl border border-white/10 shadow-2xl inline-block max-w-md uppercase tracking-wide leading-tight">
-          {subtitle || "How E block students be moving to reach AB1 at crisp 8am"}
-        </span>
-      </div>
-
-      {/* Video / Poster Content */}
-      <div className="relative w-full h-full flex items-center justify-center overflow-hidden py-12">
-        <img
-          src={poster || "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=1000&auto=format&fit=crop&q=80"}
-          alt="Video preview"
-          className="max-h-[460px] w-auto object-contain transition-transform duration-300 group-hover:scale-[1.01]"
-        />
-        <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
-          <button
-            onClick={() => setIsPlaying(!isPlaying)}
-            className="w-16 h-16 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-orange-600 transition-all cursor-pointer backdrop-blur-sm shadow-2xl"
-          >
-            {isPlaying ? (
-              <span className="text-xl font-bold">❚❚</span>
-            ) : (
-              <span className="text-2xl font-bold ml-1">▶</span>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Bottom Video Controls Overlay (Exact Reddit format) */}
-      <div className="w-full bg-black/90 px-4 py-2.5 flex items-center justify-between text-white text-xs font-mono z-20 border-t border-white/10">
-        <button className="text-gray-300 hover:text-white transition-colors cursor-pointer">
-          <RotateCcw className="w-4 h-4" />
-        </button>
-
-        {/* Progress Bar */}
-        <div className="flex-1 mx-4 h-1.5 bg-gray-800 rounded-full overflow-hidden relative cursor-pointer">
-          <div className="w-3/4 h-full bg-white rounded-full" />
-        </div>
-
-        <div className="flex items-center gap-3 text-xs font-semibold text-gray-300">
-          <span>0:06 / 0:06</span>
-          <span className="px-1.5 py-0.5 border border-gray-600 rounded text-[10px] font-bold text-gray-200">CC</span>
-          <button className="hover:text-white transition-colors cursor-pointer"><Settings className="w-4 h-4" /></button>
-          <button className="hover:text-white transition-colors cursor-pointer"><Maximize2 className="w-4 h-4" /></button>
-          <button onClick={() => setIsMuted(!isMuted)} className="hover:text-white transition-colors cursor-pointer">
-            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Reddit Post Card Component ─────────────────────────────
-function RedditPostCard({ post, onLike, onDislike, onReport, activeReportPostId, setActiveReportPostId }) {
+// ── Spoiler Post Component ───────────────────────────────
+function SpoilerPostCard({ post, onLike, onDislike, onReport, activeReportPostId, setActiveReportPostId }) {
+  const [showSpoiler, setShowSpoiler] = useState(!post.hasSpoiler);
   const [joined, setJoined] = useState(post.isJoined);
 
   return (
     <div className="bg-white border border-gray-200 rounded-2xl hover:border-gray-300 transition-all mb-4 p-4 md:p-5 shadow-xs">
-      {/* 1. Subreddit Header Bar */}
+      {/* 1. Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2 flex-wrap text-xs">
-          {/* Subreddit Avatar */}
           <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold border border-gray-200">
-            {post.communityIcon || '🌱'}
+            {post.communityIcon || '🏎️'}
           </div>
           <span className="font-extrabold text-gray-900 hover:underline cursor-pointer">
             {post.community}
           </span>
-          {post.isVerified && (
-            <span className="text-amber-500 font-bold text-xs" title="Verified Subreddit">★</span>
-          )}
           <span className="text-gray-300">•</span>
           <span className="text-gray-400 font-normal">{post.time}</span>
           <span className="text-gray-300">•</span>
@@ -242,31 +175,51 @@ function RedditPostCard({ post, onLike, onDislike, onReport, activeReportPostId,
         </div>
       </div>
 
-      {/* 2. Post Title */}
-      <h2 className="text-base md:text-lg font-bold text-gray-900 mb-2 leading-snug cursor-pointer hover:text-orange-600 transition-colors">
-        {post.title}
-      </h2>
-
-      {/* 3. Post Content (Video / Image / Text) */}
-      {post.type === 'video' && (
-        <RedditVideoPlayer poster={post.videoPoster} subtitle={post.subtitle} videoUrl={post.videoUrl} />
-      )}
-
-      {post.type === 'image' && post.image && (
-        <div className="my-3 rounded-2xl overflow-hidden bg-black/5 border border-gray-100 max-h-[520px] flex items-center justify-center cursor-pointer">
-          <img src={post.image} alt="Post content" className="w-full object-cover max-h-[520px] hover:scale-[1.005] transition-transform duration-300" />
+      {/* 2. Spoiler Tag & Title */}
+      {post.hasSpoiler && (
+        <div className="flex items-center gap-1.5 text-xs font-extrabold text-gray-800 mb-1">
+          <span>◆</span>
+          <span>SPOILER</span>
         </div>
       )}
 
-      {post.type === 'text' && post.bodyText && (
-        <p className="text-sm text-gray-700 leading-relaxed my-2">
-          {post.bodyText}
-        </p>
+      <h2 className="text-base md:text-lg font-bold text-gray-900 mb-3 leading-snug cursor-pointer hover:text-orange-600 transition-colors">
+        {post.title}
+      </h2>
+
+      {/* 3. Media with Spoiler Overlay */}
+      {post.image && (
+        <div className="relative rounded-2xl overflow-hidden bg-[#2D2825] my-2 min-h-[380px] max-h-[560px] flex items-center justify-center shadow-md">
+          {!showSpoiler ? (
+            <div className="relative w-full h-full flex flex-col items-center justify-center p-8 text-center min-h-[380px]">
+              {/* Blurred background image effect */}
+              <img
+                src={post.image}
+                alt="Spoiler background"
+                className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40"
+              />
+              <div className="absolute inset-0 bg-black/40" />
+
+              <button
+                onClick={() => setShowSpoiler(true)}
+                className="relative z-10 bg-black/80 hover:bg-black text-white text-xs font-extrabold px-5 py-2.5 rounded-full transition-all cursor-pointer border border-white/20 shadow-2xl flex items-center gap-2"
+              >
+                <Eye className="w-4 h-4" />
+                View spoiler
+              </button>
+            </div>
+          ) : (
+            <img
+              src={post.image}
+              alt="Post content"
+              className="w-full max-h-[560px] object-contain transition-transform duration-300"
+            />
+          )}
+        </div>
       )}
 
-      {/* 4. Bottom Action Bar (Reddit Pill Buttons) */}
+      {/* 4. Action Pills */}
       <div className="flex items-center gap-2 flex-wrap mt-3 select-none">
-        {/* Vote Pill */}
         <div className="flex items-center bg-gray-100 rounded-full h-8 px-2 text-xs font-bold">
           <button
             onClick={() => onLike(post.id)}
@@ -285,18 +238,15 @@ function RedditPostCard({ post, onLike, onDislike, onReport, activeReportPostId,
           </button>
         </div>
 
-        {/* Comments Pill */}
-        <button className="flex items-center gap-1.5 h-8 px-3 bg-gray-100 hover:bg-gray-200 rounded-full text-xs font-bold text-gray-700 transition-colors cursor-pointer">
+        <button className="flex items-center gap-1.5 h-8 px-3.5 bg-gray-100 hover:bg-gray-200 rounded-full text-xs font-bold text-gray-700 transition-colors cursor-pointer">
           <MessageCircle className="w-4 h-4 text-gray-500" />
           <span>{post.commentsCount}</span>
         </button>
 
-        {/* Crosspost / Repost Pill */}
         <button className="flex items-center gap-1.5 h-8 px-3 bg-gray-100 hover:bg-gray-200 rounded-full text-xs font-bold text-gray-700 transition-colors cursor-pointer">
           <Repeat className="w-3.5 h-3.5 text-gray-500" />
         </button>
 
-        {/* Share Pill */}
         <button className="flex items-center gap-1.5 h-8 px-3.5 bg-gray-100 hover:bg-gray-200 rounded-full text-xs font-bold text-gray-700 transition-colors cursor-pointer">
           <Share2 className="w-3.5 h-3.5 text-gray-500" />
           <span>Share</span>
@@ -348,34 +298,24 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans flex flex-col">
 
-      {/* ══════════ TOP HEADER (REDDIT DESIGN) ══════════ */}
+      {/* ══════════ TOP HEADER (DITTO MATCH) ══════════ */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 h-14 flex items-center justify-between gap-4">
-        {/* Left: Brand Logo & Navigation Drawer Toggle */}
+        {/* Left: Brand Name "Inspire" & Drawer Toggle */}
         <div className="flex items-center gap-3 flex-shrink-0">
-          <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer">
-            <span className="text-lg text-gray-700 font-black">☰</span>
+          <button className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer border border-gray-200">
+            <span className="text-sm font-black text-gray-700">☰</span>
           </button>
           
           <div className="flex items-center gap-1.5 cursor-pointer select-none">
-            {/* Reddit Mascot Orange Circle Icon */}
-            <div className="w-8 h-8 rounded-full bg-[#FF4500] flex items-center justify-center text-white shadow-sm">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="12" cy="12" r="10" fill="#FF4500" />
-                <circle cx="12" cy="12" r="7" fill="white" />
-                <circle cx="9" cy="11" r="1.5" fill="#FF4500" />
-                <circle cx="15" cy="11" r="1.5" fill="#FF4500" />
-                <path d="M9 15c1.5 1 4.5 1 6 0" stroke="#FF4500" strokeWidth="1.5" strokeLinecap="round" fill="none" />
-              </svg>
-            </div>
             <span className="text-xl font-black tracking-tight text-[#FF4500]">
-              reddit
+              Inspire
             </span>
           </div>
         </div>
 
         {/* Center: Search Bar with "✦ Ask" button */}
         <div className="flex-1 max-w-xl mx-auto relative">
-          <div className="w-full h-10 border border-gray-200 hover:border-orange-300 focus-within:border-orange-500 rounded-full bg-white flex items-center px-3 gap-2 transition-all shadow-2xs">
+          <div className="w-full h-10 border border-orange-300 hover:border-orange-500 focus-within:border-orange-500 rounded-full bg-white flex items-center px-3 gap-2 transition-all shadow-2xs">
             <div className="w-6 h-6 rounded-full bg-[#FF4500] text-white flex items-center justify-center text-[10px] font-bold">
               r/
             </div>
@@ -384,9 +324,9 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
               placeholder="Find anything"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full text-sm bg-transparent outline-none text-gray-800 placeholder-gray-400 font-medium"
+              className="w-full text-sm bg-transparent outline-none text-gray-800 placeholder-gray-400 font-normal"
             />
-            <button className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold text-xs px-3 py-1 rounded-full flex items-center gap-1 cursor-pointer shadow-xs transition-all flex-shrink-0">
+            <button className="border border-orange-300 hover:bg-orange-50 text-orange-600 font-extrabold text-xs px-3.5 py-1 rounded-full flex items-center gap-1 cursor-pointer transition-all flex-shrink-0">
               <Sparkles className="w-3.5 h-3.5" />
               Ask
             </button>
@@ -395,8 +335,8 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
 
         {/* Right: Header Actions */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <button title="Advertise" className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-700 cursor-pointer">
-            <span className="text-xs font-black border border-gray-700 px-1 rounded">AD</span>
+          <button title="Advertise" className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-[11px] font-extrabold border border-gray-700 cursor-pointer">
+            AD
           </button>
 
           <button title="Chat" className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-700 cursor-pointer">
@@ -413,7 +353,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
 
           <button title="Notifications" className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-700 cursor-pointer">
             <Bell className="w-5 h-5" />
-            <span className="absolute top-1 right-1 bg-orange-600 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">
+            <span className="absolute top-1 right-1 bg-red-600 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">
               5
             </span>
           </button>
@@ -431,7 +371,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
             {showMenu && (
               <div className="absolute right-0 top-11 w-56 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 py-2 animate-fade-in">
                 <div className="px-4 py-2 border-b border-gray-100">
-                  <p className="text-xs font-bold text-gray-900">{currentUser?.name || 'Reddit User'}</p>
+                  <p className="text-xs font-bold text-gray-900">{currentUser?.name || 'User'}</p>
                   <p className="text-[10px] text-gray-400">u/{currentUser?.username || 'user'}</p>
                 </div>
                 {currentUser?.isAdmin && (
@@ -448,7 +388,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
         </div>
       </header>
 
-      {/* ══════════ MAIN BODY (3 COLUMNS) ══════════ */}
+      {/* ══════════ MAIN BODY (3 COLUMNS DITTO MATCH) ══════════ */}
       <div className="flex flex-1 w-full max-w-[1600px] mx-auto">
 
         {/* ── LEFT SIDEBAR ──────────────────────── */}
@@ -493,8 +433,8 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
 
             {gamesOpen && (
               <div className="space-y-2">
-                {/* Slingblade Featured Banner */}
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl p-3 shadow-sm cursor-pointer hover:opacity-95 transition-opacity">
+                {/* Slingblade Featured Banner (Exact Screenshot Match) */}
+                <div className="bg-[#0055D4] text-white rounded-2xl p-3 shadow-sm cursor-pointer hover:opacity-95 transition-opacity">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-black tracking-wide">Slingblade</span>
                     <span className="bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded uppercase">NEW</span>
@@ -502,12 +442,25 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
                   <p className="text-[11px] text-blue-100 mt-0.5">Reach the top!</p>
                 </div>
 
-                {['Bonyard', '4 Pics 1 Word', 'Sword & Supper', 'Discover More'].map(name => (
-                  <button key={name} className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 rounded-xl cursor-pointer">
-                    <Gamepad2 className="w-4 h-4 text-gray-500" />
-                    <span>{name}</span>
-                  </button>
-                ))}
+                <button className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 rounded-xl cursor-pointer">
+                  <Skull className="w-4 h-4 text-gray-500" />
+                  <span>Bonkyard</span>
+                </button>
+
+                <button className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 rounded-xl cursor-pointer">
+                  <Grid className="w-4 h-4 text-gray-500" />
+                  <span>4 Pics 1 Word</span>
+                </button>
+
+                <button className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 rounded-xl cursor-pointer">
+                  <Crosshair className="w-4 h-4 text-gray-500" />
+                  <span>Sword & Supper</span>
+                </button>
+
+                <button className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 rounded-xl cursor-pointer">
+                  <Gamepad2 className="w-4 h-4 text-gray-500" />
+                  <span>Discover More</span>
+                </button>
               </div>
             )}
           </div>
@@ -532,6 +485,12 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
                     <span>{name}</span>
                   </button>
                 ))}
+                
+                {/* Manage option at the bottom */}
+                <button className="w-full flex items-center gap-3 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 rounded-xl cursor-pointer">
+                  <Wrench className="w-4 h-4 text-gray-500" />
+                  <span>Manage</span>
+                </button>
               </div>
             )}
           </div>
@@ -556,7 +515,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
           {/* Posts List */}
           <div className="space-y-4">
             {posts.map(post => (
-              <RedditPostCard
+              <SpoilerPostCard
                 key={post.id}
                 post={post}
                 onLike={handleLike}
@@ -569,7 +528,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
           </div>
         </main>
 
-        {/* ── RIGHT SIDEBAR ─────────────────────── */}
+        {/* ── RIGHT SIDEBAR (EXACT MATCH TO REFERENCE IMAGE) ─────────────────────── */}
         <aside className="w-80 p-4 border-l border-gray-200 hidden xl:block sticky top-14 self-start h-[calc(100vh-3.5rem)] overflow-y-auto no-scrollbar space-y-4">
           
           {/* Recent Posts Header */}
@@ -578,52 +537,30 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
             <button className="text-xs font-bold text-blue-600 hover:underline cursor-pointer">Clear</button>
           </div>
 
-          {/* Recent Posts List */}
+          {/* Recent Posts List with Thumbnails */}
           <div className="space-y-3">
             {recentPostsList.map((item) => (
-              <React.Fragment key={item.id}>
-                {item.isFeaturedCard ? (
-                  /* Floating Popover Subreddit Preview Card for r/apps (Exact screenshot match!) */
-                  <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-xl space-y-3 relative border-l-4 border-l-red-500">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-red-600 text-white font-black flex items-center justify-center text-xs">
-                        r/
-                      </div>
-                      <span className="font-extrabold text-sm text-gray-900">r/apps</span>
-                    </div>
-
-                    <p className="text-xs text-gray-600 leading-relaxed font-medium">
-                      {item.title}
-                    </p>
-
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100 text-xs">
-                      <div>
-                        <p className="font-extrabold text-gray-900">54K</p>
-                        <p className="text-[10px] text-gray-400">Weekly visitors</p>
-                      </div>
-                      <div>
-                        <p className="font-extrabold text-gray-900">878</p>
-                        <p className="text-[10px] text-gray-400">Weekly contributions</p>
-                      </div>
-                    </div>
+              <div key={item.id} className="p-2 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors space-y-1 flex gap-2 justify-between">
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
+                    <span className="w-4 h-4 rounded-full bg-gray-200 flex items-center justify-center text-[9px] font-bold">{item.communityIcon}</span>
+                    <span className="font-bold text-gray-800">{item.community}</span>
+                    <span>•</span>
+                    <span>{item.time}</span>
                   </div>
-                ) : (
-                  <div className="p-2 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors space-y-1">
-                    <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
-                      <span className="w-4 h-4 rounded-full bg-gray-200 flex items-center justify-center text-[9px]">{item.communityIcon}</span>
-                      <span className="font-bold text-gray-800">{item.community}</span>
-                      <span>•</span>
-                      <span>{item.time}</span>
-                    </div>
-                    <p className="text-xs font-bold text-gray-900 leading-snug hover:text-orange-600 transition-colors line-clamp-2">
-                      {item.title}
-                    </p>
-                    <p className="text-[10px] text-gray-400 font-medium">
-                      {item.upvotes} • {item.comments}
-                    </p>
-                  </div>
+                  <p className="text-xs font-bold text-gray-900 leading-snug hover:text-orange-600 transition-colors line-clamp-2">
+                    {item.title}
+                  </p>
+                  <p className="text-[10px] text-gray-400 font-medium">
+                    {item.upvotes} {item.comments ? `• ${item.comments}` : ''}
+                  </p>
+                </div>
+
+                {/* Right side thumbnail if present */}
+                {item.thumbnail && (
+                  <img src={item.thumbnail} alt="Thumbnail" className="w-14 h-14 rounded-xl object-cover border border-gray-200 flex-shrink-0 shadow-xs" />
                 )}
-              </React.Fragment>
+              </div>
             ))}
           </div>
 
@@ -647,7 +584,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
               <LogOut className="w-7 h-7 text-red-500" />
             </div>
             <div>
-              <h3 className="text-base font-black text-gray-900">Log out of Reddit?</h3>
+              <h3 className="text-base font-black text-gray-900">Log out of Inspire?</h3>
               <p className="text-xs text-gray-500 mt-1">You'll need to sign in again to access your feed.</p>
             </div>
             <div className="flex gap-3 pt-1">
