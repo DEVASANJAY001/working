@@ -157,7 +157,7 @@ export default function NotificationsScreen({
 
           {/* Notifications List */}
           {notifications.length > 0 ? (
-            <div className="bg-white border border-gray-250 rounded-2xl overflow-hidden divide-y divide-gray-100 shadow-xs">
+            <div className="bg-white border border-gray-150 rounded-2xl overflow-hidden divide-y divide-gray-100 shadow-xs">
               {notifications.map(notif => (
                 <div 
                   key={notif.id}
@@ -166,7 +166,7 @@ export default function NotificationsScreen({
                   }`}
                 >
                   {/* Notification Icon / Avatar */}
-                  <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 shadow-sm border border-gray-205 overflow-hidden">
+                  <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 shadow-sm border border-gray-100 overflow-hidden">
                     {notif.icon}
                   </div>
 
