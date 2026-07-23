@@ -28,6 +28,8 @@ import {
   Moon
 } from 'lucide-react';
 import { adminStore } from '../../services/adminStore';
+import { getStoredUsers } from '../../services/localAuthStore';
+import { communityService } from '../../services/communityService';
 
 export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser }) {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -40,6 +42,7 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
   const [reportedPosts, setReportedPosts] = useState(adminStore.getReportedPosts());
   const [deletedPostIds, setDeletedPostIds] = useState(adminStore.getDeletedPostIds());
   const [liveUsers, setLiveUsers] = useState(148);
+  const [comms, setComms] = useState([]);
   const [selectedUserEmails, setSelectedUserEmails] = useState([]);
   const [activeModUser, setActiveModUser] = useState(null);
   const [userFilterStatus, setUserFilterStatus] = useState('all');
@@ -151,6 +154,36 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
     setBannedUsers(adminStore.getBannedUsers());
     setReportedPosts(adminStore.getReportedPosts());
     setDeletedPostIds(adminStore.getDeletedPostIds());
+
+    // Sync registered users from localAuthStore
+    const registered = getStoredUsers().map(u => ({
+      id: u.id,
+      name: u.fullName,
+      email: u.email,
+      role: u.role || 'User',
+      joined: new Date(u.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      posts: 0,
+      reports: 0
+    }));
+    const defaultSamples = [
+      { id: 'usr_1', name: 'Nicole Edison', email: 'nicole@example.com', role: 'User', joined: 'May 12, 2026', posts: 14, reports: 0 },
+      { id: 'usr_2', name: 'Algar Tech', email: 'contact@algartech.io', role: 'Developer', joined: 'Apr 02, 2026', posts: 28, reports: 1 },
+      { id: 'usr_3', name: 'Crypto Daily Alerts', email: 'spammer_bot@crypto.org', role: 'User', joined: 'Jul 19, 2026', posts: 45, reports: 12 },
+      { id: 'usr_4', name: 'Green India Initiative', email: 'ngo@greenindia.org', role: 'Verified NGO', joined: 'Jan 15, 2026', posts: 62, reports: 0 },
+      { id: 'usr_5', name: 'Alex Harrison', email: 'alex.h@gmail.com', role: 'User', joined: 'Jun 28, 2026', posts: 8, reports: 0 },
+    ];
+    const mergedUsers = [...registered];
+    defaultSamples.forEach(sample => {
+      if (!mergedUsers.some(u => u.email.toLowerCase() === sample.email.toLowerCase())) {
+        mergedUsers.push(sample);
+      }
+    });
+    setAllUsers(mergedUsers);
+
+    // Fetch communities
+    communityService.getCommunities().then(list => {
+      setComms(list || []);
+    });
   };
 
   useEffect(() => {
@@ -163,12 +196,18 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
     const unsubRep = adminStore.subscribeReports(reps => setReportedPosts(reps));
     const unsubDel = adminStore.subscribeDeletedPosts(ids => setDeletedPostIds(ids));
 
-    // Fluctuate live users randomly
+    // Subscribe to local storage user registrations
+    const unsubUsersList = eventBus.subscribe("portal_local_auth_users", () => {
+      refreshData();
+    });
+
+    // Fluctuate live users dynamically based on allUsers count
     const interval = setInterval(() => {
-      setLiveUsers(prev => {
+      setLiveUsers(() => {
+        const base = allUsers.length * 2 + 5;
         const change = Math.floor(Math.random() * 5) - 2; // -2 to +2
-        const next = prev + change;
-        return next < 120 ? 120 : next > 180 ? 180 : next;
+        const next = base + change;
+        return next < 3 ? 3 : next;
       });
     }, 3000);
 
@@ -178,9 +217,10 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
       unsubBan();
       unsubRep();
       unsubDel();
+      unsubUsersList();
       clearInterval(interval);
     };
-  }, []);
+  }, [allUsers.length]);
 
   // Handlers for Announcement
   const handlePublishAnnouncement = (e) => {
@@ -583,18 +623,23 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                       <line x1="0" y1="70" x2="300" y2="70" stroke="#E5E7EB" strokeDasharray="3 3" />
                       <line x1="0" y1="100" x2="300" y2="100" stroke="#E5E7EB" />
                       
-                      {/* Bars */}
-                      <rect x="25" y="20" width="22" height="80" rx="3" fill="#8B5CF6" />
-                      <rect x="95" y="45" width="22" height="55" rx="3" fill="#EC4899" />
-                      <rect x="165" y="10" width="22" height="90" rx="3" fill="#F97316" />
-                      <rect x="235" y="60" width="22" height="40" rx="3" fill="#10B981" />
+                      {/* Dynamic Bars based on actual community database */}
+                      {comms.slice(0, 4).map((c, i) => {
+                        const maxMembers = Math.max(...comms.map(x => x.members || 1), 1);
+                        const height = Math.round(((c.members || 1) / maxMembers) * 90);
+                        const xPos = 25 + i * 70;
+                        const colors = ["#8B5CF6", "#EC4899", "#F97316", "#10B981"];
+                        const barColor = colors[i % colors.length];
+                        return (
+                          <rect key={c.id} x={xPos} y={100 - height} width="22" height={height} rx="3" fill={barColor} />
+                        );
+                      })}
                     </svg>
                   </div>
-                  <div className="flex justify-between text-[9px] text-gray-400 font-extrabold uppercase tracking-wider px-1">
-                    <span className="truncate max-w-[50px]">CarsIndia</span>
-                    <span className="truncate max-w-[50px]">ipl</span>
-                    <span className="truncate max-w-[50px]">AI_Agents</span>
-                    <span className="truncate max-w-[50px]">SideProj</span>
+                  <div className="flex justify-between text-[9px] text-gray-400 font-extrabold uppercase tracking-wider px-1 gap-1">
+                    {comms.slice(0, 4).map((c) => (
+                      <span key={c.id} className="truncate max-w-[60px]" title={c.name}>{c.name}</span>
+                    ))}
                   </div>
                 </div>
 
@@ -604,25 +649,72 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                     <h3 className="font-extrabold text-xs uppercase tracking-wider">Report Frequency Breakdown</h3>
                     <p className={`text-[10px] ${themeSubtext}`}>Common violation segments</p>
                   </div>
-                  <div className="flex items-center justify-around h-32">
-                    <svg viewBox="0 0 100 100" className="w-24 h-24 transform -rotate-90">
-                      <circle cx="50" cy="50" r="35" fill="transparent" stroke="#F3F4F6" strokeWidth="12" />
-                      {/* Spam: 45% (dasharray: 2 * pi * 35 = 220. => 45% = 99) */}
-                      <circle cx="50" cy="50" r="35" fill="transparent" stroke="#8B5CF6" strokeWidth="12"
-                              strokeDasharray="99 121" strokeDashoffset="0" />
-                      {/* Scams: 30% (= 66) */}
-                      <circle cx="50" cy="50" r="35" fill="transparent" stroke="#F97316" strokeWidth="12"
-                              strokeDasharray="66 154" strokeDashoffset="-99" />
-                      {/* Harassment: 25% (= 55) */}
-                      <circle cx="50" cy="50" r="35" fill="transparent" stroke="#EF4444" strokeWidth="12"
-                              strokeDasharray="55 165" strokeDashoffset="-165" />
-                    </svg>
-                    <div className="space-y-1.5 text-[9px] font-bold uppercase tracking-wider">
-                      <div className="flex items-center gap-1.5"><span className="w-2 h-2 bg-[#8B5CF6] rounded-full shrink-0"></span><span>Spam (45%)</span></div>
-                      <div className="flex items-center gap-1.5"><span className="w-2 h-2 bg-[#F97316] rounded-full shrink-0"></span><span>Scams (30%)</span></div>
-                      <div className="flex items-center gap-1.5"><span className="w-2 h-2 bg-[#EF4444] rounded-full shrink-0"></span><span>Abuse (25%)</span></div>
-                    </div>
-                  </div>
+                  {(() => {
+                    const reasonCounts = {};
+                    reportedPosts.forEach(r => {
+                      const reason = r.reportReason || 'Other';
+                      reasonCounts[reason] = (reasonCounts[reason] || 0) + r.reportsCount;
+                    });
+                    const totalReports = Object.values(reasonCounts).reduce((a, b) => a + b, 0) || 1;
+                    const sortedReasons = Object.entries(reasonCounts)
+                      .sort((a, b) => b[1] - a[1])
+                      .slice(0, 3);
+
+                    // If empty, default placeholders
+                    const dataPoints = sortedReasons.length > 0 ? sortedReasons.map(ent => ({
+                      label: ent[0],
+                      val: ent[1],
+                      pct: Math.round((ent[1] / totalReports) * 100)
+                    })) : [
+                      { label: 'Spam', val: 0, pct: 45 },
+                      { label: 'Scams', val: 0, pct: 30 },
+                      { label: 'Abuse', val: 0, pct: 25 }
+                    ];
+
+                    // 2 * PI * 35 = 220 circum
+                    let accumulatedOffset = 0;
+
+                    return (
+                      <div className="flex items-center justify-around h-32">
+                        <svg viewBox="0 0 100 100" className="w-24 h-24 transform -rotate-90">
+                          <circle cx="50" cy="50" r="35" fill="transparent" stroke="#F3F4F6" strokeWidth="12" />
+                          {dataPoints.map((pt, i) => {
+                            const colors = ["#8B5CF6", "#F97316", "#EF4444"];
+                            const color = colors[i % colors.length];
+                            const dashVal = Math.round((pt.pct / 100) * 220);
+                            const dashOffset = -accumulatedOffset;
+                            accumulatedOffset += dashVal;
+
+                            return (
+                              <circle
+                                key={pt.label}
+                                cx="50"
+                                cy="50"
+                                r="35"
+                                fill="transparent"
+                                stroke={color}
+                                strokeWidth="12"
+                                strokeDasharray={`${dashVal} ${220 - dashVal}`}
+                                strokeDashoffset={dashOffset}
+                              />
+                            );
+                          })}
+                        </svg>
+                        <div className="space-y-1.5 text-[9px] font-bold uppercase tracking-wider">
+                          {dataPoints.map((pt, i) => {
+                            const colors = ["bg-[#8B5CF6]", "bg-[#F97316]", "bg-[#EF4444]"];
+                            const colorClass = colors[i % colors.length];
+                            return (
+                              <div key={pt.label} className="flex items-center gap-1.5">
+                                <span className={`w-2 h-2 ${colorClass} rounded-full shrink-0`}></span>
+                                <span className="truncate max-w-[75px]" title={pt.label}>{pt.label} ({pt.pct}%)</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
