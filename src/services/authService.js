@@ -332,29 +332,66 @@ export const authService = {
 
     async getCurrentUser() {
         const storedSession = getStoredSession();
+        let baseUser = null;
+
         if (storedSession?.isAuthenticated) {
-            return storedSession;
+            baseUser = storedSession;
+        } else if (isAwsConfigured) {
+            try {
+                const authUser = await amplifyGetCurrentUser();
+                if (authUser) {
+                    const attributes = await fetchUserAttributes();
+                    baseUser = {
+                        ...authUser,
+                        name: attributes.name || attributes.given_name || authUser.username,
+                        email: attributes.email,
+                        profileImage: attributes.picture || attributes.profile || "",
+                    };
+                }
+            } catch (err) {
+                console.log("[getCurrentUser] Amplify fetch failed:", err);
+            }
         }
 
-        if (!isAwsConfigured) {
-            return storedSession || null;
+        if (!baseUser) {
+            return null;
         }
 
         try {
-            const authUser = await amplifyGetCurrentUser();
-            if (authUser) {
-                const attributes = await fetchUserAttributes();
-                return {
-                    ...authUser,
-                    name: attributes.name || attributes.given_name || authUser.username,
-                    email: attributes.email,
-                    profileImage: attributes.picture || attributes.profile || "",
-                };
+            const lookupKey = baseUser.email || baseUser.username;
+            if (lookupKey) {
+                const allProfilesStr = window.localStorage.getItem('aws_dynamodb_profiles');
+                if (allProfilesStr) {
+                    const db = JSON.parse(allProfilesStr);
+                    const key = lookupKey.toLowerCase().trim();
+                    let profile = db[key];
+                    if (!profile) {
+                        for (const k of Object.keys(db)) {
+                            const p = db[k];
+                            if ((p.username && p.username.toLowerCase() === key) || (p.email && p.email.toLowerCase() === key)) {
+                                profile = p;
+                                break;
+                            }
+                        }
+                    }
+                    if (profile) {
+                        return {
+                            ...baseUser,
+                            name: profile.fullName || baseUser.name,
+                            username: profile.username || baseUser.username,
+                            profileImage: profile.profileImage || baseUser.profileImage,
+                            bio: profile.bio || baseUser.bio,
+                            dob: profile.dob || baseUser.dob,
+                            gender: profile.gender || baseUser.gender
+                        };
+                    }
+                }
             }
-            return storedSession || null;
-        } catch {
-            return storedSession || null;
+        } catch (e) {
+            console.log("[getCurrentUser] DynamoDB simulation lookup failed:", e);
         }
+
+        return baseUser;
     },
 
     /* ---------------- LOGOUT ---------------- */
