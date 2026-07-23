@@ -114,7 +114,7 @@ const recentPostsList = [
   },
 ];
 
-export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdmin, currentUser }) {
+export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdmin, currentUser, onViewProfile }) {
   const [posts, setPosts] = useState(initialPosts);
   const [activeNav, setActiveNav] = useState('Home');
   const [sortFilter, setSortFilter] = useState('Best');
@@ -251,6 +251,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
       onCreatePress={onCreatePress}
       onGoToAdmin={onGoToAdmin}
       onLogout={() => setShowLogoutConfirm(true)}
+      onViewProfile={onViewProfile}
       activeNav={activeNav}
       setActiveNav={setActiveNav}
       recentPostsList={recentPostsList}

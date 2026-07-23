@@ -10,6 +10,7 @@ export default function DashboardLayout({
   onCreatePress,
   onGoToAdmin,
   onLogout,
+  onViewProfile,
   activeNav,
   setActiveNav,
   recentPostsList,
@@ -25,6 +26,7 @@ export default function DashboardLayout({
         onCreatePress={onCreatePress}
         onGoToAdmin={onGoToAdmin}
         onLogout={onLogout}
+        onViewProfile={onViewProfile}
       />
 
       {/* Main Body Grid: locked to viewport height */}

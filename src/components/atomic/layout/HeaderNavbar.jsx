@@ -10,7 +10,8 @@ export default function HeaderNavbar({
   currentUser,
   onCreatePress,
   onGoToAdmin,
-  onLogout
+  onLogout,
+  onViewProfile
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const emailNickname = currentUser?.email ? currentUser.email.split('@')[0] : '';
@@ -74,6 +75,7 @@ export default function HeaderNavbar({
               currentUser={currentUser}
               onGoToAdmin={onGoToAdmin}
               onLogout={onLogout}
+              onViewProfile={onViewProfile}
             />
           )}
         </div>
