@@ -175,7 +175,7 @@ export default function CreateContentScreen({ onBack, onPublish }) {
   };
 
   return (
-    <div className="h-screen w-screen bg-[#DAE0E6] text-gray-900 font-sans flex flex-col overflow-hidden">
+    <div className="h-screen w-screen bg-white text-gray-900 font-sans flex flex-col overflow-hidden">
       <DashboardLayout
         searchQuery=""
         setSearchQuery={() => {}}
@@ -190,13 +190,13 @@ export default function CreateContentScreen({ onBack, onPublish }) {
       >
         <div className="max-w-3xl mx-auto py-6 px-4 space-y-6 text-left">
           {/* Header row */}
-          <div className="flex items-center justify-between border-b border-gray-300 pb-3">
-            <h1 className="text-lg font-bold text-gray-900">Create post</h1>
+          <div className="flex items-center justify-between border-b border-gray-200 pb-3">
+            <h1 className="text-xl font-bold text-gray-900">Create post</h1>
             <button 
               onClick={() => alert(`Drafts count: ${drafts.length}`)}
-              className="text-xs font-bold text-blue-600 hover:bg-gray-200 px-3 py-1.5 rounded-full transition-colors cursor-pointer"
+              className="text-xs font-bold text-gray-700 hover:text-gray-900 px-3 py-1.5 rounded-full transition-colors cursor-pointer"
             >
-              Drafts <span className="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.5 rounded-full ml-1">{drafts.length}</span>
+              Drafts
             </button>
           </div>
 
@@ -204,11 +204,11 @@ export default function CreateContentScreen({ onBack, onPublish }) {
           <div className="relative">
             <button 
               onClick={() => setShowCommunityPopup(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg text-xs font-bold text-gray-800 cursor-pointer transition-all shadow-xs focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+              className="flex items-center gap-3 px-4 py-1.5 bg-white hover:bg-gray-50 border border-gray-350 rounded-full text-xs font-black text-gray-750 cursor-pointer transition-all shadow-sm focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
               aria-label="Select Community"
             >
               <span>{selectedCommunity ? `${selectedCommunity.icon} ${selectedCommunity.name}` : 'Select Community'}</span>
-              <ChevronDown className="w-4 h-4 text-gray-500" aria-hidden="true" />
+              <span className="text-gray-400 font-bold select-none">↕</span>
             </button>
 
             {/* Post To / Select Community Popup */}
