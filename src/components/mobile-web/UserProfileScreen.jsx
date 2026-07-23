@@ -3,7 +3,7 @@ import {
   ChevronDown, Share2, Award, Plus, Camera, ExternalLink, Trophy, ArrowLeft,
   X, MessageSquare, ArrowBigUp, ArrowBigDown, ShieldAlert, ListFilter
 } from 'lucide-react';
-import { DashboardLayout, Button, Modal } from '../atomic';
+import { DashboardLayout, Button, Modal, CommunityCard } from '../atomic';
 
 export default function UserProfileScreen({ 
   currentUser, 
