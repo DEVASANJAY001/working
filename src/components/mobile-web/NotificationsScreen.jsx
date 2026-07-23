@@ -128,7 +128,7 @@ export default function NotificationsScreen({
       >
         <div className="max-w-2xl mx-auto py-6 px-4 space-y-6">
           {/* Header Title & Actions */}
-          <div className="flex items-center justify-between gap-4 border-b border-gray-150 pb-4">
+          <div className="flex items-center justify-between gap-4 border-b border-gray-100 pb-4">
             <h1 className="text-xl sm:text-2xl font-black text-gray-900">Notifications</h1>
             
             <div className="flex items-center gap-3 text-xs font-bold text-gray-500">
@@ -157,7 +157,7 @@ export default function NotificationsScreen({
 
           {/* Notifications List */}
           {notifications.length > 0 ? (
-            <div className="bg-white border border-gray-150 rounded-2xl overflow-hidden divide-y divide-gray-100 shadow-xs">
+            <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden divide-y divide-gray-100 shadow-xs">
               {notifications.map(notif => (
                 <div 
                   key={notif.id}
@@ -203,7 +203,7 @@ export default function NotificationsScreen({
           )}
 
           {/* Footer details */}
-          <div className="text-[11px] text-gray-450 font-bold leading-relaxed pt-4 border-t border-gray-200 flex flex-wrap gap-x-3 gap-y-1 justify-center sm:justify-start">
+          <div className="text-[11px] text-gray-450 font-bold leading-relaxed pt-4 border-t border-gray-100 flex flex-wrap gap-x-3 gap-y-1 justify-center sm:justify-start">
             <span className="hover:underline cursor-pointer">Reddit Rules</span>
             <span>•</span>
             <span className="hover:underline cursor-pointer">Privacy Policy</span>
