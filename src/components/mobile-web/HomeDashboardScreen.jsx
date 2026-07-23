@@ -5,7 +5,7 @@ import {
   X, MoreVertical, Users, PlusCircle, Code, Utensils, Leaf, Rocket,
   CloudRain, Camera, Cpu, ChevronRight, Train, Trophy, AlertTriangle,
   Share2, Bookmark, MessageCircle, Gift, Send, Smile, Copy, Smartphone,
-  ShieldAlert, Pin, Sparkles, Flag, Megaphone
+  Flame, Clock, Flag, Pin
 } from 'lucide-react';
 import { adminStore } from '../../services/adminStore';
 
@@ -31,8 +31,9 @@ const initialPosts = [
     id: 'post_1',
     community: 'r/GreenTech', communityIcon: '🌱',
     authorName: 'British Ecological', authorHandle: 'britishecological',
-    time: '2h', flair: 'Technology',
+    time: '2h', timestamp: 2, flair: 'Technology',
     text: 'Introducing our groundbreaking technology for wind turbines, designed to harness the power of nature more efficiently than ever before.',
+    image: 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=700&auto=format&fit=crop&q=80',
     likes: 784, commentsCount: 14, shares: 160, awards: 32,
     isLiked: false, isDisliked: false, isFollowing: false, isSaved: false,
   },
@@ -40,17 +41,19 @@ const initialPosts = [
     id: 'post_2',
     community: 'r/ArtificialIntelligence', communityIcon: '🤖',
     authorName: 'Tech World', authorHandle: 'techworldindia',
-    time: '3h', flair: 'News',
+    time: '3h', timestamp: 3, flair: 'News',
     text: 'BREAKING: New AI model achieves 98% accuracy in solving real-world problems. This is a major leap forward for artificial intelligence research.',
+    image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=700&auto=format&fit=crop&q=80',
     likes: 128, commentsCount: 24, shares: 89, awards: 12,
     isLiked: false, isDisliked: false, isFollowing: true, isSaved: false,
   },
   {
     id: 'post_3',
-    community: 'r/Photography', communityIcon: '📸',
+    community: 'r/Photography', communityIcon: '🎨',
     authorName: 'Nicole Edison', authorHandle: 'nicole_edison',
-    time: '1h', flair: 'OC',
-    text: 'Just finished an amazing photoshoot for our new eco-friendly product line! 📸🌿 The colors came out stunning.',
+    time: '1h', timestamp: 1, flair: 'OC',
+    text: 'Parallel, Jason Anderson, oil on linen, 2019. Just stunning work!',
+    image: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=700&auto=format&fit=crop&q=80',
     likes: 64, commentsCount: 8, shares: 23, awards: 4,
     isLiked: false, isDisliked: false, isFollowing: true, isSaved: false,
   },
@@ -69,6 +72,14 @@ const tabs = [
   { id: 'Local Feed', label: 'Local', icon: MapPin },
   { id: 'Trending Feed', label: 'Trending', icon: TrendingUp },
   { id: 'Following Feed', label: 'Following', icon: Users },
+];
+
+const sortCategories = [
+  { id: 'best', label: 'Best', icon: Rocket },
+  { id: 'hot', label: 'Hot', icon: Flame },
+  { id: 'new', label: 'New', icon: Clock },
+  { id: 'top', label: 'Top', icon: Trophy },
+  { id: 'rising', label: 'Rising', icon: TrendingUp }
 ];
 
 // ── Upvote-style vote button ──────────────────────────────
@@ -97,77 +108,118 @@ function VoteBox({ post, onLike, onDislike }) {
 // ── Reddit-style Post Card ────────────────────────────────
 function PostCard({ post, onLike, onDislike, onSave, onComment, onReport, activeReportPostId, setActiveReportPostId }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-xl hover:border-gray-400 transition-colors group mb-2">
-      <div className="flex gap-0">
-        {/* Left vote column */}
-        <div className="w-10 flex flex-col items-center pt-3 pb-3 px-1 bg-gray-50 rounded-l-xl">
-          <VoteBox post={post} onLike={onLike} onDislike={onDislike} />
+    <div className="bg-white border border-gray-200 rounded-2xl hover:border-gray-300 transition-all mb-3 p-4">
+      {/* 1. Header: Community + Meta info */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="w-6 h-6 rounded-full bg-violet-50 text-violet-600 flex items-center justify-center text-[10px] font-bold shadow-sm">
+            {post.communityIcon || '🌱'}
+          </div>
+          <span className="text-xs font-black text-gray-900 hover:underline cursor-pointer">
+            {post.community}
+          </span>
+          <span className="text-gray-300 text-[10px]">•</span>
+          <span className="text-[11px] text-gray-400 font-medium">
+            {post.time} ago
+          </span>
+          <span className="text-gray-300 text-[10px]">•</span>
+          <span className="text-[10px] text-violet-600/70 font-semibold bg-violet-50/50 px-2 py-0.5 rounded-md">
+            Recommended
+          </span>
+          
+          <button className="text-[10px] font-extrabold text-violet-600 hover:bg-violet-50 px-2.5 py-0.5 rounded-full border border-violet-200 transition-colors cursor-pointer ml-1 select-none">
+            Join
+          </button>
         </div>
 
-        {/* Right content */}
-        <div className="flex-1 p-3 min-w-0">
-          {/* Community + meta */}
-          <div className="flex items-center gap-2 flex-wrap mb-2">
-            <span className="text-xs font-bold text-gray-900 hover:underline cursor-pointer">{post.community}</span>
-            <span className="text-gray-300">•</span>
-            <span className="text-[11px] text-gray-400">Posted by <span className="hover:underline cursor-pointer">u/{post.authorHandle}</span></span>
-            <span className="text-[11px] text-gray-400">{post.time}</span>
-            {post.flair && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">{post.flair}</span>
-            )}
-          </div>
-
-          {/* Title / text */}
-          <p className="text-sm font-semibold text-gray-900 leading-snug mb-2 cursor-pointer hover:text-violet-700 transition-colors">
-            {post.text}
-          </p>
-
-          {/* Action bar */}
-          <div className="flex items-center gap-1 flex-wrap -ml-1">
-            <button
-              onClick={() => onComment(post)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-all cursor-pointer"
-            >
-              <MessageCircle className="w-4 h-4" />
-              {post.commentsCount} Comments
-            </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-all cursor-pointer">
-              <Share2 className="w-4 h-4" />
-              Share
-            </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-all cursor-pointer">
-              <Gift className="w-4 h-4" />
-              Award
-            </button>
-            <button
-              onClick={() => onSave(post.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all cursor-pointer ${post.isSaved ? 'text-violet-600 bg-violet-50' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'}`}
-            >
-              <Bookmark className={`w-4 h-4 ${post.isSaved ? 'fill-violet-600' : ''}`} />
-              {post.isSaved ? 'Saved' : 'Save'}
-            </button>
-            
-            <div className="relative ml-auto">
-              <button 
-                onClick={() => setActiveReportPostId(activeReportPostId === post.id ? null : post.id)} 
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-all cursor-pointer"
+        {/* 3-dots actions menu with Admin Moderation Report */}
+        <div className="relative">
+          <button 
+            onClick={() => setActiveReportPostId(activeReportPostId === post.id ? null : post.id)}
+            className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-50 transition-colors cursor-pointer"
+          >
+            <MoreHorizontal className="w-4 h-4" />
+          </button>
+          
+          {activeReportPostId === post.id && (
+            <div className="absolute right-0 top-7 w-36 bg-white border border-gray-200 rounded-xl shadow-xl z-30 p-1 space-y-1">
+              <button
+                onClick={() => onReport(post)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-bold text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
               >
-                <MoreHorizontal className="w-4 h-4" />
+                <Flag className="w-3.5 h-3.5" /> Report Post
               </button>
-              
-              {activeReportPostId === post.id && (
-                <div className="absolute right-0 bottom-8 w-36 bg-white border border-gray-200 rounded-xl shadow-xl z-30 p-1 space-y-1">
-                  <button
-                    onClick={() => onReport(post)}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-bold text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                  >
-                    <Flag className="w-3.5 h-3.5" /> Report Post
-                  </button>
-                </div>
-              )}
             </div>
-          </div>
+          )}
         </div>
+      </div>
+
+      {/* 2. Title & Description */}
+      <div className="space-y-1 cursor-pointer">
+        <h3 className="text-[15px] font-bold text-gray-900 leading-snug hover:text-violet-700 transition-colors">
+          {post.text}
+        </h3>
+      </div>
+
+      {/* 3. Post Image/Media */}
+      {post.image && (
+        <div className="mt-3 rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 max-h-[500px] flex items-center justify-center cursor-pointer shadow-sm">
+          <img
+            src={post.image}
+            alt="Post media"
+            className="w-full object-cover max-h-[500px] hover:scale-[1.008] transition-transform duration-500"
+          />
+        </div>
+      )}
+
+      {/* 4. Bottom Action Bar: Pill Buttons */}
+      <div className="flex items-center gap-2 flex-wrap mt-3.5 select-none">
+        
+        {/* Upvote / Downvote Pill */}
+        <div className="flex items-center bg-gray-100 rounded-full h-8 px-1">
+          <button
+            onClick={() => onLike(post.id)}
+            className={`p-1.5 rounded-full hover:bg-gray-200 transition-colors cursor-pointer ${post.isLiked ? 'text-orange-500' : 'text-gray-500'}`}
+          >
+            <ArrowUp className="w-4 h-4" strokeWidth={2.5} />
+          </button>
+          <span className={`text-xs font-black px-1.5 leading-none ${post.isLiked ? 'text-orange-500' : post.isDisliked ? 'text-violet-600' : 'text-gray-700'}`}>
+            {post.likes}
+          </span>
+          <button
+            onClick={() => onDislike(post.id)}
+            className={`p-1.5 rounded-full hover:bg-gray-200 transition-colors cursor-pointer ${post.isDisliked ? 'text-violet-600' : 'text-gray-500'}`}
+          >
+            <ArrowDown className="w-4 h-4" strokeWidth={2.5} />
+          </button>
+        </div>
+
+        {/* Comment Pill */}
+        <button
+          onClick={() => onComment(post)}
+          className="flex items-center gap-1.5 h-8 px-3.5 bg-gray-100 hover:bg-gray-200 rounded-full text-xs font-bold text-gray-600 transition-colors cursor-pointer"
+        >
+          <MessageCircle className="w-3.5 h-3.5" />
+          <span>{post.commentsCount}</span>
+        </button>
+
+        {/* Shares Pill */}
+        <button
+          className="flex items-center gap-1.5 h-8 px-3.5 bg-gray-100 hover:bg-gray-200 rounded-full text-xs font-bold text-gray-600 transition-colors cursor-pointer"
+        >
+          <Share2 className="w-3.5 h-3.5" />
+          <span>{post.shares}</span>
+        </button>
+
+        {/* Save Pill */}
+        <button
+          onClick={() => onSave(post.id)}
+          className={`flex items-center gap-1.5 h-8 px-3.5 rounded-full text-xs font-bold transition-colors cursor-pointer ${post.isSaved ? 'text-violet-600 bg-violet-50 border border-violet-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
+        >
+          <Bookmark className={`w-3.5 h-3.5 ${post.isSaved ? 'fill-violet-600' : ''}`} />
+          <span>{post.isSaved ? 'Saved' : 'Save'}</span>
+        </button>
+
       </div>
     </div>
   );
@@ -177,13 +229,13 @@ function PostCard({ post, onLike, onDislike, onSave, onComment, onReport, active
 export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdmin, currentUser }) {
   const [activeTab, setActiveTab] = useState('Home Feed');
   const [posts, setPosts] = useState(initialPosts);
-  
   // Admin Data State
   const [pinnedAnnouncement, setPinnedAnnouncement] = useState(adminStore.getAnnouncement());
   const [ads, setAds] = useState(adminStore.getAds());
   const [deletedPostIds, setDeletedPostIds] = useState(adminStore.getDeletedPostIds());
   const [activeReportPostId, setActiveReportPostId] = useState(null);
   const [toastMsg, setToastMsg] = useState('');
+  const [sortType, setSortType] = useState('best');
 
   useEffect(() => {
     setPinnedAnnouncement(adminStore.getAnnouncement());
@@ -197,7 +249,6 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
     setActiveReportPostId(null);
     setTimeout(() => setToastMsg(''), 3500);
   };
-
   const [profileImage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchOverlay, setShowSearchOverlay] = useState(false);
@@ -208,6 +259,26 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
   const [communityDesc, setCommunityDesc] = useState('');
   const [selectedPost, setSelectedPost] = useState(null);
   const [showComments, setShowComments] = useState(false);
+
+  const getSortedPosts = (filterFunc = () => true) => {
+    let list = posts.filter(filterFunc);
+    if (sortType === 'best') {
+      return [...list].sort((a, b) => b.likes - a.likes);
+    }
+    if (sortType === 'hot') {
+      return [...list].sort((a, b) => (b.likes + b.commentsCount) - (a.likes + a.commentsCount));
+    }
+    if (sortType === 'new') {
+      return [...list].sort((a, b) => a.timestamp - b.timestamp);
+    }
+    if (sortType === 'top') {
+      return [...list].sort((a, b) => b.likes - a.likes);
+    }
+    if (sortType === 'rising') {
+      return [...list].sort((a, b) => b.shares - a.shares);
+    }
+    return list;
+  };
 
   const handleLike = (postId) => {
     setPosts(prev => prev.map(p => p.id === postId
@@ -386,90 +457,43 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
         {/* ── MAIN FEED ─────────────────────────── */}
         <main className="flex-1 min-w-0">
           <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl px-3 py-1.5 mb-4 overflow-x-auto no-scrollbar">
-            {tabs.map(({ id, label, icon: Icon }) => (
+            {sortCategories.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
-                onClick={() => setActiveTab(id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold flex-shrink-0 transition-all cursor-pointer ${activeTab === id ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+                onClick={() => setSortType(id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold flex-shrink-0 transition-all cursor-pointer ${sortType === id ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
               >
-                <Icon className={`w-4 h-4 ${activeTab === id ? 'text-violet-600' : ''}`} />
+                <Icon className={`w-4 h-4 ${sortType === id ? 'text-orange-500' : 'text-gray-400'}`} />
                 {label}
               </button>
             ))}
           </div>
 
-          {/* Create-post shortcut bar */}
-          <div className="bg-white border border-gray-200 rounded-xl p-2 flex items-center gap-2 mb-4">
-            {profileImage ? (
-              <img src={profileImage} alt="You" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-600 to-orange-500 flex items-center justify-center text-white font-extrabold text-xs flex-shrink-0">
-                D
-              </div>
-            )}
-            <button
-              onClick={onCreatePress}
-              className="flex-1 h-9 text-left px-4 text-sm text-gray-400 bg-gray-100 border border-transparent rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all cursor-pointer"
-            >
-              Create a post...
-            </button>
-            <button onClick={onCreatePress} className="w-9 h-9 flex items-center justify-center text-gray-500 hover:bg-gray-100 rounded-full transition-colors cursor-pointer">
-              <Plus className="w-5 h-5" />
-            </button>
-          </div>
+          {/* Create-post shortcut bar (hidden in For You feed) */}
+          {activeTab !== 'Home Feed' && (
+            <div className="bg-white border border-gray-200 rounded-xl p-2 flex items-center gap-2 mb-4">
+              {profileImage ? (
+                <img src={profileImage} alt="You" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-600 to-orange-500 flex items-center justify-center text-white font-extrabold text-xs flex-shrink-0">
+                  D
+                </div>
+              )}
+              <button
+                onClick={onCreatePress}
+                className="flex-1 h-9 text-left px-4 text-sm text-gray-400 bg-gray-100 border border-transparent rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all cursor-pointer"
+              >
+                Create a post...
+              </button>
+              <button onClick={onCreatePress} className="w-9 h-9 flex items-center justify-center text-gray-500 hover:bg-gray-100 rounded-full transition-colors cursor-pointer">
+                <Plus className="w-5 h-5" />
+              </button>
+            </div>
+          )}
 
           {/* ── Home Feed ── */}
           {activeTab === 'Home Feed' && (
             <div className="space-y-2">
-              {/* Trending carousel */}
-              <div className="bg-white border border-gray-200 rounded-xl p-4 mb-2">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-black text-gray-800">🔥 Trending Today</span>
-                  <span className="text-[11px] text-violet-600 font-bold cursor-pointer hover:opacity-80">See All →</span>
-                </div>
-                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
-                  {[
-                    { tag: '#ChennaiRains', count: '12.4K posts', trend: '+22%', icon: CloudRain, color: 'text-cyan-500 bg-cyan-50', bar: 'bg-cyan-500', pct: 85 },
-                    { tag: '#MetroPhase2', count: '8.7K posts',  trend: '+14%', icon: Train,     color: 'text-violet-600 bg-violet-50', bar: 'bg-violet-600', pct: 72 },
-                    { tag: '#AIJobs',      count: '6.8K posts',  trend: '+10%', icon: Cpu,       color: 'text-green-500 bg-green-50', bar: 'bg-green-500', pct: 60 },
-                    { tag: '#IPL2025',     count: '5.4K posts',  trend: '+18%', icon: Trophy,    color: 'text-amber-500 bg-amber-50', bar: 'bg-amber-500', pct: 50 },
-                  ].map((item, idx) => {
-                    const Icon = item.icon;
-                    return (
-                      <div key={idx} className="w-44 flex-shrink-0 bg-gray-50 border border-gray-100 rounded-xl p-3 space-y-2 hover:bg-white hover:border-gray-300 transition-all cursor-pointer">
-                        <div className="flex items-center justify-between">
-                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${item.color}`}>
-                            <Icon className="w-3.5 h-3.5" />
-                          </div>
-                          <span className="text-[9px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-md">▲ {item.trend}</span>
-                        </div>
-                        <p className="text-[11px] font-black text-gray-800">{item.tag}</p>
-                        <p className="text-[10px] text-gray-400">{item.count}</p>
-                        <div className="w-full h-1 bg-gray-200 rounded-full">
-                          <div className={`h-full ${item.bar} rounded-full`} style={{ width: `${item.pct}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Stories row with neutral initials/blank placeholders */}
-              <div className="bg-white border border-gray-200 rounded-xl py-3 px-4 mb-2">
-                <div className="flex gap-4 overflow-x-auto no-scrollbar">
-                  {stories.map(story => (
-                    <div key={story.id} className="flex flex-col items-center flex-shrink-0 w-14 cursor-pointer group">
-                      <div className={`w-12 h-12 rounded-full p-0.5 ${story.active ? 'bg-gradient-to-br from-violet-600 to-orange-500' : 'bg-gray-200'}`}>
-                        <div className="w-full h-full rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-xs font-black text-gray-500 select-none">
-                          {story.name[0]}
-                        </div>
-                      </div>
-                      <span className="text-[10px] text-gray-500 mt-1 truncate w-full text-center">{story.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               {/* ── PINNED SUPER USER ANNOUNCEMENT ── */}
               {pinnedAnnouncement && (
                 <div className="border-2 border-violet-500/80 rounded-3xl p-5 bg-gradient-to-br from-violet-900/10 via-purple-500/5 to-white shadow-md relative overflow-hidden space-y-3 mb-2">
@@ -513,7 +537,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
               )}
 
               {/* Posts */}
-              {posts.filter(p => !deletedPostIds.includes(p.id)).map(post => (
+              {getSortedPosts(p => !deletedPostIds.includes(p.id)).map(post => (
                 <PostCard 
                   key={post.id} 
                   post={post} 
@@ -613,7 +637,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
               </div>
 
               <p className="text-xs font-black text-gray-700 px-1">Trending Post</p>
-              {posts.filter(p => p.id === 'post_2').map(post => (
+              {getSortedPosts(p => p.id === 'post_2').map(post => (
                 <PostCard key={post.id} post={post} onLike={handleLike} onDislike={handleDislike} onSave={handleSave} onComment={handleComment} />
               ))}
             </div>
@@ -637,7 +661,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
                   ))}
                 </div>
               </div>
-              {posts.filter(p => p.id === 'post_3').map(post => (
+              {getSortedPosts(p => p.id === 'post_3').map(post => (
                 <PostCard key={post.id} post={post} onLike={handleLike} onDislike={handleDislike} onSave={handleSave} onComment={handleComment} />
               ))}
             </div>
