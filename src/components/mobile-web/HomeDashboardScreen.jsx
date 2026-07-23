@@ -178,41 +178,6 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
   const renderFeedItems = () => {
     const feed = [];
 
-    // Render Pinned Announcement at the top
-    if (pinnedAnnouncement && pinnedAnnouncement.isPinned) {
-      const annPost = {
-        id: pinnedAnnouncement.id,
-        community: 'announcements',
-        communityIcon: '📢',
-        isVerified: true,
-        authorName: pinnedAnnouncement.authorName || 'Super User',
-        time: 'Pinned',
-        recommendationReason: 'Official Platform Pinned Post',
-        title: pinnedAnnouncement.title,
-        bodyText: pinnedAnnouncement.text,
-        image: pinnedAnnouncement.image,
-        likes: pinnedAnnouncement.likes || 0,
-        commentsCount: pinnedAnnouncement.commentsCount || 0,
-        shares: pinnedAnnouncement.shares || 0,
-        isPinnedAnnouncement: true
-      };
-      
-      feed.push(
-        <div key={annPost.id} className="border-b-2 border-violet-500/80 md:border-2 md:border-violet-500/80 md:rounded-2xl overflow-hidden relative">
-          <div className="bg-violet-500 text-white text-[10px] font-black px-3 py-1 flex items-center gap-1 uppercase tracking-wider">
-            <Pin className="w-3 h-3" /> Pinned Announcement
-          </div>
-          <SpoilerPostCard
-            post={annPost}
-            onLike={() => {}}
-            onDislike={() => {}}
-            onReport={() => {}}
-            activeReportPostId={null}
-            setActiveReportPostId={() => {}}
-          />
-        </div>
-      );
-    }
 
     visiblePosts.forEach((post, index) => {
       feed.push(
