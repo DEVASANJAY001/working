@@ -17,9 +17,11 @@ export default function LeftSidebar({ activeNav, setActiveNav, isOpen = true, is
 
   return (
     <aside
-      className={`border-r border-gray-200 p-3 h-full overflow-y-auto no-scrollbar space-y-4 flex-shrink-0 transition-all duration-300 ease-in-out ${
-        isMobileDrawer ? 'block w-64' : 'hidden lg:block'
-      } ${isOpen ? 'w-64 opacity-100' : 'w-0 opacity-0 overflow-hidden border-r-0 p-0'}`}
+      className={`p-3 h-full overflow-y-auto no-scrollbar space-y-4 flex-shrink-0 transition-all duration-300 ease-in-out ${
+        isMobileDrawer 
+          ? 'block w-full' 
+          : `hidden lg:block border-r border-gray-200 ${isOpen ? 'w-64 opacity-100' : 'w-0 opacity-0 overflow-hidden border-r-0 p-0'}`
+      }`}
     >
       {/* Main Navigation Links */}
       <div className="space-y-1">
