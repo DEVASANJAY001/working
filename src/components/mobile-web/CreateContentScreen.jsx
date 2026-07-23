@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Search, Image as ImageIcon, Link as LinkIcon, BarChart2, FileText, Sparkles, HelpCircle, ChevronDown } from 'lucide-react';
-import { DashboardLayout, Button } from '../atomic';
+import { DashboardLayout, Button, Avatar } from '../atomic';
 
 export default function CreateContentScreen({ onBack, onPublish }) {
   const [activeTab, setActiveTab] = useState('Text'); // Text, Images & Video, Link, Poll
@@ -408,18 +408,18 @@ export default function CreateContentScreen({ onBack, onPublish }) {
 
               {/* Action buttons (Post, Save Draft) */}
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-150">
-                <button
+                <Button
                   onClick={handleSaveDraft}
-                  className="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-full text-xs font-black transition-colors cursor-pointer"
+                  variant="outline"
                 >
                   Save Draft
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handlePostSubmit}
-                  className="px-5 py-2 bg-[#0079D3] hover:bg-[#0079D3]/90 text-white rounded-full text-xs font-black transition-all shadow-xs cursor-pointer"
+                  variant="default"
                 >
                   Post
-                </button>
+                </Button>
               </div>
             </div>
           </div>
