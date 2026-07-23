@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { Lock, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { authService } from '../../services/authService';
 import resetPasswordImage from '../../assets/reset_password.png';
+import AuthLayout from './AuthLayout';
+import { AuthHeader, AuthErrorAlert, AuthInput, AuthButton } from './AuthComponents';
 
 export default function ResetPasswordScreen({ email, onBack, onResetSuccess, onGoToLogin }) {
   const [code, setCode] = useState('');
@@ -44,7 +46,6 @@ export default function ResetPasswordScreen({ email, onBack, onResetSuccess, onG
       });
 
       setLoading(false);
-      alert('Password Reset Successful!');
       onResetSuccess();
     } catch (err) {
       setLoading(false);
@@ -53,38 +54,30 @@ export default function ResetPasswordScreen({ email, onBack, onResetSuccess, onG
   };
 
   return (
-    <div className="flex-1 flex items-center justify-center p-6 md:p-12 bg-white min-h-screen animate-fade-in overflow-y-auto">
-      <div className="w-full max-w-md flex flex-col justify-between h-full min-h-[500px]">
-        {/* Header */}
-        <div>
-          <button onClick={onBack} className="w-10 h-10 -ml-2 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer">
-            <ArrowLeft className="w-6 h-6 text-gray-800" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 flex flex-col items-center justify-center my-6">
-          <img
-            src={resetPasswordImage}
-            alt="Reset Password"
-            className="w-32 h-32 object-contain mb-4"
+    <AuthLayout
+      screenKey="reset-password"
+      heroTitle="Create New Password 🔑"
+      heroSubtitle="Your new password must be unique and satisfy complexity requirements."
+    >
+      <div className="w-full max-w-md mx-auto my-auto flex flex-col items-center">
+        <div className="w-full">
+          <AuthHeader
+            title="Reset Password"
+            subtitle="Create a new password for your account"
+            onBack={onBack}
           />
 
-          <h2 className="text-2xl font-bold text-gray-900">Reset Password</h2>
-          <p className="text-sm text-gray-400 mt-1 leading-relaxed max-w-xs text-center">
-            Create a new password for your account
-          </p>
+          <div className="flex justify-center my-3">
+            <img
+              src={resetPasswordImage}
+              alt="Reset Password"
+              className="w-24 h-24 md:w-28 md:h-28 object-contain"
+            />
+          </div>
 
-          {/* Error Alert */}
-          {error && (
-            <div className="w-full mt-3 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-red-500 rounded-full flex-shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
+          <AuthErrorAlert error={error} />
 
-          {/* Form */}
-          <form onSubmit={handleSave} className="w-full mt-6 space-y-3.5">
+          <form onSubmit={handleSave} className="space-y-3 w-full mt-2">
             <div className="space-y-1.5 text-left">
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">Verification Code</label>
               <input
@@ -92,98 +85,85 @@ export default function ResetPasswordScreen({ email, onBack, onResetSuccess, onG
                 maxLength={6}
                 placeholder="Enter 6-digit code"
                 value={code}
-                onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
                 className="w-full py-2.5 px-4 border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:bg-white transition-all text-sm"
               />
             </div>
 
-            <div className="space-y-1.5 text-left">
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">New Password</label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                  <Lock className="w-4 h-4 text-gray-400" />
-                </span>
-                <input
-                  type={secureText ? 'password' : 'text'}
-                  placeholder="Enter new password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="w-full py-2.5 pl-10 pr-12 border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:bg-white transition-all text-sm"
-                />
+            <AuthInput
+              label="New Password"
+              icon={Lock}
+              type={secureText ? 'password' : 'text'}
+              placeholder="Enter new password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              rightElement={
                 <button
                   type="button"
                   onClick={() => setSecureText(!secureText)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   {secureText ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
-              </div>
-            </div>
+              }
+            />
 
-            <div className="space-y-1.5 text-left">
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">Confirm Password</label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                  <Lock className="w-4 h-4 text-gray-400" />
-                </span>
-                <input
-                  type={secureTextConfirm ? 'password' : 'text'}
-                  placeholder="Confirm new password"
-                  value={confirmPassword}
-                  onChange={e => setConfirmPassword(e.target.value)}
-                  className="w-full py-2.5 pl-10 pr-12 border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:bg-white transition-all text-sm"
-                />
+            <AuthInput
+              label="Confirm Password"
+              icon={Lock}
+              type={secureTextConfirm ? 'password' : 'text'}
+              placeholder="Confirm new password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              rightElement={
                 <button
                   type="button"
                   onClick={() => setSecureTextConfirm(!secureTextConfirm)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   {secureTextConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
-              </div>
-            </div>
+              }
+            />
 
             {/* Validation Checklist */}
-            <div className="text-left bg-gray-50 border border-gray-100 rounded-xl p-3.5">
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-2">Password must contain:</span>
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className={`w-4 h-4 transition-colors ${hasMinLength ? 'text-green-500' : 'text-gray-300'}`} />
-                  <span className={`text-xs transition-colors ${hasMinLength ? 'text-green-700 font-semibold' : 'text-gray-400'}`}>At least 8 characters</span>
+            <div className="text-left bg-gray-50 border border-gray-100 rounded-xl p-3">
+              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider block mb-1.5">Password requirements:</span>
+              <div className="grid grid-cols-2 gap-1.5">
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle className={`w-3.5 h-3.5 transition-colors ${hasMinLength ? 'text-green-500' : 'text-gray-300'}`} />
+                  <span className={`text-[11px] transition-colors ${hasMinLength ? 'text-green-700 font-semibold' : 'text-gray-400'}`}>8+ chars</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className={`w-4 h-4 transition-colors ${hasUppercase ? 'text-green-500' : 'text-gray-300'}`} />
-                  <span className={`text-xs transition-colors ${hasUppercase ? 'text-green-700 font-semibold' : 'text-gray-400'}`}>One uppercase letter</span>
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle className={`w-3.5 h-3.5 transition-colors ${hasUppercase ? 'text-green-500' : 'text-gray-300'}`} />
+                  <span className={`text-[11px] transition-colors ${hasUppercase ? 'text-green-700 font-semibold' : 'text-gray-400'}`}>1 Uppercase</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className={`w-4 h-4 transition-colors ${hasNumber ? 'text-green-500' : 'text-gray-300'}`} />
-                  <span className={`text-xs transition-colors ${hasNumber ? 'text-green-700 font-semibold' : 'text-gray-400'}`}>One numeric character</span>
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle className={`w-3.5 h-3.5 transition-colors ${hasNumber ? 'text-green-500' : 'text-gray-300'}`} />
+                  <span className={`text-[11px] transition-colors ${hasNumber ? 'text-green-700 font-semibold' : 'text-gray-400'}`}>1 Number</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className={`w-4 h-4 transition-colors ${hasSymbol ? 'text-green-500' : 'text-gray-300'}`} />
-                  <span className={`text-xs transition-colors ${hasSymbol ? 'text-green-700 font-semibold' : 'text-gray-400'}`}>One special symbol</span>
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle className={`w-3.5 h-3.5 transition-colors ${hasSymbol ? 'text-green-500' : 'text-gray-300'}`} />
+                  <span className={`text-[11px] transition-colors ${hasSymbol ? 'text-green-700 font-semibold' : 'text-gray-400'}`}>1 Symbol</span>
                 </div>
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full h-13 rounded-full text-white font-bold text-base bg-gradient-to-r from-violet-600 to-orange-500 hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center shadow-lg shadow-violet-500/25 mt-4 disabled:opacity-60 cursor-pointer"
-            >
-              {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Save Password'}
-            </button>
+            <AuthButton type="submit" loading={loading} className="mt-4">
+              Save Password
+            </AuthButton>
           </form>
-        </div>
 
-        {/* Footer */}
-        <p className="text-sm text-gray-500 text-center mt-6">
-          Remember your password?{' '}
-          <span onClick={onGoToLogin} className="text-violet-600 font-bold hover:underline cursor-pointer">
-            Login
-          </span>
-        </p>
+          <p className="text-sm text-gray-500 text-center mt-5">
+            Remember your password?{' '}
+            <span onClick={onGoToLogin} className="text-violet-600 font-bold hover:underline cursor-pointer">
+              Login
+            </span>
+          </p>
+        </div>
       </div>
-    </div>
+    </AuthLayout>
   );
 }

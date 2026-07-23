@@ -222,7 +222,7 @@ function AppContent() {
     switch (currentScreen) {
       case 'Splash':
         return <SplashScreen onFinish={() => navigateTo('GetStarted')} />;
-      
+
       case 'GetStarted':
         return (
           <GetStartedScreen
@@ -230,7 +230,7 @@ function AppContent() {
             onRegister={() => navigateTo('Register')}
           />
         );
-      
+
       case 'Login':
         return (
           <LoginScreen
@@ -247,7 +247,7 @@ function AppContent() {
             onGoToRegister={() => navigateTo('Register')}
           />
         );
-      
+
       case 'Register':
         return (
           <RegisterScreen
@@ -260,7 +260,7 @@ function AppContent() {
             onGoogleSuccess={() => navigateTo('Home')}
           />
         );
-      
+
       case 'EmailVerification':
         return (
           <EmailVerificationScreen
@@ -269,7 +269,7 @@ function AppContent() {
             onVerifySuccess={() => navigateTo('PhoneNumber')}
           />
         );
-      
+
       case 'PhoneNumber':
         return (
           <PhoneNumberScreen
@@ -277,7 +277,7 @@ function AppContent() {
             onContinue={() => navigateTo('ProfileSetup')}
           />
         );
-      
+
       case 'ProfileSetup':
         return (
           <ProfileSetupScreen
@@ -285,7 +285,7 @@ function AppContent() {
             onContinue={() => navigateTo('LanguageSelection')}
           />
         );
-      
+
       case 'LanguageSelection':
         return (
           <LanguageSelectionScreen
@@ -293,7 +293,7 @@ function AppContent() {
             onContinue={() => navigateTo('InterestSelection')}
           />
         );
-      
+
       case 'InterestSelection':
         return (
           <InterestSelectionScreen
@@ -301,7 +301,7 @@ function AppContent() {
             onFinish={() => navigateTo('Home')}
           />
         );
-      
+
       case 'Admin':
         return (
           <AdminDashboardScreen
@@ -313,14 +313,14 @@ function AppContent() {
 
       case 'Home':
         return (
-          <HomeDashboardScreen 
-            onLogout={handleLogout} 
+          <HomeDashboardScreen
+            onLogout={handleLogout}
             onCreatePress={() => navigateTo('CreateContent')}
             onGoToAdmin={() => navigateTo('Admin')}
             currentUser={currentUser}
           />
         );
-      
+
       case 'CreateContent':
         return (
           <CreateContentScreen
@@ -330,7 +330,7 @@ function AppContent() {
             }}
           />
         );
-      
+
       case 'ForgotPassword':
         return (
           <ForgotPasswordScreen
@@ -342,7 +342,7 @@ function AppContent() {
             onGoToLogin={() => navigateTo('Login')}
           />
         );
-      
+
       case 'ResetPassword':
         return (
           <ResetPasswordScreen
@@ -352,7 +352,7 @@ function AppContent() {
             onGoToLogin={() => navigateTo('Login')}
           />
         );
-      
+
       default:
         return <GetStartedScreen onLogin={() => navigateTo('Login')} onRegister={() => navigateTo('Register')} />;
     }

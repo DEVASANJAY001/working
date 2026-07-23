@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowLeft } from 'lucide-react';
 import { authService } from '../../services/authService';
 import emailVerificationImage from '../../assets/email_verification.png';
+import AuthLayout from './AuthLayout';
+import { AuthHeader, AuthErrorAlert, AuthButton } from './AuthComponents';
 
 export default function EmailVerificationScreen({ email, onBack, onVerifySuccess }) {
   const [code, setCode] = useState(['', '', '', '', '', '']);
@@ -82,39 +83,34 @@ export default function EmailVerificationScreen({ email, onBack, onVerifySuccess
   };
 
   return (
-    <div className="flex-1 flex items-center justify-center p-6 md:p-12 bg-white min-h-screen animate-fade-in overflow-y-auto">
-      <div className="w-full max-w-md flex flex-col justify-between h-full min-h-[500px]">
-        {/* Header */}
-        <div>
-          <button onClick={onBack} className="w-10 h-10 -ml-2 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors cursor-pointer">
-            <ArrowLeft className="w-6 h-6 text-gray-800" />
-          </button>
-        </div>
-
-        {/* Content & Illustration */}
-        <div className="flex-1 flex flex-col items-center justify-center text-center my-6">
-          <img
-            src={emailVerificationImage}
-            alt="Verify Email"
-            className="w-40 h-40 object-contain mb-6"
+    <AuthLayout
+      screenKey="email-verification"
+      heroTitle="Security Verification 🛡️"
+      heroSubtitle="Check your email for the verification code to activate your account."
+    >
+      <div className="w-full max-w-md mx-auto my-auto flex flex-col items-center">
+        <div className="w-full">
+          <AuthHeader
+            title="Verify your email"
+            subtitle={
+              <span>
+                We've sent a code to <strong className="text-gray-800">{email || 'design@example.com'}</strong>
+              </span>
+            }
+            onBack={onBack}
           />
 
-          <h2 className="text-2xl font-bold text-gray-900">Verify your email</h2>
-          <p className="text-sm text-gray-400 mt-2 leading-relaxed max-w-xs">
-            We've sent a verification code to<br />
-            <span className="font-semibold text-gray-800">{email || 'design@example.com'}</span>
-          </p>
+          <div className="flex justify-center my-3">
+            <img
+              src={emailVerificationImage}
+              alt="Verify Email"
+              className="w-28 h-28 md:w-32 md:h-32 object-contain"
+            />
+          </div>
 
-          {/* Error Alert */}
-          {error && (
-            <div className="w-full mt-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-red-500 rounded-full flex-shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
+          <AuthErrorAlert error={error} />
 
-          {/* Code Inputs */}
-          <form onSubmit={handleVerify} className="w-full mt-8">
+          <form onSubmit={handleVerify} className="w-full mt-4">
             <div className="flex justify-between gap-2 max-w-xs mx-auto">
               {code.map((digit, index) => (
                 <input
@@ -130,19 +126,15 @@ export default function EmailVerificationScreen({ email, onBack, onVerifySuccess
               ))}
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full h-13 rounded-full text-white font-bold text-base bg-gradient-to-r from-violet-600 to-orange-500 hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center shadow-lg shadow-violet-500/25 mt-8 disabled:opacity-60 cursor-pointer"
-            >
-              {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Verify Email'}
-            </button>
+            <AuthButton type="submit" loading={loading} className="mt-6">
+              Verify Email
+            </AuthButton>
           </form>
 
           <button
             onClick={handleResend}
             disabled={timer > 0}
-            className="mt-6 flex items-center justify-center text-sm font-semibold text-gray-400 disabled:opacity-60 cursor-pointer"
+            className="mt-6 w-full flex items-center justify-center text-sm font-semibold text-gray-400 disabled:opacity-60 cursor-pointer"
           >
             Didn't receive the code?{' '}
             <span className="text-violet-600 font-bold hover:underline ml-1">
@@ -151,6 +143,6 @@ export default function EmailVerificationScreen({ email, onBack, onVerifySuccess
           </button>
         </div>
       </div>
-    </div>
+    </AuthLayout>
   );
 }
