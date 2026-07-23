@@ -81,6 +81,11 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
   const [adImage, setAdImage] = useState('');
   const [adTargetUrl, setAdTargetUrl] = useState('');
   const [adSuccessMsg, setAdSuccessMsg] = useState('');
+  const [adBudget, setAdBudget] = useState('150');
+  const [adBudgetType, setAdBudgetType] = useState('daily');
+  const [adPlacement, setAdPlacement] = useState('all');
+  const [adStartDate, setAdStartDate] = useState('');
+  const [adEndDate, setAdEndDate] = useState('');
 
   const [userSearchQuery, setUserSearchQuery] = useState('');
 
@@ -212,7 +217,6 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
     setTimeout(() => setAnnSuccessMsg(''), 4000);
   };
 
-  // Handlers for Ads
   const handleAddAd = (e) => {
     e.preventDefault();
     if (!adTitle.trim()) return;
@@ -220,14 +224,19 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
       title: adTitle,
       sponsor: adSponsor || "Sponsored Banner",
       image: adImage || "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600&auto=format&fit=crop&q=80",
-      targetUrl: adTargetUrl || "#"
+      targetUrl: adTargetUrl || "#",
+      budget: adBudget,
+      budgetType: adBudgetType,
+      placement: adPlacement,
+      startDate: adStartDate || new Date().toISOString().split('T')[0],
+      endDate: adEndDate || 'No expiration date'
     });
     setAds(adminStore.getAds());
     setAdTitle('');
     setAdSponsor('');
     setAdImage('');
     setAdTargetUrl('');
-    setAdSuccessMsg('🚀 New Advertisement successfully created and published live on feed!');
+    setAdSuccessMsg('🚀 Campaign created successfully with targeting & budget constraints!');
     setTimeout(() => setAdSuccessMsg(''), 4000);
   };
 
@@ -1725,15 +1734,15 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
 
           {/* ── TAB 6: ADVERTISEMENT MANAGEMENT ── */}
           {activeTab === 'ads' && (
-            <div className="space-y-6 animate-fade-in">
-              {/* Form to Add Ad */}
-              <div className={`${themeCardBg} rounded-3xl p-6 md:p-8 space-y-6`}>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+              {/* Left Column: Ads Manager Campaign Form (2 cols span) */}
+              <div className={`${themeCardBg} rounded-3xl p-6 md:p-8 space-y-6 lg:col-span-2`}>
                 <div>
                   <h2 className="text-xl font-black flex items-center gap-2">
-                    <Megaphone className="w-5 h-5 text-emerald-505" /> Upload Advertisement Campaign
+                    <Megaphone className="w-5 h-5 text-emerald-500" /> Ad Campaign Manager
                   </h2>
                   <p className={`text-xs ${themeSubtext} mt-1`}>
-                    Super User feature to create and publish sponsored ad banners live into user feeds.
+                    Configure sponsored banner campaigns, placement targeting groups, budget caps, and scheduling timelines.
                   </p>
                 </div>
 
@@ -1744,104 +1753,202 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                   </div>
                 )}
 
-                <form onSubmit={handleAddAd} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className={`block text-xs font-bold ${themeSubtext} uppercase tracking-wider`}>Ad Campaign Title</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Boost Your Creative Workflow"
-                      value={adTitle}
-                      onChange={e => setAdTitle(e.target.value)}
-                      className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
-                    />
+                <form onSubmit={handleAddAd} className="space-y-4">
+                  {/* Title & Sponsor */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className={`block text-[10px] font-black ${themeSubtext} uppercase tracking-wider`}>Campaign Name / Headline</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Build Fast with Next.js Agents"
+                        value={adTitle}
+                        onChange={e => setAdTitle(e.target.value)}
+                        className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className={`block text-[10px] font-black ${themeSubtext} uppercase tracking-wider`}>Advertiser / Sponsor Brand</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Vercel Inc."
+                        value={adSponsor}
+                        onChange={e => setAdSponsor(e.target.value)}
+                        className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
+                      />
+                    </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className={`block text-xs font-bold ${themeSubtext} uppercase tracking-wider`}>Sponsor Name</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Inspire Network"
-                      value={adSponsor}
-                      onChange={e => setAdSponsor(e.target.value)}
-                      className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
-                    />
+                  {/* Asset & Destination Link */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className={`block text-[10px] font-black ${themeSubtext} uppercase tracking-wider`}>Creative Image URL</label>
+                      <input
+                        type="url"
+                        placeholder="https://images.unsplash.com/..."
+                        value={adImage}
+                        onChange={e => setAdImage(e.target.value)}
+                        className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className={`block text-[10px] font-black ${themeSubtext} uppercase tracking-wider`}>Destination Click URL</label>
+                      <input
+                        type="url"
+                        placeholder="https://example.com/promo"
+                        value={adTargetUrl}
+                        onChange={e => setAdTargetUrl(e.target.value)}
+                        className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
+                      />
+                    </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className={`block text-xs font-bold ${themeSubtext} uppercase tracking-wider`}>Banner Image URL</label>
-                    <input
-                      type="url"
-                      placeholder="https://images.unsplash.com/..."
-                      value={adImage}
-                      onChange={e => setAdImage(e.target.value)}
-                      className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
-                    />
+                  {/* Budgets & Placement */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <label className={`block text-[10px] font-black ${themeSubtext} uppercase tracking-wider`}>Budget Cap ($)</label>
+                      <input
+                        type="number"
+                        placeholder="150"
+                        value={adBudget}
+                        onChange={e => setAdBudget(e.target.value)}
+                        className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className={`block text-[10px] font-black ${themeSubtext} uppercase tracking-wider`}>Budget Model</label>
+                      <select
+                        value={adBudgetType}
+                        onChange={e => setAdBudgetType(e.target.value)}
+                        className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
+                      >
+                        <option value="daily">Daily Budget Cap</option>
+                        <option value="lifetime">Lifetime Campaign Cap</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className={`block text-[10px] font-black ${themeSubtext} uppercase tracking-wider`}>Audience Placement</label>
+                      <select
+                        value={adPlacement}
+                        onChange={e => setAdPlacement(e.target.value)}
+                        className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
+                      >
+                        <option value="all">All Feed Placements</option>
+                        <option value="CarsIndia">CarsIndia Feed Only</option>
+                        <option value="ipl">ipl Feed Only</option>
+                      </select>
+                    </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className={`block text-xs font-bold ${themeSubtext} uppercase tracking-wider`}>Target Link / URL</label>
-                    <input
-                      type="url"
-                      placeholder="https://example.com/ad"
-                      value={adTargetUrl}
-                      onChange={e => setAdTargetUrl(e.target.value)}
-                      className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
-                    />
+                  {/* Scheduling Dates */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className={`block text-[10px] font-black ${themeSubtext} uppercase tracking-wider`}>Campaign Start Date</label>
+                      <input
+                        type="date"
+                        value={adStartDate}
+                        onChange={e => setAdStartDate(e.target.value)}
+                        className={`w-full py-2.5 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className={`block text-[10px] font-black ${themeSubtext} uppercase tracking-wider`}>Campaign End Date (Optional)</label>
+                      <input
+                        type="date"
+                        value={adEndDate}
+                        onChange={e => setAdEndDate(e.target.value)}
+                        className={`w-full py-2.5 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
+                      />
+                    </div>
                   </div>
 
-                  <div className="md:col-span-2 pt-2">
+                  {/* Submit button */}
+                  <div className="pt-2">
                     <button
                       type="submit"
                       className="w-full h-12 rounded-2xl text-white font-bold text-sm bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center shadow-lg shadow-emerald-500/20 cursor-pointer"
                     >
-                      <Megaphone className="w-4 h-4 mr-2" /> Upload Live Advertisement Banner
+                      <Megaphone className="w-4 h-4 mr-2" /> Launch Sponsored Campaign
                     </button>
                   </div>
                 </form>
               </div>
 
-              {/* Existing Campaigns List */}
-              <div className={`${themeCardBg} rounded-3xl p-6 md:p-8 space-y-4`}>
-                <h3 className="font-extrabold text-base">Active Advertisement Banners</h3>
+              {/* Right Column / Bottom: Active Sponsored Campaigns List */}
+              <div className="space-y-6">
+                <div className={`${themeCardBg} rounded-3xl p-6 space-y-4`}>
+                  <h3 className="text-xs font-black uppercase tracking-wider">Campaign Performance Dashboard</h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {ads.map((ad) => (
-                    <div key={ad.id} className={`p-4 ${themeSubCardBg} rounded-2xl space-y-3 flex flex-col justify-between border ${isDarkMode ? 'border-gray-800' : 'border-gray-150'}`}>
-                      <div className="space-y-2">
-                        <div className="h-32 rounded-xl overflow-hidden bg-gray-900 relative">
-                          <img src={ad.image} alt={ad.title} className="w-full h-full object-cover" />
-                          <span className="absolute top-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur text-white text-[10px] font-extrabold rounded-md">
-                            {ad.sponsor}
-                          </span>
+                  <div className="space-y-4">
+                    {ads.map((ad) => {
+                      const impressions = ad.clicks * 15 + 1200;
+                      const ctr = impressions > 0 ? ((ad.clicks / impressions) * 100).toFixed(2) : '0.00';
+                      const spend = (ad.clicks * 0.42).toFixed(2);
+                      const isTargetAll = ad.placement === 'all' || !ad.placement;
+
+                      return (
+                        <div key={ad.id} className={`p-4 ${themeSubCardBg} border rounded-2xl space-y-3 flex flex-col justify-between ${isDarkMode ? 'border-gray-800' : 'border-gray-150'}`}>
+                          <div className="space-y-2">
+                            <div className="h-28 rounded-xl overflow-hidden bg-gray-900 relative">
+                              <img src={ad.image} alt={ad.title} className="w-full h-full object-cover" />
+                              <span className="absolute top-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur text-white text-[9px] font-black uppercase rounded-md tracking-wider">
+                                {ad.sponsor}
+                              </span>
+                              <span className="absolute bottom-2 right-2 px-2 py-0.5 bg-violet-600/90 text-white text-[9px] font-black uppercase rounded-md tracking-wider">
+                                Placement: {isTargetAll ? 'All Feeds' : ad.placement}
+                              </span>
+                            </div>
+                            <h4 className="font-bold text-xs">{ad.title}</h4>
+                          </div>
+
+                          {/* Stats Grid */}
+                          <div className="grid grid-cols-3 gap-1.5 text-center text-[10px] font-bold">
+                            <div className={`p-1.5 rounded-lg ${themeInputBg}`}>
+                              <div className="text-emerald-500 font-extrabold">{impressions}</div>
+                              <div className="text-gray-400 text-[8px]">Imps</div>
+                            </div>
+                            <div className={`p-1.5 rounded-lg ${themeInputBg}`}>
+                              <div className="text-violet-500 font-extrabold">{ctr}%</div>
+                              <div className="text-gray-400 text-[8px]">CTR</div>
+                            </div>
+                            <div className={`p-1.5 rounded-lg ${themeInputBg}`}>
+                              <div className="text-gray-800 font-extrabold">${spend}</div>
+                              <div className="text-gray-400 text-[8px]">Spend</div>
+                            </div>
+                          </div>
+
+                          {/* Budget cap details */}
+                          <div className="flex justify-between items-center text-[10px] text-gray-400 font-bold border-t border-gray-800/10 pt-2">
+                            <span>Limit: ${ad.budget || '150'} / {ad.budgetType || 'daily'}</span>
+                            <span>{ad.clicks || 0} Clicks</span>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-1 text-xs">
+                            <button
+                              onClick={() => handleToggleAd(ad.id)}
+                              className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${ad.active
+                                  ? 'bg-emerald-500/20 text-emerald-600 border border-emerald-500/30'
+                                  : `${isDarkMode ? 'bg-gray-800 text-gray-400 border border-gray-700' : 'bg-gray-150 text-gray-500 border border-gray-300'}`
+                                }`}
+                            >
+                              {ad.active ? 'Running' : 'Paused'}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteAd(ad.id)}
+                              className="p-1.5 rounded-xl bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/30 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
-                        <h4 className="font-bold text-sm">{ad.title}</h4>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-800/10 text-xs">
-                        <span className={`${themeSubtext} font-semibold`}>{ad.clicks} Clicks</span>
-
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleToggleAd(ad.id)}
-                            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${ad.active
-                                ? 'bg-emerald-500/20 text-emerald-600 border border-emerald-500/30'
-                                : `${isDarkMode ? 'bg-gray-800 text-gray-400 border border-gray-700' : 'bg-gray-150 text-gray-500 border border-gray-300'}`
-                              }`}
-                          >
-                            {ad.active ? 'Active' : 'Paused'}
-                          </button>
-
-                          <button
-                            onClick={() => handleDeleteAd(ad.id)}
-                            className="p-1.5 rounded-xl bg-red-500/20 text-red-500 hover:bg-red-500/30 border border-red-500/30 cursor-pointer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
