@@ -5,7 +5,7 @@ export default function AdPostCard({ ad }) {
   if (!ad) return null;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl hover:border-gray-300 transition-all mb-4 p-4 md:p-5 shadow-xs">
+    <div className="bg-white p-4 border-b border-gray-100 md:border md:border-gray-200 md:rounded-2xl md:hover:border-gray-300 md:shadow-xs md:p-5 md:mb-4 transition-all">
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2 text-xs">

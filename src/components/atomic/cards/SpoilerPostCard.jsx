@@ -12,7 +12,7 @@ export default function SpoilerPostCard({
   setActiveReportPostId
 }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl hover:border-gray-300 transition-all mb-4 p-4 md:p-5 shadow-xs">
+    <div className="bg-white p-4 border-b border-gray-100 md:border md:border-gray-200 md:rounded-2xl md:hover:border-gray-300 md:shadow-xs md:p-5 md:mb-4 transition-all">
       {/* Subreddit Header Molecule */}
       <SubredditHeader
         post={post}

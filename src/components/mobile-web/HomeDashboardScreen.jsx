@@ -198,7 +198,7 @@ export default function HomeDashboardScreen({ onLogout, onCreatePress, onGoToAdm
       };
       
       feed.push(
-        <div key={annPost.id} className="border-2 border-violet-500/80 rounded-2xl overflow-hidden relative">
+        <div key={annPost.id} className="border-b-2 border-violet-500/80 md:border-2 md:border-violet-500/80 md:rounded-2xl overflow-hidden relative">
           <div className="bg-violet-500 text-white text-[10px] font-black px-3 py-1 flex items-center gap-1 uppercase tracking-wider">
             <Pin className="w-3 h-3" /> Pinned Announcement
           </div>

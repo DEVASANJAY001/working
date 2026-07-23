@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import HeaderNavbar from './HeaderNavbar';
 import LeftSidebar from '../menu/LeftSidebar';
@@ -21,22 +21,36 @@ export default function DashboardLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+
+  // Trigger close animation before unmounting
+  const handleCloseDrawer = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setMobileDrawerOpen(false);
+      setIsClosing(false);
+    }, 240); // Matches duration of slide-left animation
+  };
 
   const mobileDrawer = mobileDrawerOpen ? ReactDOM.createPortal(
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[300] bg-black/40 animate-fade-in"
-        onClick={() => setMobileDrawerOpen(false)}
+        className={`fixed inset-0 z-[300] bg-black/40 ${isClosing ? 'animate-fade-out' : 'animate-fade-in'}`}
+        onClick={handleCloseDrawer}
       />
-      {/* Slide-in drawer */}
-      <div className="fixed top-0 left-0 h-full w-[75vw] max-w-[340px] z-[301] animate-slide-right bg-white shadow-2xl rounded-r-3xl flex flex-col overflow-hidden">
+      {/* Slide-in / Slide-out drawer */}
+      <div 
+        className={`fixed top-0 left-0 h-full w-[75vw] max-w-[340px] z-[301] bg-white shadow-2xl rounded-r-3xl flex flex-col overflow-hidden ${
+          isClosing ? 'animate-slide-left' : 'animate-slide-right'
+        }`}
+      >
         {/* Drawer Header with Close Arrow */}
         <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white flex-shrink-0">
           <span className="text-sm font-black text-gray-800">Navigation</span>
           <button
-            onClick={() => setMobileDrawerOpen(false)}
-            className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center border border-gray-150 hover:bg-gray-100 transition-colors cursor-pointer text-gray-500 hover:text-gray-800"
+            onClick={handleCloseDrawer}
+            className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center border border-gray-100 hover:bg-gray-100 transition-colors cursor-pointer text-gray-500 hover:text-gray-800"
           >
             ←
           </button>
@@ -46,7 +60,7 @@ export default function DashboardLayout({
         <div className="flex-1 overflow-y-auto no-scrollbar">
           <LeftSidebar
             activeNav={activeNav}
-            setActiveNav={(nav) => { setActiveNav(nav); setMobileDrawerOpen(false); }}
+            setActiveNav={(nav) => { setActiveNav(nav); handleCloseDrawer(); }}
             isOpen={true}
             isMobileDrawer={true}
           />
@@ -87,11 +101,11 @@ export default function DashboardLayout({
           {/* Floating Border Toggle Button (Centered on separation border line) */}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="absolute top-4 -right-4 w-8 h-8 rounded-full bg-white border border-gray-250 shadow-sm flex items-center justify-center cursor-pointer hover:bg-gray-50 hover:shadow transition-all z-20"
+            className="absolute top-4 -right-4 w-8 h-8 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center cursor-pointer hover:bg-gray-50 hover:shadow transition-all z-20"
             title={sidebarOpen ? "Collapse menu" : "Expand menu"}
           >
             <span className="text-gray-600 font-bold text-xs select-none">
-              {sidebarOpen ? '☰' : '☰'}
+              ☰
             </span>
           </button>
         </div>
