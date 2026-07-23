@@ -207,7 +207,7 @@ export default function CreateContentScreen({ onBack, onPublish }) {
             {/* Post To / Select Community Popup */}
             {showCommunityPopup && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 animate-fade-in" role="dialog" aria-modal="true">
-                <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-slide-up-fade">
+                <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-slide-up-fade">
                   {/* Popup Header */}
                   <div className="p-4 border-b border-gray-150 flex items-center justify-between bg-white flex-shrink-0">
                     <h3 className="text-sm font-bold text-gray-900">Post to</h3>
