@@ -46,6 +46,15 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
   const [annText, setAnnText] = useState(announcement?.text || '');
   const [annImage, setAnnImage] = useState(announcement?.image || '');
   const [annSuccessMsg, setAnnSuccessMsg] = useState('');
+  const [annTarget, setAnnTarget] = useState(announcement?.target || 'Entire Platform');
+  const [annPriority, setAnnPriority] = useState(announcement?.priority || 'Standard');
+  const [annStatus, setAnnStatus] = useState(announcement?.status || 'published');
+  const [annScheduledTime, setAnnScheduledTime] = useState(announcement?.scheduledTime || '');
+  const [annCommentsEnabled, setAnnCommentsEnabled] = useState(announcement?.commentsEnabled !== false);
+  const [annLikesEnabled, setAnnLikesEnabled] = useState(announcement?.likesEnabled !== false);
+  const [annBookmarksEnabled, setAnnBookmarksEnabled] = useState(announcement?.bookmarksEnabled !== false);
+  const [annNotification, setAnnNotification] = useState(announcement?.notification || false);
+  const [annExpiryDate, setAnnExpiryDate] = useState(announcement?.expiryDate || '');
 
   const [adTitle, setAdTitle] = useState('');
   const [adSponsor, setAdSponsor] = useState('');
@@ -97,7 +106,22 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
 
   // Refresh stored state
   const refreshData = () => {
-    setAnnouncement(adminStore.getAnnouncement());
+    const ann = adminStore.getAnnouncement();
+    setAnnouncement(ann);
+    if (ann) {
+      setAnnTitle(ann.title || '');
+      setAnnText(ann.text || '');
+      setAnnImage(ann.image || '');
+      setAnnTarget(ann.target || 'Entire Platform');
+      setAnnPriority(ann.priority || 'Standard');
+      setAnnStatus(ann.status || 'published');
+      setAnnScheduledTime(ann.scheduledTime || '');
+      setAnnCommentsEnabled(ann.commentsEnabled !== false);
+      setAnnLikesEnabled(ann.likesEnabled !== false);
+      setAnnBookmarksEnabled(ann.bookmarksEnabled !== false);
+      setAnnNotification(ann.notification || false);
+      setAnnExpiryDate(ann.expiryDate || '');
+    }
     setAds(adminStore.getAds());
     setBannedUsers(adminStore.getBannedUsers());
     setReportedPosts(adminStore.getReportedPosts());
@@ -137,13 +161,34 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
   const handlePublishAnnouncement = (e) => {
     e.preventDefault();
     if (!annTitle.trim() || !annText.trim()) return;
+    const isPinned = annStatus === 'published';
     const updated = adminStore.setAnnouncement({
       title: annTitle,
       text: annText,
-      image: annImage || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&auto=format&fit=crop&q=80"
+      image: annImage || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&auto=format&fit=crop&q=80",
+      target: annTarget,
+      priority: annPriority,
+      status: annStatus,
+      scheduledTime: annScheduledTime,
+      commentsEnabled: annCommentsEnabled,
+      likesEnabled: annLikesEnabled,
+      bookmarksEnabled: annBookmarksEnabled,
+      notification: annNotification,
+      expiryDate: annExpiryDate,
+      isPinned: isPinned
     });
     setAnnouncement(updated);
-    setAnnSuccessMsg('✨ Super User Pinned Announcement successfully updated! All users will see this post first.');
+    setAnnSuccessMsg(`✨ Super User Announcement successfully saved in ${annStatus} status!`);
+    setTimeout(() => setAnnSuccessMsg(''), 4000);
+  };
+
+  const handleDeleteAnnouncement = () => {
+    adminStore.deleteAnnouncement();
+    setAnnouncement(null);
+    setAnnTitle('');
+    setAnnText('');
+    setAnnImage('');
+    setAnnSuccessMsg('🗑️ Pinned Announcement successfully deleted/unpinned!');
     setTimeout(() => setAnnSuccessMsg(''), 4000);
   };
 
@@ -637,73 +682,261 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
             </div>
           )}
 
-          {/* ── TAB 2: PINNED SUPER USER ANNOUNCEMENT ── */}
           {activeTab === 'announcement' && (
-            <div className={`${themeCardBg} rounded-3xl p-6 md:p-8 space-y-6 animate-fade-in`}>
-              <div>
-                <h2 className="text-xl font-black flex items-center gap-2">
-                  <Pin className="w-5 h-5 text-violet-500" /> Upload Super User Pinned Post
-                </h2>
-                <p className={`text-xs ${themeSubtext} mt-1`}>
-                  This post will be permanently pinned at the top of every user's feed when they open the platform first.
-                </p>
-              </div>
-
-              {annSuccessMsg && (
-                <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-xs rounded-2xl font-bold flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>{annSuccessMsg}</span>
-                </div>
-              )}
-
-              <form onSubmit={handlePublishAnnouncement} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className={`block text-xs font-bold ${themeSubtext} uppercase tracking-wider`}>Announcement Title</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Welcome to Inspire Platform!"
-                    value={annTitle}
-                    onChange={e => setAnnTitle(e.target.value)}
-                    className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
-                  />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+              {/* Left Column: Announcement Builder (2 cols span) */}
+              <div className={`${themeCardBg} rounded-3xl p-6 md:p-8 space-y-6 lg:col-span-2`}>
+                <div>
+                  <h2 className="text-xl font-black flex items-center gap-2">
+                    <Pin className="w-5 h-5 text-violet-500" /> Platform Announcement Builder
+                  </h2>
+                  <p className={`text-xs ${themeSubtext} mt-1`}>
+                    Design, draft, schedule, or publish announcements targeted to specific audiences with custom engagement controls.
+                  </p>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className={`block text-xs font-bold ${themeSubtext} uppercase tracking-wider`}>Post Message / Body</label>
-                  <textarea
-                    rows={4}
-                    required
-                    placeholder="Enter full announcement details for all community members..."
-                    value={annText}
-                    onChange={e => setAnnText(e.target.value)}
-                    className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
-                  />
-                </div>
+                {annSuccessMsg && (
+                  <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-xs rounded-2xl font-bold flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>{annSuccessMsg}</span>
+                  </div>
+                )}
 
-                <div className="space-y-1.5">
-                  <label className={`block text-xs font-bold ${themeSubtext} uppercase tracking-wider`}>Banner Image URL (Optional)</label>
-                  <div className="relative">
-                    <ImageIcon className="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5" />
+                <form onSubmit={handlePublishAnnouncement} className="space-y-4">
+                  {/* Title & Body */}
+                  <div className="space-y-1.5">
+                    <label className={`block text-[10px] font-black ${themeSubtext} uppercase tracking-wider`}>Announcement Title</label>
                     <input
-                      type="url"
-                      placeholder="https://images.unsplash.com/..."
-                      value={annImage}
-                      onChange={e => setAnnImage(e.target.value)}
-                      className={`w-full py-3 pl-10 pr-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
+                      type="text"
+                      required
+                      placeholder="e.g. Welcome to the Official Inspire Community!"
+                      value={annTitle}
+                      onChange={e => setAnnTitle(e.target.value)}
+                      className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
                     />
                   </div>
+
+                  <div className="space-y-1.5">
+                    <label className={`block text-[10px] font-black ${themeSubtext} uppercase tracking-wider`}>Post Body / Message</label>
+                    <textarea
+                      rows={4}
+                      required
+                      placeholder="Enter the announcement copy details..."
+                      value={annText}
+                      onChange={e => setAnnText(e.target.value)}
+                      className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
+                    />
+                  </div>
+
+                  {/* Banner Image */}
+                  <div className="space-y-1.5">
+                    <label className={`block text-[10px] font-black ${themeSubtext} uppercase tracking-wider`}>Banner Image URL (Optional)</label>
+                    <div className="relative">
+                      <ImageIcon className="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5" />
+                      <input
+                        type="url"
+                        placeholder="https://images.unsplash.com/..."
+                        value={annImage}
+                        onChange={e => setAnnImage(e.target.value)}
+                        className={`w-full py-3 pl-10 pr-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Targeting & Priority */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className={`block text-[10px] font-black ${themeSubtext} uppercase tracking-wider`}>Target Audience</label>
+                      <select
+                        value={annTarget}
+                        onChange={e => setAnnTarget(e.target.value)}
+                        className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
+                      >
+                        <option value="Entire Platform">Entire Platform</option>
+                        <option value="CarsIndia">CarsIndia Community Only</option>
+                        <option value="ipl">ipl Community Only</option>
+                        <option value="AI_Agents">AI_Agents Community Only</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className={`block text-[10px] font-black ${themeSubtext} uppercase tracking-wider`}>Priority / Banner Level</label>
+                      <select
+                        value={annPriority}
+                        onChange={e => setAnnPriority(e.target.value)}
+                        className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
+                      >
+                        <option value="Standard">Standard Priority</option>
+                        <option value="Urgent">Urgent Priority (Red Banner)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Status & Schedule Date */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className={`block text-[10px] font-black ${themeSubtext} uppercase tracking-wider`}>Publish Status</label>
+                      <select
+                        value={annStatus}
+                        onChange={e => setAnnStatus(e.target.value)}
+                        className={`w-full py-3 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
+                      >
+                        <option value="published">Publish Immediately (Live)</option>
+                        <option value="draft">Save as Draft</option>
+                        <option value="scheduled">Schedule for Future</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className={`block text-[10px] font-black ${themeSubtext} uppercase tracking-wider`}>Scheduled Date/Time or Expiry</label>
+                      <input
+                        type="datetime-local"
+                        value={annScheduledTime || annExpiryDate}
+                        onChange={e => {
+                          if (annStatus === 'scheduled') {
+                            setAnnScheduledTime(e.target.value);
+                          } else {
+                            setAnnExpiryDate(e.target.value);
+                          }
+                        }}
+                        disabled={annStatus === 'draft'}
+                        className={`w-full py-2.5 px-4 border rounded-2xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Engagement Interaction Toggles */}
+                  <div className="space-y-3 pt-2">
+                    <label className={`block text-[10px] font-black ${themeSubtext} uppercase tracking-wider`}>User Interaction Controls</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-bold">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={annCommentsEnabled}
+                          onChange={e => setAnnCommentsEnabled(e.target.checked)}
+                          className="w-4 h-4 rounded text-violet-600 focus:ring-violet-500"
+                        />
+                        <span>Enable user comments & replies</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={annLikesEnabled}
+                          onChange={e => setAnnLikesEnabled(e.target.checked)}
+                          className="w-4 h-4 rounded text-violet-600 focus:ring-violet-500"
+                        />
+                        <span>Allow feed upvoting/likes</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={annBookmarksEnabled}
+                          onChange={e => setAnnBookmarksEnabled(e.target.checked)}
+                          className="w-4 h-4 rounded text-violet-600 focus:ring-violet-500"
+                        />
+                        <span>Allow saving to bookmarks</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={annNotification}
+                          onChange={e => setAnnNotification(e.target.checked)}
+                          className="w-4 h-4 rounded text-violet-600 focus:ring-violet-500"
+                        />
+                        <span className="text-violet-600">Dispatch Push notification on save</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-4 pt-2">
+                    <button
+                      type="submit"
+                      className="flex-1 h-12 rounded-2xl text-white font-bold text-sm bg-gradient-to-r from-violet-600 to-orange-500 hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center shadow-lg shadow-violet-500/25 cursor-pointer"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" /> Save Announcement Settings
+                    </button>
+                    {announcement && (
+                      <button
+                        type="button"
+                        onClick={handleDeleteAnnouncement}
+                        className="px-5 h-12 rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 font-bold text-sm transition-all cursor-pointer"
+                      >
+                        Unpin / Delete
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </div>
+
+              {/* Right Column: Announcement Settings & Analytics */}
+              <div className="space-y-6">
+                {/* Active Announcement Preview & Analytics */}
+                <div className={`${themeCardBg} rounded-3xl p-6 space-y-4`}>
+                  <h3 className="text-xs font-black uppercase tracking-wider">Announcement Analytics</h3>
+                  {announcement ? (
+                    <div className="space-y-4">
+                      <div className={`p-4 rounded-2xl ${themeSubCardBg} space-y-3`}>
+                        <div className="flex items-center justify-between">
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-violet-500/20 text-violet-600 border border-violet-500/30">
+                            {announcement.status || 'Active'}
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-bold">
+                            {announcement.target || 'Entire Platform'}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-sm">{announcement.title}</h4>
+                      </div>
+
+                      {/* Performance Grid */}
+                      <div className="grid grid-cols-2 gap-3 text-center">
+                        <div className={`p-3 rounded-2xl ${themeSubCardBg}`}>
+                          <div className="text-lg font-black text-violet-600">{announcement.likes || 1240}</div>
+                          <div className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Total Likes</div>
+                        </div>
+                        <div className={`p-3 rounded-2xl ${themeSubCardBg}`}>
+                          <div className="text-lg font-black text-pink-500">{announcement.commentsCount || 88}</div>
+                          <div className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Comments</div>
+                        </div>
+                        <div className={`p-3 rounded-2xl ${themeSubCardBg}`}>
+                          <div className="text-lg font-black text-orange-500">{announcement.shares || 310}</div>
+                          <div className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Shares</div>
+                        </div>
+                        <div className={`p-3 rounded-2xl ${themeSubCardBg}`}>
+                          <div className="text-lg font-black text-emerald-500">2.4k</div>
+                          <div className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Views (Reach)</div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={`p-5 rounded-2xl ${themeSubCardBg} text-center text-xs ${themeSubtext} italic`}>
+                      No active platform announcement. Use the builder to publish one.
+                    </div>
+                  )}
                 </div>
 
-                <button
-                  type="submit"
-                  className="w-full h-12 rounded-2xl text-white font-bold text-sm bg-gradient-to-r from-violet-600 to-orange-500 hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center shadow-lg shadow-violet-500/25 cursor-pointer mt-4"
-                >
-                  <Sparkles className="w-4 h-4 mr-2" /> Publish Super User Pinned Post
-                </button>
-              </form>
+                {/* Platform Target Summary */}
+                <div className={`${themeCardBg} rounded-3xl p-6 space-y-3`}>
+                  <h3 className="text-xs font-black uppercase tracking-wider">Audience Targeting Stats</h3>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between py-1 border-b border-gray-100">
+                      <span className="text-gray-400">Total Reach Potential</span>
+                      <span className="font-bold">14,200 users</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-gray-100">
+                      <span className="text-gray-400">CarsIndia Members</span>
+                      <span className="font-bold">5,430 users</span>
+                    </div>
+                    <div className="flex justify-between py-1">
+                      <span className="text-gray-400">AI_Agents Members</span>
+                      <span className="font-bold">2,110 users</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
+
 
           {/* ── TAB 3: USER MANAGEMENT & SAFETY ── */}
           {activeTab === 'users' && (
