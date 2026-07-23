@@ -8,11 +8,13 @@ export default function RedditVideoPlayer({ poster, subtitle, videoUrl }) {
   return (
     <div className="relative bg-black rounded-2xl overflow-hidden group shadow-lg my-3 w-full flex flex-col items-center justify-center min-h-[380px] max-h-[560px]">
       {/* Meme Subtitle Header */}
-      <div className="absolute top-4 inset-x-4 z-20 text-center">
-        <span className="bg-black/80 text-white font-black text-sm md:text-base px-4 py-2 rounded-xl border border-white/10 shadow-2xl inline-block max-w-md uppercase tracking-wide leading-tight">
-          {subtitle || "How E block students be moving to reach AB1 at crisp 8am"}
-        </span>
-      </div>
+      {subtitle && (
+        <div className="absolute top-4 inset-x-4 z-20 text-center">
+          <span className="bg-black/80 text-white font-black text-sm md:text-base px-4 py-2 rounded-xl border border-white/10 shadow-2xl inline-block max-w-md uppercase tracking-wide leading-tight">
+            {subtitle}
+          </span>
+        </div>
+      )}
 
       {/* Video Content */}
       <div className="relative w-full h-full flex items-center justify-center overflow-hidden py-12">

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Bell, Plus, MessageSquare } from 'lucide-react';
 import { Avatar, Button } from '../atoms';
-import { SearchBar, UserMenuDropdown } from '../molecules';
+import { SearchBar } from '../molecules';
+import UserMenuDropdown from '../menu/UserMenuDropdown';
 
 export default function HeaderNavbar({
   searchQuery,

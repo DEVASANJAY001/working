@@ -1,5 +1,7 @@
 import React from 'react';
-import { HeaderNavbar, LeftSidebar, RightSidebar } from '../organisms';
+import HeaderNavbar from './HeaderNavbar';
+import LeftSidebar from '../menu/LeftSidebar';
+import RightSidebar from '../recent/RightSidebar';
 
 export default function DashboardLayout({
   searchQuery,
@@ -15,7 +17,7 @@ export default function DashboardLayout({
 }) {
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans flex flex-col">
-      {/* Organism: Top Navigation Header */}
+      {/* Top Navigation Header */}
       <HeaderNavbar
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -27,7 +29,7 @@ export default function DashboardLayout({
 
       {/* Main Body Grid Layout */}
       <div className="flex flex-1 w-full max-w-[1600px] mx-auto">
-        {/* Organism: Left Navigation Sidebar */}
+        {/* Left Navigation Sidebar */}
         <LeftSidebar
           activeNav={activeNav}
           setActiveNav={setActiveNav}
@@ -38,7 +40,7 @@ export default function DashboardLayout({
           {children}
         </main>
 
-        {/* Organism: Right Sidebar */}
+        {/* Right Sidebar */}
         <RightSidebar
           recentPostsList={recentPostsList}
         />
