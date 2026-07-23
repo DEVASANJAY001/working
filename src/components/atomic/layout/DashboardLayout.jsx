@@ -35,6 +35,7 @@ export default function DashboardLayout({
           activeNav={activeNav}
           setActiveNav={(nav) => { setActiveNav(nav); setMobileDrawerOpen(false); }}
           isOpen={true}
+          isMobileDrawer={true}
         />
       </div>
     </>,
