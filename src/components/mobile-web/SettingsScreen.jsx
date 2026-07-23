@@ -719,6 +719,7 @@ export default function SettingsScreen({
         activeNav="Profile"
         setActiveNav={onGoToFeed}
         recentPostsList={[]}
+        hideRightSidebar={true}
       >
         <div className="w-full space-y-6 pl-6 pr-4 pb-12 overflow-y-auto max-h-[calc(100vh-6rem)] no-scrollbar">
           
