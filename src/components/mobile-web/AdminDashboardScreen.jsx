@@ -48,6 +48,14 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
     'spammer_bot@crypto.org': 4,
     'contact@algartech.io': 1
   });
+  const [selectedReportId, setSelectedReportId] = useState(null);
+  const [moderatorNotes, setModeratorNotes] = useState({});
+  const [escalationStatus, setEscalationStatus] = useState({});
+  const [moderationHistory, setModerationHistory] = useState([
+    { id: 'h_1', time: '10 mins ago', action: 'Dismissed spam flag', target: 'u/techworldindia' },
+    { id: 'h_2', time: '1 hr ago', action: 'Deleted post & Banned user', target: 'spammer_bot@crypto.org' }
+  ]);
+  const [modFilterPriority, setModFilterPriority] = useState('all');
 
   // Form states
   const [annTitle, setAnnTitle] = useState(announcement?.title || '');
@@ -1275,69 +1283,256 @@ export default function AdminDashboardScreen({ onLogout, onGoToFeed, currentUser
                 </div>
               </div>
             );
-          })()}
+          })()}          {activeTab === 'moderation' && (() => {
+            // Apply priority filters dynamically
+            const filteredReports = reportedPosts.filter(r => {
+              if (modFilterPriority === 'critical') return r.reportsCount >= 12;
+              if (modFilterPriority === 'high') return r.reportsCount >= 5 && r.reportsCount < 12;
+              if (modFilterPriority === 'medium') return r.reportsCount < 5;
+              return true;
+            });
 
+            // Set default highlighted report
+            const currentSelectedReport = reportedPosts.find(r => r.id === selectedReportId) || filteredReports[0];
 
-          {/* ── TAB 4: CONTENT MODERATION & REPORTED POSTS ── */}
-          {activeTab === 'moderation' && (
-            <div className={`${themeCardBg} rounded-3xl p-6 md:p-8 space-y-6 animate-fade-in`}>
-              <div>
-                <h2 className="text-xl font-black flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-amber-500" /> Reported Posts & Content Moderation
-                </h2>
-                <p className={`text-xs ${themeSubtext} mt-1`}>
-                  Inspect community report flags and delete non-compliant posts immediately.
-                </p>
-              </div>
+            const handleUpdateNote = (reportId, noteText) => {
+              setModeratorNotes(prev => ({ ...prev, [reportId]: noteText }));
+            };
 
-              {reportedPosts.length === 0 ? (
-                <div className={`p-12 text-center ${themeSubCardBg} rounded-3xl border border-gray-800/10 space-y-3`}>
-                  <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto" />
-                  <h3 className="font-bold text-base">No Reported Posts</h3>
-                  <p className={`text-xs ${themeSubtext}`}>All community posts are clean and compliant!</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {reportedPosts.map((report) => (
-                    <div key={report.id} className={`p-5 ${themeSubCardBg} border border-amber-500/30 rounded-3xl space-y-3`}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="font-extrabold text-sm">{report.authorName}</span>
-                          <span className={`text-xs ${themeSubtext}`}>({report.authorHandle})</span>
-                        </div>
-                        <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-500/20 text-amber-500 border border-amber-500/30 flex items-center gap-1">
-                          <AlertTriangle className="w-3.5 h-3.5" /> {report.reportsCount} Reports
-                        </span>
-                      </div>
+            const handleEscalate = (reportId) => {
+              setEscalationStatus(prev => ({ ...prev, [reportId]: 'Escalated to Super Admin' }));
+              setAnnSuccessMsg("⚡ Ticket escalated successfully. Senior support has been notified.");
+              setTimeout(() => setAnnSuccessMsg(''), 4000);
+            };
 
-                      <p className={`text-xs p-3 rounded-2xl ${themeInputBg} border italic`}>
-                        "{report.text}"
+            // Custom wrapper handlers to log history on actions
+            const handleResolveKeep = (report) => {
+              handleDismissReport(report.id);
+              setModerationHistory(prev => [
+                { id: `h_${Date.now()}`, time: 'Just now', action: 'Approved post (Dismissed flags)', target: `@${report.authorHandle}` },
+                ...prev
+              ]);
+            };
+
+            const handleResolveDelete = (report) => {
+              handleDeleteReportedPost(report.postId, report.id);
+              setModerationHistory(prev => [
+                { id: `h_${Date.now()}`, time: 'Just now', action: 'Deleted post', target: `@${report.authorHandle}` },
+                ...prev
+              ]);
+            };
+
+            const handleResolveWarn = (report) => {
+              // Warn author
+              const authorEmail = `${report.authorHandle}@example.com`;
+              setUserWarnings(prev => ({
+                ...prev,
+                [authorEmail]: (prev[authorEmail] || 0) + 1
+              }));
+              handleDeleteReportedPost(report.postId, report.id);
+              setModerationHistory(prev => [
+                { id: `h_${Date.now()}`, time: 'Just now', action: 'Deleted post & Issued Warning', target: `@${report.authorHandle}` },
+                ...prev
+              ]);
+            };
+
+            const handleResolveBan = (report) => {
+              // Ban author
+              const authorEmail = `${report.authorHandle}@example.com`;
+              adminStore.banUser(authorEmail);
+              setBannedUsers(adminStore.getBannedUsers());
+              handleDeleteReportedPost(report.postId, report.id);
+              setModerationHistory(prev => [
+                { id: `h_${Date.now()}`, time: 'Just now', action: 'Deleted post & Banned Author', target: `@${report.authorHandle}` },
+                ...prev
+              ]);
+            };
+
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+                {/* Left Column: Moderation Queue List (2 cols span) */}
+                <div className={`${themeCardBg} rounded-3xl p-6 space-y-4 lg:col-span-2`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h2 className="text-lg font-black flex items-center gap-2">
+                        <AlertTriangle className="w-5 h-5 text-amber-500" /> Trust & Safety Content Queue
+                      </h2>
+                      <p className={`text-[11px] ${themeSubtext}`}>
+                        Review reported community submissions, run spam heuristics, and take actions that synchronize instantly.
                       </p>
+                    </div>
 
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-850 text-xs">
-                        <span className={themeSubtext}>Reason: <strong className="text-amber-505">{report.reportReason}</strong></span>
+                    {/* Priority Filter */}
+                    <div className="flex gap-2 items-center text-xs">
+                      <span className="font-bold text-gray-400">Severity:</span>
+                      <select
+                        value={modFilterPriority}
+                        onChange={e => setModFilterPriority(e.target.value)}
+                        className={`py-1 px-2 border rounded-lg ${themeInputBg} text-xs focus:outline-none`}
+                      >
+                        <option value="all">All Levels</option>
+                        <option value="critical">Critical (12+ Reports)</option>
+                        <option value="high">High (5-11 Reports)</option>
+                        <option value="medium">Medium / Low (&lt;5 Reports)</option>
+                      </select>
+                    </div>
+                  </div>
 
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleDismissReport(report.id)}
-                            className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${themeBtnSecondary}`}
+                  {annSuccessMsg && (
+                    <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-[11px] rounded-xl font-bold flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>{annSuccessMsg}</span>
+                    </div>
+                  )}
+
+                  {filteredReports.length === 0 ? (
+                    <div className={`p-12 text-center ${themeSubCardBg} rounded-3xl border border-gray-800/10 space-y-2`}>
+                      <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto" />
+                      <h3 className="font-bold text-sm">Clear Moderation Queue</h3>
+                      <p className={`text-[11px] ${themeSubtext}`}>No reports matched your selection. Feeds are compliant.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {filteredReports.map((report) => {
+                        const isCritical = report.reportsCount >= 12;
+                        const isHigh = report.reportsCount >= 5 && report.reportsCount < 12;
+                        const isSpamBot = report.authorHandle.toLowerCase().includes('bot') ||
+                          report.text.toLowerCase().includes('profit') ||
+                          report.text.toLowerCase().includes('scam') ||
+                          report.text.toLowerCase().includes('guaranteed');
+
+                        return (
+                          <div
+                            key={report.id}
+                            onClick={() => setSelectedReportId(report.id)}
+                            className={`p-4 ${themeSubCardBg} border transition-all rounded-2xl space-y-3 cursor-pointer ${
+                              currentSelectedReport?.id === report.id
+                                ? 'border-amber-500/50 shadow-md'
+                                : 'border-gray-800/15'
+                            }`}
                           >
-                            Dismiss Report
-                          </button>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="font-extrabold text-xs">{report.authorName}</span>
+                                <span className={`text-[10px] ${themeSubtext}`}>@{report.authorHandle}</span>
+                                {isSpamBot && (
+                                  <span className="px-1.5 py-0.2 bg-red-500/15 text-red-500 text-[9px] rounded-full font-black uppercase tracking-wider animate-pulse flex items-center gap-1">
+                                    ⚠️ Spam Bot
+                                  </span>
+                                )}
+                              </div>
+
+                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1 ${
+                                isCritical
+                                  ? 'bg-red-500/15 text-red-500 border border-red-500/25'
+                                  : isHigh
+                                    ? 'bg-orange-500/15 text-orange-500 border border-orange-500/25'
+                                    : 'bg-amber-500/15 text-amber-500 border border-amber-500/25'
+                              }`}>
+                                <AlertTriangle className="w-3 h-3" /> {report.reportsCount} Reports ({isCritical ? 'Critical' : isHigh ? 'High' : 'Medium'})
+                              </span>
+                            </div>
+
+                            <p className={`text-xs p-3 rounded-xl ${themeInputBg} border italic`}>
+                              "{report.text}"
+                            </p>
+
+                            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-gray-800/10 text-[10px]">
+                              <span className={themeSubtext}>Reason: <strong className="text-amber-500">{report.reportReason}</strong></span>
+
+                              <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                                <button
+                                  onClick={() => handleResolveKeep(report)}
+                                  className="px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-500 text-[10px] font-bold border border-emerald-500/20 cursor-pointer"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleResolveDelete(report)}
+                                  className="px-2.5 py-1.5 rounded-xl bg-orange-500/15 hover:bg-orange-500/25 text-orange-500 text-[10px] font-bold border border-orange-500/20 cursor-pointer"
+                                >
+                                  Delete
+                                </button>
+                                <button
+                                  onClick={() => handleResolveWarn(report)}
+                                  className="px-2.5 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-500 text-[10px] font-bold border border-amber-500/20 cursor-pointer"
+                                >
+                                  Warn
+                                </button>
+                                <button
+                                  onClick={() => handleResolveBan(report)}
+                                  className="px-2.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold shadow cursor-pointer"
+                                >
+                                  Ban Author
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Right Column: Moderation Details, Notes & History */}
+                <div className="space-y-6">
+                  {/* Notes & Workflow Actions */}
+                  <div className={`${themeCardBg} rounded-3xl p-5 space-y-4`}>
+                    <h3 className="text-xs font-black uppercase tracking-wider">Moderator Action Panel</h3>
+                    {currentSelectedReport ? (
+                      <div className="space-y-4 text-xs">
+                        <div className={`p-3.5 rounded-2xl ${themeSubCardBg} space-y-2`}>
+                          <div className="font-extrabold text-[10px] text-gray-400 uppercase">Selected Ticket</div>
+                          <div className="font-bold">Author: @{currentSelectedReport.authorHandle}</div>
+                          <div className="text-gray-500 line-clamp-2">"{currentSelectedReport.text}"</div>
+                        </div>
+
+                        {/* Note text area */}
+                        <div className="space-y-1">
+                          <label className={`block text-[9px] font-bold ${themeSubtext} uppercase`}>Moderator Audit Notes</label>
+                          <textarea
+                            rows={3}
+                            placeholder="Type notes regarding violations, evidence, or user history..."
+                            value={moderatorNotes[currentSelectedReport.id] || ''}
+                            onChange={e => handleUpdateNote(currentSelectedReport.id, e.target.value)}
+                            className={`w-full py-2 px-3 border rounded-xl ${themeInputBg} focus:outline-none focus:ring-2 focus:ring-violet-500 text-xs`}
+                          />
+                        </div>
+
+                        {/* Escalation Workflow */}
+                        <div className="flex gap-2 pt-1">
                           <button
-                            onClick={() => handleDeleteReportedPost(report.postId, report.id)}
-                            className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5"
+                            onClick={() => handleEscalate(currentSelectedReport.id)}
+                            className="flex-1 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 rounded-xl font-bold text-[10px] uppercase tracking-wider cursor-pointer"
                           >
-                            <Trash2 className="w-3.5 h-3.5" /> Delete Post
+                            {escalationStatus[currentSelectedReport.id] || 'Escalate Ticket'}
                           </button>
                         </div>
                       </div>
+                    ) : (
+                      <p className={`text-xs ${themeSubtext} italic text-center p-4`}>
+                        No report selected. Select any card to add auditor notes.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Resolved Actions Audit Trail */}
+                  <div className={`${themeCardBg} rounded-3xl p-5 space-y-3`}>
+                    <h3 className="text-xs font-black uppercase tracking-wider">Safety Resolution Log</h3>
+                    <div className="space-y-3 relative pl-3.5 border-l border-violet-500/30 text-[11px]">
+                      {moderationHistory.slice(0, 4).map((hist) => (
+                        <div key={hist.id} className="relative">
+                          <span className="absolute -left-[19.5px] top-1 w-2 h-2 bg-violet-600 rounded-full border border-white shadow"></span>
+                          <div className="font-bold text-gray-800">{hist.action}</div>
+                          <div className={`text-[10px] ${themeSubtext}`}>{hist.target} • {hist.time}</div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            );
+          })()}
 
           {/* ── TAB 5: POPULAR POSTS ── */}
           {activeTab === 'trending' && (
