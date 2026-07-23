@@ -14,6 +14,7 @@ export default function DashboardLayout({
   activeNav,
   setActiveNav,
   recentPostsList,
+  rightColumnOverride,
   children
 }) {
   return (
@@ -43,9 +44,15 @@ export default function DashboardLayout({
         </main>
 
         {/* Right Sidebar: independently scrollable */}
-        <RightSidebar
-          recentPostsList={recentPostsList}
-        />
+        {rightColumnOverride ? (
+          <aside className="w-80 border-l border-gray-200 hidden xl:block h-full overflow-y-auto no-scrollbar flex-shrink-0">
+            {rightColumnOverride}
+          </aside>
+        ) : (
+          <RightSidebar
+            recentPostsList={recentPostsList}
+          />
+        )}
       </div>
     </div>
   );
