@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Search, Image as ImageIcon, Link as LinkIcon, BarChart2, FileText, Sparkles, HelpCircle } from 'lucide-react';
+import { X, Search, Image as ImageIcon, Link as LinkIcon, BarChart2, FileText, Sparkles, HelpCircle, ChevronDown } from 'lucide-react';
 import { DashboardLayout, Button } from '../atomic';
 
 export default function CreateContentScreen({ onBack, onPublish }) {
